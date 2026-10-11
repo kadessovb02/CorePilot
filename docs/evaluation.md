@@ -22,3 +22,5 @@ corepilot evaluate --cases examples/evaluation.jsonl
 ```
 
 These cases inspect actual successful file-read events, recorded check results and expected diff state. Optional required/forbidden phrases are lexical checks and need human review. The command saves its report locally and never applies a diff.
+
+Cases normally use the configured workflow. Set `"orchestrated": false` or `true` on a case to compare single-model and specialist execution explicitly; specialist cases require all three role registrations. Reports record each case's workflow, models with observed calls, call counts by role and review decisions. The top-level legacy `model` field is null when specialists were selected, so an unused single-model configuration is not presented as the executing model. Compare the same source revision and held-out tasks, including actual compatibility/style checks and latency; role separation alone is not evidence of an improvement.

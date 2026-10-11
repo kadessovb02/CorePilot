@@ -5,7 +5,7 @@
   const activeStatuses = new Set(["queued", "running"]);
   const resumableStatuses = new Set(["cancelled", "failed", "interrupted"]);
   const statusNames = { queued: "Queued", running: "Running", completed: "Completed", cancelled: "Stopped", failed: "Error", interrupted: "Interrupted" };
-  const state = { projects: [], tasks: new Map(), selected: null, project: "", model: null, training: null, connected: false, busy: false, inspector: false, inspectorTab: "activity", lastTaskRefresh: 0, lastHealthRefresh: 0, rendered: "", activityRendered: "", diff: "", diffTask: null, pending: new Set(), polling: false };
+  const state = { projects: [], tasks: new Map(), selected: null, project: "", model: null, modelMode: null, orchestration: null, taskCapacity: {max_concurrent_tasks: 1, running: 0, queued: 0}, training: null, connected: false, busy: false, inspector: false, inspectorTab: "activity", lastTaskRefresh: 0, lastHealthRefresh: 0, rendered: "", activityRendered: "", diff: "", diffTask: null, pending: new Set(), polling: false };
   const handoff = { provider: "all", project: "", selected: null, chats: [], cache: new Map(), loading: false, busy: false, generation: 0, error: null };
   let toastTimer, pollTimer;
 
@@ -49,11 +49,17 @@
   function toast(message) { clearTimeout(toastTimer); $("toast").textContent = message; $("toast").hidden = false; toastTimer = setTimeout(() => { $("toast").hidden = true; }, 5000); }
   function currentTask() { return state.tasks.get(state.selected); }
   function runningTask() { return [...state.tasks.values()].find((task) => activeStatuses.has(task.status)); }
+  function blocksAnotherTask() { return !!runningTask() && !(state.taskCapacity?.max_concurrent_tasks > 1); }
   function detailString(data) { if (data === null || data === undefined) return ""; if (typeof data === "string") return data; try { return JSON.stringify(data, null, 2); } catch { return String(data); } }
   function eventText(event) { return event.message || event.data?.text || event.data?.content || ""; }
   function toolName(event) { return event.data?.tool || event.data?.name || event.data?.tool_name || event.message || "Tool"; }
   function eventData(event) { const d = event.data; if (!d) return ""; return detailString(d.result ?? d.output ?? d.arguments ?? d.args ?? d.input ?? d); }
   function providerName(provider) { return ({codex: "Codex", claude: "Claude", canonical: "JSONL"})[provider] || "History"; }
+  function roleName(role) { return ({planner: "Planner", coder: "Coder", reviewer: "Reviewer"})[role] || role || "Agent"; }
+  function workflowChoice() { return $("workflow-select").value === "single" ? false : $("workflow-select").value === "specialists" ? true : null; }
+  function useSpecialists(task = null) { return task ? !!task.orchestration?.enabled : workflowChoice() ?? !!state.orchestration?.enabled; }
+  function modelReady(task = null) { return state.connected && (useSpecialists(task) ? !!state.orchestration?.ready : state.modelMode !== "specialists" && !!state.model?.ready); }
+  function addWorkflow(payload) { const choice = workflowChoice(); if (choice !== null) payload.orchestrated = choice; return payload; }
   function projectBranch(project) { return project?.branch || (project?.head ? String(project.head).slice(0, 7) : ""); }
   function projectDescription(project) { return [project?.path, project?.branch ? `Branch: ${project.branch}` : project?.head ? "State: detached HEAD" : null, project?.head ? `Commit: ${project.head}` : null, project?.dirty ? "Uncommitted changes" : null].filter(Boolean).join("\n"); }
 
@@ -145,15 +151,56 @@
 
   function renderModel() {
     const model = state.model;
-    $("model-dot").className = "status-dot " + (state.connected ? (model?.ready ? "ready" : "error") : "error");
+    const task = currentTask();
+    const pinned = task && (activeStatuses.has(task.status) || resumableStatuses.has(task.status)) ? task : null;
+    const ready = modelReady(pinned);
+    $("model-dot").className = "status-dot " + (ready ? "ready" : "error");
     const name = (model?.display_name || model?.name)?.split("/").pop();
-    $("model-label").textContent = state.connected ? (name || (model?.ready ? "Model ready" : "Model offline")) : "Disconnected";
-    $("model-button").title = model?.ready ? "Local model is ready" : "Show model status";
+    $("model-label").textContent = state.connected ? (useSpecialists(pinned) ? "Specialists" : name || (model?.ready ? "Model ready" : "Model offline")) : "Disconnected";
+    $("model-button").title = ready ? "Configured workflow models are ready" : "Show model status";
     const details = [["Status", state.connected ? (model?.ready ? "Ready" : "Unavailable") : "Server unavailable"], ["Model", model?.display_name || model?.name || "—"], ["Adapter", model?.adapter || "None"], ["Model endpoint", model?.url || "—"]];
     if (model?.error) details.push(["Reason", typeof model.error === "string" ? model.error : detailString(model.error)]);
     $("model-details").replaceChildren(...details.flatMap(([label, value]) => [el("dt", "", label), el("dd", "", value)]));
+    renderRoleModels();
     renderTraining();
+    if (state.connected) {
+      $("connection-banner").hidden = ready;
+      if (!ready) $("connection-message").textContent = useSpecialists(pinned) ? "Specialist models unavailable. Check the configured role endpoints; saved tasks remain accessible." : "Model unavailable. Configure a running local endpoint; saved tasks and diffs remain accessible.";
+    }
     updateComposer();
+  }
+
+  function renderRoleModels() {
+    const pool = state.orchestration;
+    const configured = !!pool && (pool.configured ?? Object.keys(pool.roles || {}).length > 0);
+    const anyRoles = configured || Object.values(pool?.roles || {}).some(role => role.configured);
+    $("workflow-option").hidden = !configured;
+    if (!configured) $("workflow-select").value = "auto";
+    $("workflow-select").options[0].textContent = `Auto · ${pool?.enabled ? "specialists" : "single"}`;
+    $("role-model-details").hidden = !anyRoles;
+    if (!anyRoles) return;
+    const nodes = [el("div", "role-model-heading", "Planner → Coder → Reviewer")];
+    for (const role of ["planner", "coder", "reviewer"]) {
+      const model = pool.roles?.[role];
+      const row = el("div", "role-model-row");
+      row.append(el("span", "status-dot " + (model?.ready ? "ready" : "error")), el("span", "", roleName(role)));
+      row.append(el("code", "", model?.display_name || model?.name || "Unconfigured"));
+      row.title = model?.ready ? "Model ready" : model?.error || "Model unavailable";
+      nodes.push(row);
+    }
+    nodes.push(el("p", "", "Roles run in order using your configured model servers."));
+    $("role-model-details").replaceChildren(...nodes);
+  }
+
+  function renderWorkflow(task) {
+    const workflow = task?.orchestration;
+    $("workflow-status").hidden = !workflow?.enabled;
+    if (!workflow?.enabled) return;
+    const nodes = [];
+    for (const role of ["planner", "coder", "reviewer"]) nodes.push(el("span", "workflow-phase" + (workflow.phase === role ? " current" : ""), roleName(role)));
+    const round = typeof workflow.round === "number" && workflow.round > 1 ? ` · revision ${workflow.round - 1}` : "";
+    nodes.push(el("small", "", `${activeStatuses.has(task.status) ? "Working" : statusNames[task.status] || task.status}${round}`));
+    $("workflow-status").replaceChildren(...nodes);
   }
 
   function renderTraining() {
@@ -186,16 +233,17 @@
     if (state.pending.has("health")) return;
     state.pending.add("health");
     try {
-      const status = await api("/api/status");
-      state.connected = true; state.model = status.model || status; state.training = status.training || null;
+      const task = currentTask();
+      const pinned = task && (activeStatuses.has(task.status) || resumableStatuses.has(task.status)) ? task : null;
+      const choice = pinned ? !!pinned.orchestration?.enabled : workflowChoice();
+      const status = await api("/api/status" + (choice === null ? "" : `?workflow=${choice ? "specialists" : "single"}`));
+      state.connected = true; state.model = status.model || status; state.modelMode = status.model_mode || null; state.orchestration = status.orchestration || null; state.taskCapacity = status.task_capacity || {max_concurrent_tasks: 1, running: 0, queued: 0}; state.training = status.training || null;
       if (Array.isArray(status.projects)) {
         state.projects = status.projects;
         if (!state.project || !state.projects.find((project) => project.id === state.project && project.available !== false)) state.project = state.projects.find((project) => project.available !== false)?.id || "";
         renderProjects();
       }
       state.lastHealthRefresh = Date.now();
-      $("connection-banner").hidden = !!state.model.ready;
-      if (!state.model.ready) $("connection-message").textContent = "Model unavailable. Configure a running local endpoint; saved tasks and diffs remain accessible.";
       renderModel();
     } catch (error) { showConnectionError(error); }
     finally { state.pending.delete("health"); }
@@ -219,7 +267,10 @@
     $("page-name").textContent = "New task";
     $("task-status").hidden = true; $("welcome").hidden = false; $("messages").hidden = true; $("messages").replaceChildren();
     $("checkpoint-card").hidden = true; renderEmptyActivity(); renderEmptyDiff();
+    renderWorkflow(null);
+    $("workflow-select").value = "auto";
     $("prompt").value = ""; resizePrompt(); clearError(); renderProjects(); renderTaskList(); updateComposer();
+    state.lastHealthRefresh = 0; renderModel(); refreshHealth();
     closeSidebar(); $("prompt").focus();
   }
 
@@ -230,6 +281,7 @@
     clearError(); closeSidebar();
     renderProjects(); renderTaskList(); renderTask(); renderEmptyDiff();
     await refreshTask(true);
+    await refreshHealth();
     if (state.selected === id && state.inspectorTab === "diff") await refreshDiff();
   }
 
@@ -260,7 +312,7 @@
     const failed = !!(output?.error || output?.timed_out || (typeof output?.exit_code === "number" && output.exit_code !== 0));
     const details = el("details", "tool-chip" + (failed ? " tool-failed" : "")); details.dataset.eventSeq = event.seq;
     const summary = el("summary"); summary.innerHTML = icon(failed ? "close" : result || event.type === "tool_result" ? "check" : "terminal");
-    const label = toolName(event) + (failed ? (output.exit_code !== undefined ? ` · exit ${output.exit_code}` : " · error") : "");
+    const label = (event.data?.role ? `${roleName(event.data.role)} · ` : "") + toolName(event) + (failed ? (output.exit_code !== undefined ? ` · exit ${output.exit_code}` : " · error") : "");
     summary.append(el("span", "tool-name", label), el("span", "tool-time", clockLabel(result?.time || event.time)));
     const chevron = document.createElementNS("http://www.w3.org/2000/svg", "svg"); chevron.classList.add("tool-chevron"); chevron.innerHTML = '<use href="#i-chevron"/>'; summary.append(chevron); details.append(summary);
     const text = result ? `Call\n${eventData(event)}\n\nResult\n${eventData(result)}` : eventData(event);
@@ -279,8 +331,9 @@
     $("task-status").textContent = statusNames[task.status] || task.status;
     $("task-status").className = `status-pill ${task.status}`; $("task-status").hidden = false;
     $("welcome").hidden = true; $("messages").hidden = false;
+    renderWorkflow(task);
     const chain = taskChain(task);
-    const signature = JSON.stringify(chain.map((item) => [item.id, item.status, item.answer, item.error, item.events?.length, item.events?.at(-1)?.seq, item.updated_at]));
+    const signature = JSON.stringify(chain.map((item) => [item.id, item.status, item.answer, item.error, item.events?.length, item.events?.at(-1)?.seq, item.updated_at, item.orchestration]));
     if (state.rendered !== signature) {
       const scroll = $("chat-scroll"); const atBottom = scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop < 120;
       const opened = new Set([...$("messages").querySelectorAll("details[open]")].map((item) => item.dataset.eventSeq));
@@ -296,13 +349,16 @@
         const toolResults = new Map((item.events || []).filter((event) => event.type === "tool_result" && event.data?.call_id).map((event) => [event.data.call_id, event]));
         const pairedCalls = new Set((item.events || []).filter((event) => event.type === "tool_start" && event.data?.call_id).map((event) => event.data.call_id));
         for (const event of item.events || []) {
+          if (event.type === "role") { const role = el("div", "role-transition"); role.append(el("strong", "", roleName(event.data?.role)), el("span", "", event.data?.model || "")); if (event.data?.round > 1) role.append(el("small", "", `Revision ${event.data.round - 1}`)); nodes.push(role); }
           if (event.type === "user") nodes.push(el("div", "user-message", eventText(event)));
           if (event.type === "assistant" && eventText(event)) { lastAssistant = eventText(event); nodes.push(makeAssistant(lastAssistant, event.time)); }
           if (event.type === "tool_start" || (event.type === "tool_result" && !pairedCalls.has(event.data?.call_id))) { const tool = makeTool(event, toolResults.get(event.data?.call_id)); if (opened.has(String(event.seq))) tool.open = true; nodes.push(tool); }
         }
         if (item.answer && item.answer.trim() !== lastAssistant.trim()) nodes.push(makeAssistant(item.answer, item.updated_at));
+        const review = item.orchestration?.review;
+        if (review) { const note = el("details", "workflow-review" + (review.approved ? " approved" : "")); const summary = el("summary", "", review.approved ? "Reviewer approved the implementation" : "Reviewer requested changes"); note.append(summary); if (review.summary) note.append(el("p", "", review.summary)); if (review.issues?.length) { const issues = el("ul"); for (const issue of review.issues) issues.append(el("li", "", issue)); note.append(issues); } nodes.push(note); }
       }
-      if (activeStatuses.has(task.status)) { const working = el("div", "working-row"); const dots = el("span", "thinking-dots"); dots.innerHTML = "<i></i><i></i><i></i>"; working.append(dots, el("span", "", task.status === "queued" ? "Task queued…" : `Agent working · step ${task.step || 0}`)); nodes.push(working); }
+      if (activeStatuses.has(task.status)) { const working = el("div", "working-row"); const dots = el("span", "thinking-dots"); dots.innerHTML = "<i></i><i></i><i></i>"; working.append(dots, el("span", "", task.status === "queued" ? "Task queued…" : `${task.orchestration?.enabled ? roleName(task.orchestration.phase) : "Agent"} working · step ${task.step || 0}`)); nodes.push(working); }
       else { const end = el("div", `task-end ${task.status}`); end.innerHTML = icon(task.status === "completed" ? "check" : "stop"); end.append(el("span", "", task.error || (task.status === "completed" ? "Task completed. Review the result and file changes." : task.status === "failed" ? "Task failed. You can resume from the saved checkpoint." : "Task stopped. Context is saved."))); nodes.push(end); }
       $("messages").replaceChildren(...nodes); state.rendered = signature;
       if (atBottom) requestAnimationFrame(() => { scroll.scrollTop = scroll.scrollHeight; });
@@ -317,7 +373,7 @@
   function renderActivity(task) {
     $("checkpoint-card").hidden = false;
     $("step-label").textContent = `Step ${task.step || 0} of ${task.max_steps || 24}`;
-    $("step-status").textContent = statusNames[task.status] || task.status;
+    $("step-status").textContent = task.orchestration?.enabled && task.orchestration.phase !== "completed" ? roleName(task.orchestration.phase) : statusNames[task.status] || task.status;
     $("step-progress").style.width = `${Math.min(100, 100 * (task.step || 0) / (task.max_steps || 24))}%`;
     $("workspace-path").textContent = task.workspace || "Preparing workspace…";
     $("source-path").textContent = task.source_path || "—";
@@ -327,10 +383,11 @@
     if (signature === state.activityRendered) return;
     const list = $("activity-list"); const opened = new Set([...list.querySelectorAll("details[open]")].map((item) => item.dataset.eventSeq));
     const nodes = [];
-    const labels = { status: "Status", assistant: "Model response", user: "Task clarification", memory: "Project memory", model: "Model step", handoff: "History handoff", source: "Source workspace", tool_start: "Tool call", tool_result: "Tool result", error: "Error", diff: "File changes" };
+    const labels = { status: "Status", role: "Role switch", routing: "Workflow choice", assistant: "Model response", user: "Task clarification", memory: "Project memory", model: "Model step", handoff: "History handoff", source: "Source workspace", tool_start: "Tool call", tool_result: "Tool result", error: "Error", diff: "File changes" };
     for (const event of task.events || []) {
       const item = el("div", `activity-item ${event.type}`); const header = el("div", "activity-header"); header.append(el("span", "activity-dot"), el("span", "", event.type.startsWith("tool_") ? toolName(event) : labels[event.type] || event.type)); const time = el("time", "", clockLabel(event.time)); time.dateTime = event.time || ""; header.append(time); item.append(header);
       if (event.type === "status") item.append(el("div", "activity-details", statusNames[event.data?.status] || eventText(event)));
+      else if (event.type === "role") item.append(el("div", "activity-details", [roleName(event.data?.role), event.data?.model, event.data?.round > 1 ? `Revision ${event.data.round - 1}` : ""].filter(Boolean).join(" · ")));
       else if (event.type === "error") item.append(el("div", "activity-details", eventText(event)));
       else { const details = el("details"); details.dataset.eventSeq = event.seq; if (opened.has(String(event.seq))) details.open = true; details.append(el("summary", "", event.type === "assistant" ? "Show response" : "Show details"), el("pre", "", (eventData(event) || eventText(event)).slice(0, 32000))); item.append(details); }
       nodes.push(item);
@@ -378,30 +435,34 @@
 
   function updateComposer() {
     const task = currentTask(), running = runningTask(), active = task && activeStatuses.has(task.status), otherActive = running && running.id !== state.selected;
+    const otherBlocked = otherActive && blocksAnotherTask();
+    const pinned = task && resumableStatuses.has(task.status) ? task : null;
     $("send-button").hidden = !!active; $("stop-button").hidden = !active;
     $("stop-button").disabled = state.busy;
-    $("send-button").disabled = state.busy || !state.connected || !state.model?.ready || !state.project || !$("prompt").value.trim() || !!otherActive;
+    $("send-button").disabled = state.busy || !modelReady(pinned) || !state.project || !$("prompt").value.trim() || !!otherBlocked;
     $("prompt").disabled = state.busy || !!active;
     $("prompt").placeholder = active ? "The agent is working. Stop the task to resume it later." : resumableStatuses.has(task?.status) ? "Add instructions to resume from the checkpoint…" : task ? "Next task for this project…" : "Describe what to do…";
     $("send-button").setAttribute("aria-label", resumableStatuses.has(task?.status) ? "Resume task with a message" : "Send task");
     $("project-select").disabled = state.busy || !!task || !state.projects.some((project) => project.available !== false);
     $("memory-toggle").disabled = state.busy || !!active;
+    $("workflow-select").disabled = state.busy || !!active || !!pinned;
+    if (active || pinned) $("workflow-select").value = task.orchestration?.enabled ? "specialists" : "single";
     $("task-actions").hidden = !task || !resumableStatuses.has(task.status);
-    $("resume-task").disabled = state.busy || !state.model?.ready || !!running;
+    $("resume-task").disabled = state.busy || !modelReady(task) || blocksAnotherTask();
     $("checkpoint-label").textContent = task ? `Context saved · ${task.step || 0} steps` : "";
-    $("composer-hint").textContent = !state.project && state.connected ? "Add a project to start a task" : otherActive ? "Another task is running" : active ? "You can stop the task without losing its checkpoint" : "Enter to send · Shift + Enter for a new line";
+    $("composer-hint").textContent = !state.project && state.connected ? "Add a project to start a task" : otherBlocked ? "Another task is running" : active ? "You can stop the task without losing its checkpoint" : otherActive ? `${state.taskCapacity.running || 0} running · ${state.taskCapacity.queued || 0} queued` : "Enter to send · Shift + Enter for a new line";
     if ($("history-dialog").open) updateHandoffControls();
   }
 
   function updateHandoffControls() {
-    $("continue-history").disabled = handoff.busy || handoff.loading || !handoff.selected || !state.connected || !state.model?.ready || !!runningTask();
+    $("continue-history").disabled = handoff.busy || handoff.loading || !handoff.selected || !modelReady() || blocksAnotherTask();
     $("close-history").disabled = handoff.busy;
     $("history-project").disabled = handoff.busy;
     $("history-provider").disabled = handoff.busy;
     $("history-prompt").disabled = handoff.busy;
     $("refresh-history").disabled = handoff.busy || handoff.loading;
     for (const button of $("history-chat-list").querySelectorAll(".history-chat-option")) button.disabled = handoff.busy;
-    $("history-model-hint").textContent = handoff.busy ? "Importing context and creating a task…" : !state.model?.ready ? "Browse history now. Continue when the model is ready." : runningTask() ? "Finish or stop the active task first." : handoff.selected ? "The agent starts from the current files." : "Choose a session to continue.";
+    $("history-model-hint").textContent = handoff.busy ? "Importing context and creating a task…" : !modelReady() ? "Browse history now. Continue when the workflow models are ready." : blocksAnotherTask() ? "Finish or stop the active task first." : handoff.selected ? "The agent starts from the current files." : "Choose a session to continue.";
   }
 
   function renderHandoffList() {
@@ -465,7 +526,7 @@
     if ($("continue-history").disabled || !handoff.selected) return;
     handoff.busy = true; state.busy = true; $("history-error").hidden = true; updateComposer(); updateHandoffControls();
     try {
-      const payload = { project: handoff.project, memory: $("memory-toggle").checked };
+      const payload = addWorkflow({ project: handoff.project, memory: $("memory-toggle").checked });
       const prompt = $("history-prompt").value.trim(); if (prompt) payload.prompt = prompt;
       const result = await api(`/api/history/chats/${encodeURIComponent(handoff.selected)}/continue`, { method: "POST", body: JSON.stringify(payload), timeout: 60000 });
       const task = result.task || result; if (!task.id) throw new Error("The server did not return the created task.");
@@ -482,7 +543,7 @@
     const prompt = $("prompt").value.trim(); const previous = currentTask();
     state.busy = true; clearError(); updateComposer();
     try {
-      const payload = { prompt, project: previous?.project_id || previous?.project || state.project, memory: $("memory-toggle").checked };
+      const payload = addWorkflow({ prompt, project: previous?.project_id || previous?.project || state.project, memory: $("memory-toggle").checked });
       if (previous?.status === "completed") payload.parent_id = previous.id;
       const resume = resumableStatuses.has(previous?.status);
       const result = await api(resume ? `/api/tasks/${encodeURIComponent(previous.id)}/resume` : "/api/tasks", { method: "POST", body: JSON.stringify(resume ? { prompt } : payload), timeout: 60000 });
@@ -556,6 +617,7 @@
     $("history-chat-list").querySelectorAll(".history-chat-option")[index]?.focus();
   });
   $("project-select").addEventListener("change", (event) => setProject(event.target.value));
+  $("workflow-select").addEventListener("change", () => { state.lastHealthRefresh = 0; renderModel(); refreshHealth(); });
   $("stop-button").addEventListener("click", () => taskAction("cancel"));
   $("resume-task").addEventListener("click", () => taskAction("resume"));
   $("apply-changes").addEventListener("click", applyChanges);

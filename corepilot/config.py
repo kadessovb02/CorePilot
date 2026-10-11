@@ -2,11 +2,82 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import urlparse
+
+
+MODEL_ROLES = ("planner", "coder", "reviewer")
+
+
+def router_config(value: dict) -> dict:
+    """Validate an optional local typed-decision endpoint and bounded timeout."""
+    fields = {"enabled", "url", "model", "min_confidence", "timeout", "api_key_env"}
+    if not isinstance(value, dict) or set(value) - fields:
+        raise ValueError("orchestration.router must be an object with supported settings; API keys use api_key_env")
+    enabled = value.get("enabled", False)
+    if not isinstance(enabled, bool):
+        raise ValueError("orchestration.router.enabled must be a boolean")
+    result = {"enabled": enabled, "url": local_endpoint(value.get("url", "http://127.0.0.1:8000/v1")),
+              "model": value.get("model"), "api_key_env": value.get("api_key_env")}
+    if result["model"] is not None and (not isinstance(result["model"], str) or not result["model"].strip()):
+        raise ValueError("orchestration.router.model must be a nonempty string or null")
+    key_env = result["api_key_env"]
+    if key_env is not None and (not isinstance(key_env, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key_env)):
+        raise ValueError("orchestration.router.api_key_env must name an environment variable")
+    for name, default, minimum, maximum in (("min_confidence", 0.8, 0, 1), ("timeout", 5, 0.1, 30)):
+        number = value.get(name, default)
+        if (isinstance(number, bool) or not isinstance(number, (int, float))
+                or not minimum <= number <= maximum or not math.isfinite(number)):
+            raise ValueError(f"orchestration.router.{name} must be a finite number from {minimum} to {maximum}")
+        result[name] = float(number)
+    return result
+
+
+def orchestration_config(value: dict) -> dict:
+    """Validate explicit role registration without selecting a fallback model."""
+    fields = {"enabled", "max_review_rounds", "role_max_steps", "max_concurrent_tasks", "roles", "router"}
+    if not isinstance(value, dict) or set(value) - fields:
+        raise ValueError("orchestration must be an object with supported settings")
+    enabled = value.get("enabled", False)
+    if not isinstance(enabled, bool):
+        raise ValueError("orchestration.enabled must be a boolean")
+    result = {"enabled": enabled, "router": router_config(value.get("router", {}))}
+    for name, default, minimum, maximum in (("max_review_rounds", 2, 1, 5), ("role_max_steps", 12, 1, 100),
+                                            ("max_concurrent_tasks", 1, 1, 8)):
+        number = value.get(name, default)
+        if isinstance(number, bool) or not isinstance(number, int) or not minimum <= number <= maximum:
+            raise ValueError(f"orchestration.{name} must be an integer from {minimum} to {maximum}")
+        result[name] = number
+    roles = value.get("roles", {})
+    if not isinstance(roles, dict) or set(roles) - set(MODEL_ROLES):
+        raise ValueError("orchestration.roles supports planner, coder, and reviewer only")
+    if enabled and set(roles) != set(MODEL_ROLES):
+        raise ValueError("Enabled orchestration requires explicit planner, coder, and reviewer models")
+    model_fields = {"url", "name", "display_name", "protocol", "max_tokens", "context_chars", "api_key_env", "adapter"}
+    result["roles"] = {}
+    for role, model in roles.items():
+        if not isinstance(model, dict) or set(model) - model_fields:
+            raise ValueError(f"orchestration.roles.{role} contains unsupported model settings; API keys use api_key_env")
+        if "url" not in model or not isinstance(model.get("name"), str) or not model["name"].strip():
+            raise ValueError(f"orchestration.roles.{role} needs an explicit url and nonempty name")
+        normalized = {**model, "url": local_endpoint(model["url"])}
+        if not isinstance(model.get("protocol", "auto"), str) or model.get("protocol", "auto") not in {"auto", "native", "json"}:
+            raise ValueError(f"orchestration.roles.{role}.protocol must be auto, native, or json")
+        key_env = model.get("api_key_env")
+        if key_env is not None and (not isinstance(key_env, str) or not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", key_env)):
+            raise ValueError(f"orchestration.roles.{role}.api_key_env must name an environment variable")
+        for key in ("display_name", "adapter"):
+            if key in model and model[key] is not None and not isinstance(model[key], str):
+                raise ValueError(f"orchestration.roles.{role}.{key} must be a string or null")
+        for name, minimum, maximum in (("max_tokens", 32, 65536), ("context_chars", 4000, 1000000)):
+            if name in model and (isinstance(model[name], bool) or not isinstance(model[name], int) or not minimum <= model[name] <= maximum):
+                raise ValueError(f"orchestration.roles.{role}.{name} must be an integer from {minimum} to {maximum}")
+        result["roles"][role] = normalized
+    return result
 
 
 def local_endpoint(value: str) -> str:
@@ -47,6 +118,7 @@ class Settings:
     projects: dict[str, Path] = field(default_factory=dict)
     history_sources: list[dict] = field(default_factory=list)
     config_path: Path | None = None
+    orchestration: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.root = self.root.expanduser().resolve()
@@ -64,6 +136,7 @@ class Settings:
             if isinstance(value, bool) or not isinstance(value, int) or not minimum <= value <= maximum:
                 raise ValueError(f"{name} must be an integer from {minimum} to {maximum}")
         self.projects = {key: relative_path(path, self.config_path.parent) for key, path in self.projects.items()}
+        self.orchestration = orchestration_config(self.orchestration)
 
     @property
     def runtime(self) -> Path:
@@ -101,4 +174,4 @@ class Settings:
                    protocol=model.get("protocol", "auto"),
                    max_tokens=model.get("max_tokens", 2048), context_chars=model.get("context_chars", 22000),
                    max_steps=raw.get("max_steps", 24), command_timeout=raw.get("command_timeout", 60),
-                   projects=projects, history_sources=history)
+                   projects=projects, history_sources=history, orchestration=raw.get("orchestration", {}))

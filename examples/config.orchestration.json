@@ -1,0 +1,18 @@
+{
+  "model": {"url": "http://127.0.0.1:11434/v1", "name": "YOUR_SINGLE_MODEL", "protocol": "auto"},
+  "projects": {},
+  "history_sources": [],
+  "max_steps": 48,
+  "orchestration": {
+    "enabled": true,
+    "max_review_rounds": 2,
+    "role_max_steps": 12,
+    "max_concurrent_tasks": 1,
+    "roles": {
+      "planner": {"url": "http://127.0.0.1:8101/v1", "name": "YOUR_SMALL_ANALYSIS_MODEL", "protocol": "auto"},
+      "coder": {"url": "http://127.0.0.1:8102/v1", "name": "YOUR_SMALL_CODING_MODEL", "protocol": "auto"},
+      "reviewer": {"url": "http://127.0.0.1:8103/v1", "name": "YOUR_SMALL_REVIEW_MODEL", "protocol": "auto"}
+    },
+    "router": {"enabled": false, "url": "http://127.0.0.1:8000/v1", "min_confidence": 0.8, "timeout": 5}
+  }
+}

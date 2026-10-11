@@ -12,6 +12,7 @@ The project is an **alpha research tool**. Inference quality depends on the mode
 - Redacts common secrets, excludes hidden reasoning, deduplicates examples, and separates training, validation and held-out sessions.
 - Builds local retrieval memory from selected conversations and current source files.
 - Runs a tool loop against a **loopback OpenAI-compatible server**: read/search files, edit an isolated workspace, run supported sandboxed commands, inspect a diff, cancel and resume a task.
+- Offers a lightweight **planner → coder → reviewer** workflow with explicit specialist models, bounded repair, independent-task concurrency, and optional local **Laya / Jev-compatible** typed routing. See [specialist orchestration](docs/orchestration.md).
 - Offers optional **MLX LoRA training through Soup** on Apple Silicon. Standard messages JSONL can also be used with other SFT trainers.
 
 CorePilot imports histories from teacher agents; it does **not** train or redistribute proprietary models. It ships no real chat exports, private datasets, model weights or trained adapters. All examples are synthetic.
@@ -23,6 +24,8 @@ Tell Codex, Claude Code, or another terminal-capable agent:
 > Set up CorePilot from https://github.com/kadessovb02/CorePilot for my current repository. Follow docs/agent-setup.md, configure a suitable local model and project memory, verify the setup, and launch the interface. Keep all project data local.
 
 The primary onboarding command is `corepilot setup --repo /path/to/repository --verify`. It probes common local model endpoints, registers the project, indexes memory, and gives the agent a JSON readiness report and concrete next steps. [Agent setup guide](docs/agent-setup.md) · [Codex skill](.agents/skills/corepilot-setup/SKILL.md) · [Claude Code skill](.claude/skills/corepilot-setup/SKILL.md).
+
+For small specialist models, ask the agent: **“Configure CorePilot specialists for my repository following docs/orchestration.md. Choose models that fit my machine, preserve project style and compatibility, verify the workflow, and launch the interface. Keep all data local.”**
 
 ## Quick start
 

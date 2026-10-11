@@ -92,7 +92,7 @@ class WorkspaceTools:
         start_line = max(1, int(start_line))
         end_line = min(len(lines), start_line + 159, int(end_line) if end_line else len(lines))
         result = "\n".join(f"{index + 1}: {lines[index]}" for index in range(start_line - 1, end_line))
-        return {"path": path, "content": trim(result), "total_lines": len(lines), "start_line": start_line, "end_line": end_line}
+        return {"path": str(target.relative_to(self.root)), "content": trim(result), "total_lines": len(lines), "start_line": start_line, "end_line": end_line}
 
     def search(self, query: str, path: str = ".", limit: int = 60) -> dict:
         if not isinstance(query, str) or not query or len(query) > 500:

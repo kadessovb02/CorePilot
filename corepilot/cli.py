@@ -58,6 +58,22 @@ def parser():
     set_model.add_argument("--protocol", choices=["auto", "native", "json"], default="auto")
     set_model.add_argument("--display-name", default="Local model")
     ms.add_parser("show")
+    orchestration = sub.add_parser("orchestration", help="Configure independent specialist models and a lightweight decision router")
+    osub = orchestration.add_subparsers(dest="action", required=True)
+    specialist = osub.add_parser("model", help="Set an explicit model for a specialist")
+    specialist.add_argument("role", choices=["planner", "coder", "reviewer"])
+    specialist.add_argument("--url", required=True); specialist.add_argument("--name", required=True)
+    specialist.add_argument("--protocol", choices=["auto", "native", "json"], default="auto")
+    specialist.add_argument("--api-key-env")
+    enable = osub.add_parser("enable")
+    enable.add_argument("--max-review-rounds", type=int, default=2)
+    enable.add_argument("--role-max-steps", type=int, default=12)
+    enable.add_argument("--max-concurrent-tasks", type=int, default=1)
+    osub.add_parser("disable"); osub.add_parser("show")
+    router = osub.add_parser("router", help="Configure a local Laya/Jev-compatible typed decision endpoint")
+    router.add_argument("--url"); router.add_argument("--model"); router.add_argument("--api-key-env")
+    router.add_argument("--min-confidence", type=float, default=.8); router.add_argument("--timeout", type=float, default=5)
+    router.add_argument("--disable", action="store_true")
     history = sub.add_parser("history", help="Register explicit history paths for the UI")
     hs = history.add_subparsers(dest="action", required=True)
     ha = hs.add_parser("add"); ha.add_argument("--provider", choices=["codex", "claude", "canonical"], required=True)
@@ -127,6 +143,31 @@ def main(argv=None):
                 config["model"] = {"url": args.url.rstrip("/"), "name": args.name, "display_name": args.display_name, "protocol": args.protocol, "context_chars": 32000}
                 write_config(config_path, config)
             print(json.dumps(config.get("model", {}), indent=2))
+        elif args.command == "orchestration":
+            from .config import orchestration_config
+            state = config.setdefault("orchestration", {})
+            if args.action == "model":
+                role_model = {"url": args.url, "name": args.name, "protocol": args.protocol}
+                if args.api_key_env: role_model["api_key_env"] = args.api_key_env
+                state.setdefault("roles", {})[args.role] = role_model
+            elif args.action == "enable":
+                state.update(enabled=True, max_review_rounds=args.max_review_rounds,
+                             role_max_steps=args.role_max_steps, max_concurrent_tasks=args.max_concurrent_tasks)
+            elif args.action == "disable":
+                state["enabled"] = False
+            elif args.action == "router":
+                if args.disable:
+                    state.setdefault("router", {})["enabled"] = False
+                else:
+                    if not args.url: raise ValueError("Supply --url for a local typed decision server")
+                    state["router"] = {"enabled": True, "url": args.url, "min_confidence": args.min_confidence, "timeout": args.timeout}
+                    if args.model: state["router"]["model"] = args.model
+                    if args.api_key_env: state["router"]["api_key_env"] = args.api_key_env
+            normalized = orchestration_config(state)
+            if args.action != "show":
+                config["orchestration"] = normalized
+                write_config(config_path, config)
+            print(json.dumps(normalized, indent=2))
         elif args.command == "history":
             sources = config.setdefault("history_sources", [])
             if args.action == "add":
@@ -167,7 +208,7 @@ def main(argv=None):
             import platform
             from .config import Settings
             settings = Settings.load()
-            print(json.dumps({"version": "0.1.0", "platform": platform.system(), "home": str(settings.root), "config": str(config_path), "model_url": settings.model_url, "model": settings.model_name, "sandbox_available": bool(shutil.which("sandbox-exec")), "command_execution": "sandboxed" if shutil.which("sandbox-exec") else "disabled: supported sandbox unavailable", "projects": {k: {"exists": v.is_dir()} for k,v in settings.projects.items()}, "history_sources": len(settings.history_sources)}, indent=2))
+            print(json.dumps({"version": "0.1.0", "platform": platform.system(), "home": str(settings.root), "config": str(config_path), "model_url": settings.model_url, "model": settings.model_name, "orchestration": settings.orchestration, "sandbox_available": bool(shutil.which("sandbox-exec")), "command_execution": "sandboxed" if shutil.which("sandbox-exec") else "disabled: supported sandbox unavailable", "projects": {k: {"exists": v.is_dir()} for k,v in settings.projects.items()}, "history_sources": len(settings.history_sources)}, indent=2))
     except (ValueError, OSError, KeyError) as exc:
         p.exit(2, f"corepilot: {exc}\n")
     return 0

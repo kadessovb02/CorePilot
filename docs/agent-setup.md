@@ -20,6 +20,8 @@ For an isolated state location use `corepilot --home /path/to/state setup --repo
 
 ## Optional history and training
 
+If the user requests small specialist models, follow [orchestration.md](orchestration.md): register explicit planner/coder/reviewer endpoints, enable the workflow and run setup verification in that mode. Use existing suitable local models or start ones that fit the machine. Configure a local Laya-compatible router only when requested/available. Do not infer weight specialization from role labels or describe HTTP reachability as task-quality proof.
+
 When the user authorizes selected histories, run:
 
 ```sh

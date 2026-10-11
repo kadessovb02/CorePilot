@@ -77,9 +77,52 @@ class TaskStore:
         return event
 
 
+def public_orchestration(value: dict) -> dict:
+    """Expose workflow summaries without prompts, model requests, or manifests."""
+    if not isinstance(value, dict):
+        return {}
+    result = {}
+    if isinstance(value.get("enabled"), bool):
+        result["enabled"] = value["enabled"]
+    if isinstance(value.get("phase"), str) and value["phase"] in {"planner", "coder", "reviewer", "completed"}:
+        result["phase"] = value["phase"]
+    for key in ("round", "max_rounds", "phase_steps"):
+        if isinstance(value.get(key), int) and not isinstance(value[key], bool):
+            result[key] = value[key]
+    if isinstance(value.get("phase_steps"), dict):
+        result["phase_steps"] = {role: count for role, count in value["phase_steps"].items() if role in {"planner", "coder", "reviewer"} and isinstance(count, int) and not isinstance(count, bool)}
+    for key in ("plan", "implementation"):
+        if isinstance(value.get(key), str):
+            result[key] = value[key][:16000]
+
+    def review(item):
+        if not isinstance(item, dict):
+            return None
+        issues = item.get("issues", [])
+        summary = item.get("summary", "")
+        return {"approved": item.get("approved") is True, "summary": summary[:8000] if isinstance(summary, str) else "",
+                "issues": [issue[:2000] for issue in issues[:30] if isinstance(issue, str)] if isinstance(issues, list) else []}
+
+    if "review" in value:
+        result["review"] = review(value["review"])
+    if isinstance(value.get("reviews"), list):
+        result["reviews"] = [review(item) for item in value["reviews"][-10:] if isinstance(item, dict)]
+    if isinstance(value.get("models"), dict):
+        result["models"] = {role: value["models"][role][:200] for role in ("planner", "coder", "reviewer") if isinstance(value["models"].get(role), str)}
+    if isinstance(value.get("route"), dict):
+        route = value["route"]
+        result["route"] = {key: route[key][:1000] for key in ("choice", "reason", "backend", "error") if isinstance(route.get(key), str)}
+        confidence = route.get("confidence")
+        if isinstance(confidence, (int, float)) and not isinstance(confidence, bool) and 0 <= confidence <= 1:
+            result["route"]["confidence"] = confidence
+    return result
+
+
 def public_task(task: dict, after: int = 0, compact: bool = False) -> dict:
-    hidden = {"messages", "pending_calls", "memory_context", "baseline", "source_manifest", "initial_workspace_manifest", "import_context", "failed_tool_calls"}
+    hidden = {"messages", "role_messages", "role_contexts", "pending_calls", "memory_context", "baseline", "source_manifest", "initial_workspace_manifest", "import_context", "failed_tool_calls", "requests", "base_context", "phase_manifest", "guidance_files"}
     result = {key: value for key, value in task.items() if key not in hidden}
+    if "orchestration" in task:
+        result["orchestration"] = public_orchestration(task["orchestration"])
     result["project_id"] = task["project"]
     result["events"] = [] if compact else [event for event in task.get("events", []) if event["seq"] > after]
     return result

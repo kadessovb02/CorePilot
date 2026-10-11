@@ -10,6 +10,7 @@ from pathlib import Path
 from .config import Settings
 from .memory import retrieve
 from .model import ModelClient
+from . import orchestration as workflow
 from .store import TaskStore, now, public_task
 from .tools import WorkspaceTools, trim
 from .workspace import BoundaryError, apply_changes, changes, git_metadata, handoff_source, prepare, snapshot, source_manifest
@@ -47,19 +48,34 @@ class RepeatedToolFailure(RuntimeError):
     """The checkpoint is reviewable but an unchanged failing call needs steering."""
 
 
+def manifest_fingerprint(manifest: dict) -> str:
+    return hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest()
+
+
+def validation_is_current(task: dict, manifest: dict) -> bool:
+    check = task["checks"][-1] if task.get("checks") else None
+    return bool(check and check["exit_code"] == 0 and not check["timed_out"]
+                and check.get("source_fingerprint") == manifest_fingerprint(manifest)
+                and check.get("operation", 0) >= (task.get("last_edit_step") or 0))
+
+
 IMPORT_FIELDS = ("history_session_id", "history_provider", "history_source_cwd", "codex_session_id", "codex_source_cwd", "import_mode", "source_note")
 
 
 class AgentEngine:
-    def __init__(self, settings: Settings, model=None):
+    def __init__(self, settings: Settings, model=None, role_models=None):
         self.settings = settings
         self.store = TaskStore(settings.runtime)
         self.store.recover()
         self.model = model or ModelClient(settings)
+        from .model_pool import RoleModelPool
+        self.role_models = role_models or RoleModelPool(settings)
+        from .decision import DecisionRouter
+        self.router = DecisionRouter(settings.orchestration["router"])
         self.tasks: dict[str, dict] = {task["id"]: task for task in self.store.list()}
         self.jobs: dict[str, asyncio.Task] = {}
         self.tools: dict[str, WorkspaceTools] = {}
-        self.lock = asyncio.Lock()
+        self.lock = asyncio.Semaphore(settings.orchestration["max_concurrent_tasks"])
 
     def task(self, task_id: str) -> dict:
         if task_id not in self.tasks:
@@ -105,12 +121,19 @@ class AgentEngine:
                 job.cancel()
         await asyncio.gather(*self.jobs.values(), return_exceptions=True)
         await self.model.close()
+        await self.role_models.close()
+        await self.router.close()
 
-    async def create(self, project: str, prompt: str, memory: bool = True, max_steps: int | None = None, parent_id: str | None = None, *, read_only: bool = False, source_override: Path | None = None, import_context: str | None = None, import_metadata: dict | None = None) -> dict:
+    async def create(self, project: str, prompt: str, memory: bool = True, max_steps: int | None = None, parent_id: str | None = None, *, read_only: bool = False, orchestrated: bool | None = None, source_override: Path | None = None, import_context: str | None = None, import_metadata: dict | None = None) -> dict:
         if project not in self.settings.projects:
             raise ValueError("Unknown project")
         if not isinstance(read_only, bool):
             raise ValueError("read_only must be a boolean")
+        if orchestrated is not None and not isinstance(orchestrated, bool):
+            raise ValueError("orchestrated must be a boolean or null")
+        specialist_mode = self.settings.orchestration["enabled"] if orchestrated is None else orchestrated
+        if specialist_mode and not all(role in self.settings.orchestration["roles"] for role in workflow.ROLES):
+            raise ValueError("Specialist mode needs explicit planner, coder and reviewer model configuration")
         parent = self.task(parent_id) if parent_id else None
         if parent:
             self.validate_task_paths(parent, check_source=True)
@@ -142,6 +165,8 @@ class AgentEngine:
                 "source_dirty": parent.get("source_dirty") if parent else metadata["dirty"],
                 "read_only": read_only,
                 "wants_edits": not read_only and editing_intent(prompt), "wants_check": explicit_check_intent(prompt)}
+        if specialist_mode:
+            task["orchestration"] = workflow.new_state(self.settings.orchestration)
         if parent:
             for key in IMPORT_FIELDS:
                 if key in parent:
@@ -153,6 +178,8 @@ class AgentEngine:
         if import_context:
             task["import_context"] = import_context[:6500]
         if parent:
+            if not specialist_mode and task["messages"] and task["messages"][0].get("role") == "system":
+                task["messages"][0] = {"role": "system", "content": SYSTEM}
             request = prompt + ("\nThis task is explicitly read-only: file edit tools are unavailable. Inspect and explain the current files." if read_only else "")
             task["messages"].append({"role": "user", "content": request, "_corepilot_kind": "request"})
             if parent.get("applied"):
@@ -191,6 +218,12 @@ class AgentEngine:
             for call in task["pending_calls"]:
                 task["messages"].append({"role": "tool", "tool_call_id": call["id"], "content": '{"error":"Pending tool skipped due to user steering; inspect current state before retrying"}'})
             task["messages"].append({"role": "user", "content": prompt, "_corepilot_kind": "request"})
+            if workflow.current_role(task):
+                state = task["orchestration"]
+                state.setdefault("requests", [task["prompt"]]).append(prompt)
+                # A changed request needs a new compatibility contract and review.
+                state.update(phase="planner", phase_steps=0, plan="", implementation="", review=None, round=1)
+                state["restart_requested"] = True
             task["pending_calls"] = []
             task["failed_tool_calls"] = {}
             task["wants_edits"] = not task.get("read_only", False) and (task.get("wants_edits", False) or editing_intent(prompt))
@@ -198,6 +231,8 @@ class AgentEngine:
             self.store.event(task, "user", prompt, {})
         task["error"] = None
         task["completion_retries"] = 0
+        if workflow.current_role(task):
+            task["orchestration"]["phase_steps"] = 0
         task["status"] = "queued"
         task["max_steps"] = max(task["max_steps"], task["step"] + self.settings.max_steps)
         self.store.event(task, "status", "Task resumed from its checkpoint", {"status": "queued"})
@@ -262,11 +297,111 @@ class AgentEngine:
             task["initial_workspace_manifest"] = await asyncio.to_thread(source_manifest, initial_root)
         self.store.save(task)
 
+    async def enter_phase(self, task: dict, phase: str) -> None:
+        state = task["orchestration"]
+        state.update(phase=phase, phase_steps=0, phase_start_operation=task.get("tool_operations", 0),
+                     phase_manifest=await asyncio.to_thread(source_manifest, Path(task["workspace"])))
+        task["messages"] = workflow.phase_messages(task, SYSTEM, self.diff(task["id"]))
+        task["completion_retries"] = 0
+        task["failed_tool_calls"] = {}
+        self.store.event(task, "role", f"{phase.title()} specialist selected", {"role": phase, "model": state["models"][phase], "round": state["round"]})
+
+    async def initialize_workflow(self, task: dict) -> None:
+        state = task["orchestration"]
+        if state.get("restart_requested"):
+            state["route"] = await self.router.decide("\n\n".join(state["requests"]), wants_edits=task["wants_edits"], read_only=task["read_only"])
+            self.store.event(task, "routing", "Updated task route selected", state["route"])
+            await self.enter_phase(task, "planner")
+            state.pop("restart_requested", None)
+            self.store.save(task)
+            return
+        if state.get("initialized"):
+            return
+        state.setdefault("base_context", [message for message in task["messages"] if message.get("_corepilot_kind") == "context"][:2])
+        state.setdefault("requests", [task["prompt"]])
+        root = Path(task["workspace"])
+        state["guidance_files"] = [name for name in ("AGENTS.md", "CLAUDE.md") if (root/name).is_file() and not (root/name).is_symlink()]
+        state["route"] = await self.router.decide("\n\n".join(state["requests"]), wants_edits=task["wants_edits"], read_only=task["read_only"])
+        self.store.event(task, "routing", "Task route selected", state["route"])
+        await self.enter_phase(task, "planner")
+        state["initialized"] = True
+        self.store.save(task)
+
+    def interrupt_workflow(self, task: dict, error: str) -> None:
+        task.update(status="interrupted", error=error)
+        self.store.event(task, "status", error, {"status": "interrupted", "role": workflow.current_role(task)})
+
+    def retry_phase(self, task: dict, reason: str) -> bool:
+        if task.get("completion_retries", 0) >= 2:
+            self.interrupt_workflow(task, reason)
+            return False
+        task["completion_retries"] = task.get("completion_retries", 0) + 1
+        task["messages"].append({"role": "user", "content": reason, "_corepilot_kind": "verification"})
+        self.store.event(task, "verification", reason, {"role": workflow.current_role(task)})
+        return True
+
+    async def finish_specialist(self, task: dict, content: str) -> bool:
+        """Return True to continue; a terminal review/interruption returns False."""
+        state = task["orchestration"]
+        phase = state["phase"]
+        manifest = await asyncio.to_thread(source_manifest, Path(task["workspace"]))
+        if manifest != state["phase_manifest"]:
+            self.interrupt_workflow(task, "A read-only specialist changed source files; inspect the preserved workspace before resuming.")
+            return False
+        reads = workflow.read_evidence(task, phase_only=True)
+        source_files = set(manifest) - set(state["guidance_files"])
+        missing = set(state["guidance_files"]) - reads if phase == "planner" else set()
+        if phase == "reviewer":
+            missing |= {path for path in self.diff(task["id"])["changed_files"] if path in manifest} - reads
+        if missing or manifest and (not reads or source_files and not reads & source_files):
+            return self.retry_phase(task, "Inspect actual project files before finishing this phase. Required unread files: " + ", ".join(sorted(missing)) + ". A claimed read is not tool evidence.")
+        if phase == "planner":
+            if not content.strip():
+                return self.retry_phase(task, "Provide the compatibility and code-style contract based on observed files.")
+            state["plan"] = content[:6000]
+            if state.get("route", {}).get("choice") == "inspect":
+                state["implementation"] = state["plan"]
+                await self.enter_phase(task, "reviewer")
+            else:
+                await self.enter_phase(task, "coder")
+            return True
+        try:
+            review = workflow.review_result(content)
+        except ValueError as exc:
+            return self.retry_phase(task, str(exc) + '. Return exactly {"approved":true|false,"summary":"result","issues":[]} with no unresolved issues on approval.')
+        # A neural assessment cannot override observed failed/stale validation.
+        check = task["checks"][-1] if task.get("checks") else None
+        check_missing = task.get("wants_check") or task.get("last_edit_step") is not None
+        if check_missing and not validation_is_current(task, manifest):
+            review["approved"] = False
+            review["issues"].append("Required validation has not succeeded after the latest edit; execute and inspect the actual check.")
+        elif check is not None and (check["exit_code"] != 0 or check["timed_out"]):
+            review["approved"] = False
+            review["issues"].append("The latest observed check failed; repair and rerun it before approval.")
+        state["review"] = review
+        state["reviews"].append({**review, "round": state["round"]})
+        self.store.event(task, "review", review["summary"], {**review, "round": state["round"]})
+        if not review["approved"]:
+            if state["round"] >= state["max_rounds"] or task.get("read_only") or state.get("route", {}).get("choice") == "inspect":
+                task["answer"] = review["summary"]
+                self.interrupt_workflow(task, "Specialist review did not approve the result; feedback and checkpoint are preserved.")
+                return False
+            state["round"] += 1
+            await self.enter_phase(task, "coder")
+            return True
+        state["phase"] = "completed"
+        task.update(answer=review["summary"], status="completed")
+        self.store.event(task, "status", "Specialist review approved; inspect the result and diff", {"status": "completed"})
+        self.store.event(task, "diff", "Workspace changes available", self.diff(task["id"]))
+        return False
+
     async def execute_pending(self, task: dict, tools: WorkspaceTools) -> None:
         while task["pending_calls"]:
             call = task["pending_calls"][0]
             function = call["function"]
             name = function["name"]
+            role = workflow.current_role(task)
+            role_data = {"role": role, "operation": task.get("tool_operations", 0) + 1} if role else {}
             task["tool_operations"] = task.get("tool_operations", 0) + 1
             failures = task.setdefault("failed_tool_calls", {})
             try:
@@ -282,28 +417,38 @@ class AgentEngine:
                 arguments = json.loads(function["arguments"])
                 if "__parse_error__" in arguments:
                     raise ValueError("Tool arguments were not valid JSON")
-                self.store.event(task, "tool_start", name, {"name": name, "arguments": arguments, "call_id": call["id"]})
+                self.store.event(task, "tool_start", name, {"name": name, "arguments": arguments, "call_id": call["id"], **role_data})
+                if role and name not in workflow.tool_names(task):
+                    raise BoundaryError(f"The {role} specialist cannot use {name}; use its permitted tools.")
                 if task.get("read_only") and name in {"write_file", "apply_patch", "delete_file"}:
                     raise BoundaryError("This task is explicitly read-only. File edits are disabled; inspect files and report their actual contents.")
+                before_command = await asyncio.to_thread(source_manifest, Path(task["workspace"])) if name == "run_command" else None
                 result = await tools.execute(name, arguments)
+                if name == "run_command":
+                    manifest = await asyncio.to_thread(source_manifest, Path(task["workspace"]))
+                    if manifest != before_command:
+                        task["last_edit_step"] = task["tool_operations"]
+                        failures.clear()
+                    if role == "reviewer" and manifest != task["orchestration"]["phase_manifest"]:
+                        result.update(error="Reviewer command changed source files; source integrity must be restored before continuation.", error_type="BoundaryError")
                 if "error" not in result and name in {"apply_patch", "write_file", "delete_file"}:
                     failures.clear()
                 if "error" not in result and name in {"apply_patch", "write_file", "delete_file"} and Path(arguments.get("path", "")).suffix in {".py", ".js", ".ts", ".tsx", ".jsx", ".go", ".rs", ".java", ".c", ".cpp", ".sh", ".json", ".yaml", ".yml"}:
                     task["last_edit_step"] = task["tool_operations"]
-                if name == "run_command" and "exit_code" in result:
+                if name == "run_command" and "exit_code" in result and not result.get("error"):
                     argv = arguments.get("argv", [])
                     is_check = bool(argv and argv[0] in {"pytest", "ruff", "mypy", "npm", "make", "go", "cargo"})
                     if argv and argv[0] in {"python", "python3"}:
                         is_check = (len(argv) > 2 and argv[1] == "-m" and argv[2] in {"pytest", "unittest", "compileall"}) or (len(argv) > 1 and (re.search(r"test|check|lint", Path(argv[1]).stem, re.I) is not None or Path(argv[1]).name == "manage.py" and any(arg in {"test", "check"} for arg in argv[2:])))
                     if is_check:
                         task["last_check_step"] = task["tool_operations"]
-                        task.setdefault("checks", []).append({"step": task["step"], "operation": task["tool_operations"], "argv": argv, "exit_code": result["exit_code"], "timed_out": result["timed_out"], "output": result["output"][:3000]})
+                        task.setdefault("checks", []).append({"step": task["step"], "operation": task["tool_operations"], "argv": argv, "exit_code": result["exit_code"], "timed_out": result["timed_out"], "output": result["output"][:3000], "source_fingerprint": manifest_fingerprint(before_command)})
             except asyncio.CancelledError:
                 # A command may have partially changed files. Do not automatically repeat it.
                 result = {"error": "Tool interrupted; inspect current files before retrying"}
                 task["pending_calls"].pop(0)
                 task["messages"].append({"role": "tool", "tool_call_id": call["id"], "content": json.dumps(result)})
-                self.store.event(task, "tool_result", f"{name} interrupted", {"name": name, "result": result, "call_id": call["id"]})
+                self.store.event(task, "tool_result", f"{name} interrupted", {"name": name, "result": result, "call_id": call["id"], **role_data})
                 raise
             except Exception as exc:
                 result = {"error": str(exc)[:1500], "error_type": type(exc).__name__}
@@ -315,7 +460,9 @@ class AgentEngine:
                 failures.pop(signature, None)
             task["pending_calls"].pop(0)
             task["messages"].append({"role": "tool", "tool_call_id": call["id"], "content": trim(json.dumps(result, ensure_ascii=False), 10000)})
-            self.store.event(task, "tool_result", f"{name} finished", {"name": name, "result": result, "call_id": call["id"]})
+            self.store.event(task, "tool_result", f"{name} finished", {"name": name, "result": result, "call_id": call["id"], **role_data})
+            if role == "reviewer" and result.get("error_type") == "BoundaryError" and name == "run_command":
+                raise RepeatedToolFailure(result["error"])
             if repeated:
                 raise RepeatedToolFailure(result["error"])
 
@@ -326,13 +473,28 @@ class AgentEngine:
                 task["status"] = "running"
                 self.store.event(task, "status", "Inspecting and editing the isolated workspace", {"status": "running"})
                 await self.setup(task)
+                if workflow.current_role(task):
+                    await self.initialize_workflow(task)
+                    if workflow.current_role(task) in {"planner", "reviewer"}:
+                        state = task["orchestration"]
+                        if await asyncio.to_thread(source_manifest, Path(task["workspace"])) != state["phase_manifest"]:
+                            self.interrupt_workflow(task, "Read-only phase source integrity changed; inspect and restore the preserved workspace before resuming.")
+                            return
                 tools = WorkspaceTools(Path(task["workspace"]), self.settings.root, self.settings.command_timeout, Path(task["source_path"]))
                 self.tools[task["id"]] = tools
                 await self.execute_pending(task, tools)
                 while task["step"] < task["max_steps"]:
+                    role = workflow.current_role(task)
+                    state = task.get("orchestration", {})
+                    if role and state["phase_steps"] >= self.settings.orchestration["role_max_steps"]:
+                        self.interrupt_workflow(task, f"{role.title()} phase step budget reached; checkpoint is available for continuation")
+                        return
                     task["step"] += 1
-                    self.store.event(task, "model", f"Model step {task['step']}", {"step": task["step"]})
-                    message = await self.model.complete(task["messages"])
+                    if role:
+                        state["phase_steps"] += 1
+                    self.store.event(task, "model", f"Model step {task['step']}", {"step": task["step"], **({"role": role, "model": state["models"][role]} if role else {})})
+                    message = (await self.role_models.complete(role, task["messages"], tool_names=workflow.tool_names(task))
+                               if role else await self.model.complete(task["messages"]))
                     task["messages"].append(message)
                     if message.get("content"):
                         self.store.event(task, "assistant", message["content"], {"step": task["step"]})
@@ -344,6 +506,10 @@ class AgentEngine:
                     task["pending_calls"] = list(calls)
                     self.store.save(task)
                     if not calls:
+                        if role in {"planner", "reviewer"}:
+                            if await self.finish_specialist(task, message.get("content") or ""):
+                                continue
+                            return
                         if not (message.get("content") or "").strip():
                             if task.get("completion_retries", 0) < 2:
                                 task["completion_retries"] = task.get("completion_retries", 0) + 1
@@ -355,9 +521,13 @@ class AgentEngine:
                             task["error"] = "The model returned empty responses without a reviewable result. Resume to continue."
                             self.store.event(task, "status", task["error"], {"status": "interrupted"})
                             return
+                        completion_manifest = await asyncio.to_thread(source_manifest, Path(task["workspace"]))
+                        # Includes command writes interrupted before post-command bookkeeping.
+                        if completion_manifest != task.get("initial_workspace_manifest", {}) and task.get("last_edit_step") is None:
+                            task["last_edit_step"] = task.get("tool_operations", 0)
                         if task.get("wants_check", explicit_check_intent(task["prompt"])):
                             check = task["checks"][-1] if task.get("checks") else None
-                            if check is None or check["exit_code"] != 0 or check["timed_out"]:
+                            if not validation_is_current(task, completion_manifest):
                                 if task.get("completion_retries", 0) < 2:
                                     task["completion_retries"] = task.get("completion_retries", 0) + 1
                                     task["messages"].append({"role": "user", "content": "The user explicitly requested a local check command. Execute the relevant check with run_command and inspect its actual output before finishing. No successful check is recorded yet. Keep files unchanged unless the user requested edits; report concrete dependency or validation failures without claiming success.", "_corepilot_kind": "verification"})
@@ -365,13 +535,18 @@ class AgentEngine:
                                     continue
                                 task["status"] = "interrupted"
                                 task["answer"] = message.get("content") or ""
-                                task["error"] = "The explicitly requested check was not executed successfully." if check is None else "The explicitly requested check failed with exit code " + str(check["exit_code"]) + "; actual output is preserved."
+                                if check is None:
+                                    task["error"] = "The explicitly requested check was not executed successfully."
+                                elif check["exit_code"] != 0 or check["timed_out"]:
+                                    task["error"] = "The explicitly requested check failed with exit code " + str(check["exit_code"]) + "; actual output is preserved."
+                                else:
+                                    task["error"] = "The explicitly requested check is stale for the current source; rerun it before completing the task."
                                 self.store.event(task, "status", task["error"], {"status": "interrupted", "check": check})
                                 return
                         if task.get("wants_edits") and any(event["type"] == "tool_result" for event in task["events"]):
-                            actual_changes = await asyncio.to_thread(source_manifest, Path(task["workspace"]))
+                            actual_changes = completion_manifest
                             changed_during_task = actual_changes != task.get("initial_workspace_manifest", {})
-                            passed_check = bool(task.get("checks") and task["checks"][-1]["exit_code"] == 0 and not task["checks"][-1]["timed_out"])
+                            passed_check = validation_is_current(task, completion_manifest)
                             no_change_explained = bool(re.search(r"already|no (?:code )?changes|unchanged|уже|не требуется|не нужно менять|изменени[йя].*не.*треб", message.get("content") or "", re.I))
                             if not changed_during_task and not (passed_check and no_change_explained):
                                 if task.get("completion_retries", 0) < 2:
@@ -395,7 +570,8 @@ class AgentEngine:
                             task["error"] = "The model returned text without performing the requested project work. Resume to continue."
                             self.store.event(task, "status", task["error"], {"status": "interrupted"})
                             return
-                        if task.get("last_edit_step") is not None and (task.get("last_check_step") is None or task["last_check_step"] < task["last_edit_step"]):
+                        if task.get("last_edit_step") is not None and (task.get("last_check_step") is None or task["last_check_step"] < task["last_edit_step"]
+                            or task.get("checks") and task["checks"][-1].get("source_fingerprint") != manifest_fingerprint(completion_manifest)):
                             if task.get("completion_retries", 0) < 2:
                                 task["completion_retries"] = task.get("completion_retries", 0) + 1
                                 task["messages"].append({"role": "user", "content": "You edited code but have not executed a check after the edit. Use run_command now for the relevant local tests. A prose plan to run tests is not a completed check. If dependencies prevent testing, actually attempt the check and report its tool output.", "_corepilot_kind": "verification"})
@@ -418,6 +594,10 @@ class AgentEngine:
                             task["error"] = "Latest validation check failed with exit code " + str(check["exit_code"]) + "; checkpoint and actual output are preserved."
                             self.store.event(task, "status", task["error"], {"status": "interrupted", "check": check})
                             return
+                        if role == "coder":
+                            state["implementation"] = (message.get("content") or "")[:6000]
+                            await self.enter_phase(task, "reviewer")
+                            continue
                         task["answer"] = message.get("content") or "Model returned an empty answer."
                         task["status"] = "completed"
                         self.store.event(task, "status", "Task finished; review the result and diff", {"status": "completed"})

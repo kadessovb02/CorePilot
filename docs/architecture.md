@@ -31,6 +31,7 @@ Prepared dataset -> optional Soup / MLX trainer -> adapter -> user's model serve
 | `corepilot/indexing.py`, `memory.py` | Source chunks and lexical retrieval |
 | `corepilot/training.py` | Dry-run validation and optional MLX SFT |
 | `corepilot/model.py` | Local Chat Completions transport and bounded conversation context |
+| `corepilot/orchestration.py`, `model_pool.py`, `decision.py` | Bounded specialist workflow, independent role clients and optional local typed routing |
 | `corepilot/engine.py`, `store.py` | Tool loop, checks, evidence, atomic checkpoints and recovery |
 | `corepilot/workspace.py`, `tools.py` | Isolated files, path boundaries, commands, diff and apply |
 | `corepilot/app.py`, `web/` | Loopback API and packaged browser interface |
@@ -48,3 +49,5 @@ A new trainer consumes the exported `messages` JSONL without importing the runti
 Mutable configuration, corpus, adapters and checkpoints live under the selected state directory. They are not package assets. Applying edits is explicit. Native histories, repository files, model responses and retrieved text are untrusted data; imported conversations do not become system instructions.
 
 Context compaction must preserve the active request and corrections, keep tool calls paired with responses, and retain a bounded account of successful file evidence. Repeated failed calls must not erase successful observations or masquerade as proof that files are absent.
+
+Optional [specialist orchestration](orchestration.md) uses the same isolated workspace and checkpoint boundaries. A code scheduler selects planner/coder/reviewer stages; a local typed router may select an inspection shortcut. Role permissions and completion gates are enforced by the runtime, independently of model decisions. Multiple tasks can overlap, while requests to the same model backend remain serialized.

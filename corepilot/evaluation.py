@@ -38,19 +38,32 @@ async def evaluate(settings, cases: Path, output: Path, *, limit=0, timeout=600,
     if not rows or any(not isinstance(r, dict) or not all(r.get(k) for k in ("id", "project", "prompt")) for r in rows):
         raise ValueError("Each evaluation row needs id, project and prompt")
     if any(r["project"] not in settings.projects for r in rows): raise ValueError("Evaluation contains an unconfigured project")
+    if any(r.get("orchestrated") is not None and not isinstance(r["orchestrated"], bool) for r in rows):
+        raise ValueError("Evaluation orchestrated must be a boolean or null")
     if limit < 0 or timeout <= 0: raise ValueError("Invalid evaluation limits")
     engine = AgentEngine(settings, model); results = []
     try:
         for case in rows[:limit] if limit else rows:
             started=time.monotonic()
             created=await engine.create(case["project"],case["prompt"],memory=memory,
-                                        read_only=case.get("expect_changes") is False)
+                                        read_only=case.get("expect_changes") is False,
+                                        orchestrated=case.get("orchestrated"))
             try:await asyncio.wait_for(asyncio.shield(engine.jobs[created["id"]]),timeout)
             except asyncio.TimeoutError:await engine.cancel(created["id"])
             task=engine.task(created["id"]);diff=engine.diff(task["id"])
-            result=assess(task,case,diff);result["seconds"]=round(time.monotonic()-started,2);results.append(result)
+            result=assess(task,case,diff);result["seconds"]=round(time.monotonic()-started,2)
+            state=task.get("orchestration") or {}
+            result["workflow"]="specialists" if state.get("enabled") else "single"
+            # Count observed calls, including interrupted tasks; configured but unused roles are not execution evidence.
+            calls=[event.get("data", {}) for event in task.get("events", []) if event.get("type")=="model"]
+            result["model_calls"]={role:sum(call.get("role", "single")==role for call in calls)
+                                   for role in ("planner", "coder", "reviewer") if any(call.get("role")==role for call in calls)} if state.get("enabled") else {"single":len(calls)}
+            result["models"]={role:state["models"][role] for role in result["model_calls"]} if state.get("enabled") else {"single":settings.model_name}
+            result["review_decisions"]=len(state.get("reviews", []))
+            results.append(result)
     finally:await engine.close()
-    report={"model":settings.model_name,"memory":memory,"cases":len(results),"passed":sum(r["passed"] for r in results),"results":results,
+    report={"model":settings.model_name if all(r["workflow"]=="single" for r in results) else None,
+            "workflows":sorted({r["workflow"] for r in results}),"memory":memory,"cases":len(results),"passed":sum(r["passed"] for r in results),"results":results,
             "metric_limit":"Checks are user-defined observables and phrase matches, not a comprehensive semantic judge. No diff was applied."}
     output=Path(output);output.parent.mkdir(parents=True,exist_ok=True);output.parent.chmod(0o700)
     output.write_text(json.dumps(report,indent=2)+"\n");output.chmod(0o600)

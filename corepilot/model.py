@@ -12,6 +12,19 @@ from .config import Settings
 from .tools import TOOL_SPECS
 
 
+def selected_tools(tool_names=None) -> list[dict]:
+    """Select supported tool schemas; an empty selection grants no tools."""
+    if tool_names is None:
+        return TOOL_SPECS
+    if not isinstance(tool_names, (list, tuple, set, frozenset)) or any(not isinstance(name, str) for name in tool_names):
+        raise ValueError("tool_names must be a collection of supported tool names")
+    known = {spec["function"]["name"] for spec in TOOL_SPECS}
+    unknown = set(tool_names) - known
+    if unknown:
+        raise ValueError("Unsupported tool names: " + ", ".join(sorted(unknown)))
+    return [spec for spec in TOOL_SPECS if spec["function"]["name"] in tool_names]
+
+
 def extract_action(content: str) -> dict | None:
     """Read only the documented JSON action format; never interpret model text as code."""
     clean = re.sub(r"<think>.*?</think>", "", content, flags=re.S).strip()
@@ -213,19 +226,23 @@ class ModelClient:
             status["error"] = str(exc)[:300]
         return status
 
-    async def complete(self, messages: list[dict]) -> dict:
+    async def complete(self, messages: list[dict], *, tool_names=None) -> dict:
+        tools = selected_tools(tool_names)
+        allowed = {spec["function"]["name"] for spec in tools}
         native = self.protocol != "json"
         protocol_messages = cap_messages(messages, self.settings.context_chars)
         if not native:
-            protocol_messages = self.as_json_messages(protocol_messages)
+            protocol_messages = self.as_json_messages(protocol_messages, tool_names=tool_names)
+        elif not tools and protocol_messages:
+            protocol_messages[0]["content"] += "\nNo tools are available for this response. Use the supplied evidence and return an answer without tool calls."
         payload = {"model": self.settings.model_name, "messages": protocol_messages,
                    "temperature": 0.15, "max_tokens": self.settings.max_tokens, "stream": False}
-        if native:
-            payload.update(tools=TOOL_SPECS, tool_choice="auto")
+        if native and tools:
+            payload.update(tools=tools, tool_choice="auto")
         response = await self.http.post(self.settings.model_url + "/chat/completions", json=payload)
         if response.status_code in {400, 422, 501} and native and self.protocol == "auto":
             self.protocol = "json"
-            return await self.complete(messages)
+            return await self.complete(messages, tool_names=tool_names)
         response.raise_for_status()
         result = response.json()
         message = result["choices"][0]["message"]
@@ -252,10 +269,13 @@ class ModelClient:
                 content = ""
             elif action and "final" in action:
                 content = action["final"]
+        for call in calls:
+            if tool_names is not None and call["function"]["name"] not in allowed:
+                raise ValueError("Model requested a tool not allowed for this response: " + call["function"]["name"])
         return {"role": "assistant", "content": content, **({"tool_calls": calls} if calls else {})}
 
     @staticmethod
-    def as_json_messages(messages: list[dict]) -> list[dict]:
+    def as_json_messages(messages: list[dict], *, tool_names=None) -> list[dict]:
         adapted = []
         for message in messages:
             if message["role"] == "tool":
@@ -267,6 +287,9 @@ class ModelClient:
             else:
                 adapted.append({"role": message["role"], "content": message.get("content") or ""})
         if adapted:
-            names = [{"name": row["function"]["name"], "parameters": row["function"]["parameters"]} for row in TOOL_SPECS]
-            adapted[0]["content"] += "\nOutput exactly one JSON object per response: {\"tool\":\"name\",\"arguments\":{...}} to use a tool, or {\"final\":\"answer\"} when done. Available tools: " + json.dumps(names, ensure_ascii=False)
+            names = [{"name": row["function"]["name"], "parameters": row["function"]["parameters"]} for row in selected_tools(tool_names)]
+            if names:
+                adapted[0]["content"] += "\nOutput exactly one JSON object per response: {\"tool\":\"name\",\"arguments\":{...}} to use a tool, or {\"final\":\"answer\"} when done. Available tools: " + json.dumps(names, ensure_ascii=False)
+            else:
+                adapted[0]["content"] += '\nNo tools are available. Output exactly one JSON object: {"final":"answer"}. Do not request a tool.'
         return adapted

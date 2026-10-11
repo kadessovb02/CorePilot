@@ -4,6 +4,7 @@ import asyncio
 import json
 from contextlib import asynccontextmanager
 from pathlib import Path
+from typing import Literal
 from urllib.parse import urlparse
 
 from fastapi import FastAPI, HTTPException, Request
@@ -25,6 +26,7 @@ class NewTask(BaseModel):
     project_id: str | None = None
     memory: bool = True
     read_only: bool = False
+    orchestrated: bool | None = None
     max_steps: int | None = Field(default=None, ge=1, le=80)
     parent_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
 
@@ -48,6 +50,7 @@ class ContinueHistoryChat(BaseModel):
     prompt: str | None = Field(default=None, max_length=18000)
     memory: bool = True
     read_only: bool = False
+    orchestrated: bool | None = None
     max_steps: int | None = Field(default=None, ge=1, le=80)
 
 
@@ -103,9 +106,16 @@ def create_app(settings: Settings | None = None, model=None) -> FastAPI:
 
     @app.get("/api/status")
     @app.get("/api/health")
-    async def health():
+    async def health(workflow: Literal["single", "specialists"] | None = None):
         active = next((task["id"] for task in engine.tasks.values() if task["status"] == "running"), None)
-        return {"version": __version__, "model": await engine.model.health(), "projects": projects(), "running_task": active, "training": experiment_reports(settings.root)["training"]}
+        pool = getattr(engine, "role_models", None)
+        orchestration = await pool.health() if pool is not None else {"enabled": False, "configured": False, "ready": False, "default_mode": "single", "roles": {}}
+        specialist_health = workflow == "specialists" or (workflow is None and orchestration.get("enabled"))
+        model = orchestration.get("roles", {}).get("planner", {}) if specialist_health else await engine.model.health()
+        capacity = {"max_concurrent_tasks": settings.orchestration["max_concurrent_tasks"],
+                    "running": sum(task["status"] == "running" for task in engine.tasks.values()),
+                    "queued": sum(task["status"] == "queued" for task in engine.tasks.values())}
+        return {"version": __version__, "model": model, "model_mode": "specialists" if specialist_health else "single", "orchestration": orchestration, "task_capacity": capacity, "projects": projects(), "running_task": active, "training": experiment_reports(settings.root)["training"]}
 
     @app.get("/api/reports")
     async def reports():
@@ -171,7 +181,7 @@ def create_app(settings: Settings | None = None, model=None) -> FastAPI:
         imported = {"history_session_id": handoff.get("id", chat_id), "history_provider": provider, "history_source_cwd": handoff.get("source_cwd"), "import_mode": mode, "source_note": (note + " " + reader_note).strip()}
         if provider == "codex":
             imported.update(codex_session_id=handoff.get("id", chat_id), codex_source_cwd=handoff.get("source_cwd"))
-        return await engine.create(body.project, prompt, body.memory, body.max_steps, source_override=source, import_context=context[:6500], import_metadata=imported, read_only=body.read_only)
+        return await engine.create(body.project, prompt, body.memory, body.max_steps, source_override=source, import_context=context[:6500], import_metadata=imported, read_only=body.read_only, orchestrated=body.orchestrated)
 
     @app.post("/api/history/chats/{chat_id}/continue", status_code=201)
     async def continue_history_chat(chat_id: str, body: ContinueHistoryChat):
@@ -187,7 +197,7 @@ def create_app(settings: Settings | None = None, model=None) -> FastAPI:
 
     @app.post("/api/tasks", status_code=201)
     async def new_task(body: NewTask):
-        return await engine.create(body.project, body.prompt.strip(), body.memory, body.max_steps, body.parent_id, read_only=body.read_only)
+        return await engine.create(body.project, body.prompt.strip(), body.memory, body.max_steps, body.parent_id, read_only=body.read_only, orchestrated=body.orchestrated)
 
     @app.get("/api/tasks/{task_id}")
     async def task(task_id: str, after: int = 0):
