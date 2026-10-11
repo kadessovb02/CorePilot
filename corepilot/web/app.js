@@ -5,7 +5,7 @@
   const activeStatuses = new Set(["queued", "running"]);
   const resumableStatuses = new Set(["cancelled", "failed", "interrupted"]);
   const statusNames = { queued: "Queued", running: "Running", completed: "Completed", cancelled: "Stopped", failed: "Error", interrupted: "Interrupted" };
-  const state = { projects: [], tasks: new Map(), selected: null, project: "", model: null, modelMode: null, orchestration: null, taskCapacity: {max_concurrent_tasks: 1, running: 0, queued: 0}, training: null, connected: false, busy: false, inspector: false, inspectorTab: "activity", lastTaskRefresh: 0, lastHealthRefresh: 0, rendered: "", activityRendered: "", diff: "", diffTask: null, pending: new Set(), polling: false };
+  const state = { projects: [], tasks: new Map(), selected: null, project: "", model: null, modelMode: null, orchestration: null, controlled: null, resourceGuard: null, taskCapacity: {max_concurrent_tasks: 1, running: 0, queued: 0}, training: null, connected: false, busy: false, inspector: false, inspectorTab: "activity", lastTaskRefresh: 0, lastHealthRefresh: 0, rendered: "", activityRendered: "", diff: "", diffTask: null, pending: new Set(), polling: false };
   const handoff = { provider: "all", project: "", selected: null, chats: [], cache: new Map(), loading: false, busy: false, generation: 0, error: null };
   let toastTimer, pollTimer;
 
@@ -55,11 +55,12 @@
   function toolName(event) { return event.data?.tool || event.data?.name || event.data?.tool_name || event.message || "Tool"; }
   function eventData(event) { const d = event.data; if (!d) return ""; return detailString(d.result ?? d.output ?? d.arguments ?? d.args ?? d.input ?? d); }
   function providerName(provider) { return ({codex: "Codex", claude: "Claude", canonical: "JSONL"})[provider] || "History"; }
-  function roleName(role) { return ({planner: "Planner", coder: "Coder", reviewer: "Reviewer"})[role] || role || "Agent"; }
+  function roleName(role) { return ({planner: "Planner", coder: "Coder", reviewer: "Reviewer", select: "Inspect", edit: "Edit", tests: "Tests", check: "Verify", review: "Review", inspect: "Explain"})[role] || role || "Agent"; }
   function workflowChoice() { return $("workflow-select").value === "single" ? false : $("workflow-select").value === "specialists" ? true : null; }
-  function useSpecialists(task = null) { return task ? !!task.orchestration?.enabled : workflowChoice() ?? !!state.orchestration?.enabled; }
-  function modelReady(task = null) { return state.connected && (useSpecialists(task) ? !!state.orchestration?.ready : state.modelMode !== "specialists" && !!state.model?.ready); }
-  function addWorkflow(payload) { const choice = workflowChoice(); if (choice !== null) payload.orchestrated = choice; return payload; }
+  function useControlled(task = null) { return task ? !!task.controlled?.enabled : $("workflow-select").value === "controlled" || ($("workflow-select").value === "auto" && !!state.controlled?.enabled); }
+  function useSpecialists(task = null) { return task ? !!task.orchestration?.enabled : !useControlled() && (workflowChoice() ?? !!state.orchestration?.enabled); }
+  function modelReady(task = null) { return state.connected && !state.resourceGuard?.blocked && (useSpecialists(task) ? !!state.orchestration?.ready : state.modelMode !== "specialists" && !!state.model?.ready); }
+  function addWorkflow(payload) { const mode = $("workflow-select").value; if (mode === "controlled") { payload.controlled = true; payload.orchestrated = false; } else if (mode !== "auto") { payload.controlled = false; payload.orchestrated = mode === "specialists"; } return payload; }
   function projectBranch(project) { return project?.branch || (project?.head ? String(project.head).slice(0, 7) : ""); }
   function projectDescription(project) { return [project?.path, project?.branch ? `Branch: ${project.branch}` : project?.head ? "State: detached HEAD" : null, project?.head ? `Commit: ${project.head}` : null, project?.dirty ? "Uncommitted changes" : null].filter(Boolean).join("\n"); }
 
@@ -154,6 +155,7 @@
     const task = currentTask();
     const pinned = task && (activeStatuses.has(task.status) || resumableStatuses.has(task.status)) ? task : null;
     const ready = modelReady(pinned);
+    $("resource-hold-panel").hidden = !state.resourceGuard?.blocked;
     $("model-dot").className = "status-dot " + (ready ? "ready" : "error");
     const name = (model?.display_name || model?.name)?.split("/").pop();
     $("model-label").textContent = state.connected ? (useSpecialists(pinned) ? "Specialists" : name || (model?.ready ? "Model ready" : "Model offline")) : "Disconnected";
@@ -165,7 +167,7 @@
     renderTraining();
     if (state.connected) {
       $("connection-banner").hidden = ready;
-      if (!ready) $("connection-message").textContent = useSpecialists(pinned) ? "Specialist models unavailable. Check the configured role endpoints; saved tasks remain accessible." : "Model unavailable. Configure a running local endpoint; saved tasks and diffs remain accessible.";
+      if (!ready) $("connection-message").textContent = state.resourceGuard?.blocked ? "Computation paused by the resource guard. Results are saved. Stop the model server and review the resource hold before resuming." : useSpecialists(pinned) ? "Specialist models unavailable. Check the configured role endpoints; saved tasks remain accessible." : "Model unavailable. Configure a running local endpoint; saved tasks and diffs remain accessible.";
     }
     updateComposer();
   }
@@ -174,9 +176,9 @@
     const pool = state.orchestration;
     const configured = !!pool && (pool.configured ?? Object.keys(pool.roles || {}).length > 0);
     const anyRoles = configured || Object.values(pool?.roles || {}).some(role => role.configured);
-    $("workflow-option").hidden = !configured;
-    if (!configured) $("workflow-select").value = "auto";
-    $("workflow-select").options[0].textContent = `Auto · ${pool?.enabled ? "specialists" : "single"}`;
+    $("workflow-option").hidden = !configured && !state.controlled?.configured;
+    if (!configured && !state.controlled?.configured) $("workflow-select").value = "auto";
+    $("workflow-select").options[0].textContent = `Auto · ${state.controlled?.enabled ? "controlled" : pool?.enabled ? "specialists" : "single"}`;
     $("role-model-details").hidden = !anyRoles;
     if (!anyRoles) return;
     const nodes = [el("div", "role-model-heading", "Planner → Coder → Reviewer")];
@@ -193,11 +195,11 @@
   }
 
   function renderWorkflow(task) {
-    const workflow = task?.orchestration;
+    const workflow = task?.controlled?.enabled ? task.controlled : task?.orchestration;
     $("workflow-status").hidden = !workflow?.enabled;
     if (!workflow?.enabled) return;
     const nodes = [];
-    for (const role of ["planner", "coder", "reviewer"]) nodes.push(el("span", "workflow-phase" + (workflow.phase === role ? " current" : ""), roleName(role)));
+    for (const role of task?.controlled?.enabled ? ["select", "edit", "tests", "check", "review"] : ["planner", "coder", "reviewer"]) nodes.push(el("span", "workflow-phase" + (workflow.phase === role ? " current" : ""), roleName(role)));
     const round = typeof workflow.round === "number" && workflow.round > 1 ? ` · revision ${workflow.round - 1}` : "";
     nodes.push(el("small", "", `${activeStatuses.has(task.status) ? "Working" : statusNames[task.status] || task.status}${round}`));
     $("workflow-status").replaceChildren(...nodes);
@@ -235,9 +237,9 @@
     try {
       const task = currentTask();
       const pinned = task && (activeStatuses.has(task.status) || resumableStatuses.has(task.status)) ? task : null;
-      const choice = pinned ? !!pinned.orchestration?.enabled : workflowChoice();
+      const choice = pinned ? !!pinned.orchestration?.enabled : useControlled() ? false : workflowChoice();
       const status = await api("/api/status" + (choice === null ? "" : `?workflow=${choice ? "specialists" : "single"}`));
-      state.connected = true; state.model = status.model || status; state.modelMode = status.model_mode || null; state.orchestration = status.orchestration || null; state.taskCapacity = status.task_capacity || {max_concurrent_tasks: 1, running: 0, queued: 0}; state.training = status.training || null;
+      state.connected = true; state.model = status.model || status; state.modelMode = status.model_mode || null; state.orchestration = status.orchestration || null; state.controlled = status.controlled || null; state.resourceGuard = status.resource_guard || null; state.taskCapacity = status.task_capacity || {max_concurrent_tasks: 1, running: 0, queued: 0}; state.training = status.training || null;
       if (Array.isArray(status.projects)) {
         state.projects = status.projects;
         if (!state.project || !state.projects.find((project) => project.id === state.project && project.available !== false)) state.project = state.projects.find((project) => project.available !== false)?.id || "";
@@ -333,7 +335,7 @@
     $("welcome").hidden = true; $("messages").hidden = false;
     renderWorkflow(task);
     const chain = taskChain(task);
-    const signature = JSON.stringify(chain.map((item) => [item.id, item.status, item.answer, item.error, item.events?.length, item.events?.at(-1)?.seq, item.updated_at, item.orchestration]));
+    const signature = JSON.stringify(chain.map((item) => [item.id, item.status, item.answer, item.error, item.events?.length, item.events?.at(-1)?.seq, item.updated_at, item.orchestration, item.controlled]));
     if (state.rendered !== signature) {
       const scroll = $("chat-scroll"); const atBottom = scroll.scrollHeight - scroll.clientHeight - scroll.scrollTop < 120;
       const opened = new Set([...$("messages").querySelectorAll("details[open]")].map((item) => item.dataset.eventSeq));
@@ -355,10 +357,10 @@
           if (event.type === "tool_start" || (event.type === "tool_result" && !pairedCalls.has(event.data?.call_id))) { const tool = makeTool(event, toolResults.get(event.data?.call_id)); if (opened.has(String(event.seq))) tool.open = true; nodes.push(tool); }
         }
         if (item.answer && item.answer.trim() !== lastAssistant.trim()) nodes.push(makeAssistant(item.answer, item.updated_at));
-        const review = item.orchestration?.review;
+        const review = item.controlled?.review || item.orchestration?.review;
         if (review) { const note = el("details", "workflow-review" + (review.approved ? " approved" : "")); const summary = el("summary", "", review.approved ? "Reviewer approved the implementation" : "Reviewer requested changes"); note.append(summary); if (review.summary) note.append(el("p", "", review.summary)); if (review.issues?.length) { const issues = el("ul"); for (const issue of review.issues) issues.append(el("li", "", issue)); note.append(issues); } nodes.push(note); }
       }
-      if (activeStatuses.has(task.status)) { const working = el("div", "working-row"); const dots = el("span", "thinking-dots"); dots.innerHTML = "<i></i><i></i><i></i>"; working.append(dots, el("span", "", task.status === "queued" ? "Task queued…" : `${task.orchestration?.enabled ? roleName(task.orchestration.phase) : "Agent"} working · step ${task.step || 0}`)); nodes.push(working); }
+      if (activeStatuses.has(task.status)) { const working = el("div", "working-row"); const dots = el("span", "thinking-dots"); dots.innerHTML = "<i></i><i></i><i></i>"; working.append(dots, el("span", "", task.status === "queued" ? "Task queued…" : `${task.controlled?.enabled ? roleName(task.controlled.phase) : task.orchestration?.enabled ? roleName(task.orchestration.phase) : "Agent"} working · step ${task.step || 0}`)); nodes.push(working); }
       else { const end = el("div", `task-end ${task.status}`); end.innerHTML = icon(task.status === "completed" ? "check" : "stop"); end.append(el("span", "", task.error || (task.status === "completed" ? "Task completed. Review the result and file changes." : task.status === "failed" ? "Task failed. You can resume from the saved checkpoint." : "Task stopped. Context is saved."))); nodes.push(end); }
       $("messages").replaceChildren(...nodes); state.rendered = signature;
       if (atBottom) requestAnimationFrame(() => { scroll.scrollTop = scroll.scrollHeight; });
@@ -373,7 +375,7 @@
   function renderActivity(task) {
     $("checkpoint-card").hidden = false;
     $("step-label").textContent = `Step ${task.step || 0} of ${task.max_steps || 24}`;
-    $("step-status").textContent = task.orchestration?.enabled && task.orchestration.phase !== "completed" ? roleName(task.orchestration.phase) : statusNames[task.status] || task.status;
+    $("step-status").textContent = task.controlled?.enabled && task.controlled.phase !== "completed" ? roleName(task.controlled.phase) : task.orchestration?.enabled && task.orchestration.phase !== "completed" ? roleName(task.orchestration.phase) : statusNames[task.status] || task.status;
     $("step-progress").style.width = `${Math.min(100, 100 * (task.step || 0) / (task.max_steps || 24))}%`;
     $("workspace-path").textContent = task.workspace || "Preparing workspace…";
     $("source-path").textContent = task.source_path || "—";
@@ -383,7 +385,7 @@
     if (signature === state.activityRendered) return;
     const list = $("activity-list"); const opened = new Set([...list.querySelectorAll("details[open]")].map((item) => item.dataset.eventSeq));
     const nodes = [];
-    const labels = { status: "Status", role: "Role switch", routing: "Workflow choice", assistant: "Model response", user: "Task clarification", memory: "Project memory", model: "Model step", handoff: "History handoff", source: "Source workspace", tool_start: "Tool call", tool_result: "Tool result", error: "Error", diff: "File changes" };
+    const labels = { status: "Status", role: "Role switch", routing: "Workflow choice", assistant: "Model response", user: "Task clarification", memory: "Project memory", model: "Model step", handoff: "History handoff", source: "Source workspace", tool_start: "Tool call", tool_result: "Tool result", error: "Error", diff: "File changes", controlled: "Workflow stage", resources: "Resource pause" };
     for (const event of task.events || []) {
       const item = el("div", `activity-item ${event.type}`); const header = el("div", "activity-header"); header.append(el("span", "activity-dot"), el("span", "", event.type.startsWith("tool_") ? toolName(event) : labels[event.type] || event.type)); const time = el("time", "", clockLabel(event.time)); time.dateTime = event.time || ""; header.append(time); item.append(header);
       if (event.type === "status") item.append(el("div", "activity-details", statusNames[event.data?.status] || eventText(event)));
@@ -446,7 +448,7 @@
     $("project-select").disabled = state.busy || !!task || !state.projects.some((project) => project.available !== false);
     $("memory-toggle").disabled = state.busy || !!active;
     $("workflow-select").disabled = state.busy || !!active || !!pinned;
-    if (active || pinned) $("workflow-select").value = task.orchestration?.enabled ? "specialists" : "single";
+    if (active || pinned) $("workflow-select").value = task.controlled?.enabled ? "controlled" : task.orchestration?.enabled ? "specialists" : "single";
     $("task-actions").hidden = !task || !resumableStatuses.has(task.status);
     $("resume-task").disabled = state.busy || !modelReady(task) || blocksAnotherTask();
     $("checkpoint-label").textContent = task ? `Context saved · ${task.step || 0} steps` : "";
@@ -630,6 +632,11 @@
   $("model-button").addEventListener("click", () => { const open = $("model-popover").hidden; $("model-popover").hidden = !open; $("model-button").setAttribute("aria-expanded", String(open)); });
   document.addEventListener("click", (event) => { if (!event.target.closest(".model-menu-wrap")) { $("model-popover").hidden = true; $("model-button").setAttribute("aria-expanded", "false"); } });
   document.addEventListener("keydown", (event) => { if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k" && !$("history-dialog").open) { event.preventDefault(); newTask(); } if (event.key === "Escape" && !$("history-dialog").open) { closeSidebar(); $("model-popover").hidden = true; $("model-button").setAttribute("aria-expanded", "false"); if (state.inspector) setInspector(false); } });
+  $("release-resources").addEventListener("click", async () => {
+    if (!$("resource-idle-confirm").checked) { toast("Confirm the model server has stopped before clearing the hold."); return; }
+    try { await api("/api/resources/release", {method: "POST", body: JSON.stringify({backend_confirmed_idle: true})}); $("resource-idle-confirm").checked = false; await refreshHealth(); toast("Resource hold cleared. Start the model server when you are ready."); }
+    catch (error) { showError(error); }
+  });
   $("refresh-status").addEventListener("click", async () => { await refreshHealth(); toast(state.model?.ready ? "Local model is ready." : "Connection status refreshed."); });
   $("reconnect").addEventListener("click", async () => { await Promise.allSettled([refreshHealth(), refreshTasks()]); });
   $("copy-diff").addEventListener("click", async () => { try { await navigator.clipboard.writeText(state.diff); toast("Diff copied."); } catch { toast("Clipboard access unavailable. Select the diff text manually."); } });

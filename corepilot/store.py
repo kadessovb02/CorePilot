@@ -123,6 +123,18 @@ def public_task(task: dict, after: int = 0, compact: bool = False) -> dict:
     result = {key: value for key, value in task.items() if key not in hidden}
     if "orchestration" in task:
         result["orchestration"] = public_orchestration(task["orchestration"])
+    if isinstance(task.get("controlled"), dict):
+        state = task["controlled"]
+        result["controlled"] = {key: state[key] for key in ("enabled", "phase", "round") if key in state}
+        if isinstance(state.get("summaries"), dict):
+            result["controlled"]["summaries"] = {key: value[:2000] for key, value in state["summaries"].items()
+                                                   if key in {"edit", "tests", "review", "inspect"} and isinstance(value, str)}
+        if isinstance(state.get("review"), dict):
+            review = state["review"]
+            result["controlled"]["review"] = {"approved": review.get("approved") is True,
+                "summary": str(review.get("summary", ""))[:2000],
+                "issues": [issue[:1000] for issue in review.get("issues", [])[:20] if isinstance(issue, str)]
+                if isinstance(review.get("issues"), list) else []}
     result["project_id"] = task["project"]
     result["events"] = [] if compact else [event for event in task.get("events", []) if event["seq"] > after]
     return result

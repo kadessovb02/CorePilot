@@ -119,10 +119,13 @@ async def grade(suite: Path, task: dict, state_root: Path) -> dict:
                     and isinstance(event["data"].get("result"), dict) and not event["data"]["result"].get("error")
                     and event["data"]["result"].get("path")})
     (target / "_benchmark_reads.json").write_text(json.dumps(reads))
-    tools = WorkspaceTools(target, state_root, command_timeout=20)
+    observer_manifest = source_manifest(target)
+    tools = WorkspaceTools(target, state_root, command_timeout=20, read_only_commands=True)
     result = await tools.run_command(["python", "_benchmark_oracle/oracle.py", "--case", task["benchmark_case"],
                                       "--workspace", ".", "--answer-file", "_benchmark_answer.txt",
                                       "--reads-file", "_benchmark_reads.json"], timeout=20)
+    if source_manifest(target) != observer_manifest:
+        return {"passed": False, "failures": ["oracle_source_integrity_changed"], "exit_code": result.get("exit_code")}
     try:
         report = json.loads(result.get("output", ""))
         if not isinstance(report, dict):
@@ -175,7 +178,9 @@ def effective_case_calls(max_calls, case, override):
 
 
 async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, max_calls, max_tokens, context_chars,
-                   request_pause_seconds=3, protocol="json", case_timeout_override=None):
+                   request_pause_seconds=3, protocol="json", case_timeout_override=None, controlled_checks=None):
+    if mode not in {"single", "specialists", "controlled"}:
+        raise ValueError("Unknown benchmark workflow")
     if protocol not in ("json", "native"):
         raise ValueError("Benchmark protocol must be explicitly json or native")
     timeout = effective_case_timeout(timeout, case, case_timeout_override)
@@ -188,18 +193,29 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
                                         "max_concurrent_tasks": 1, "roles": {
                                             role: {"url": settings.model_url, "name": settings.model_name,
                                                    "protocol": protocol, "max_tokens": max_tokens, "context_chars": context_chars}
-                                            for role in ("planner", "coder", "reviewer")}})
+                                            for role in ("planner", "coder", "reviewer")}},
+                         controlled={"enabled": mode == "controlled", "profiles": {"benchmark": {
+                             "checks": controlled_checks or [], "test_roots": ["tests"]}}} if mode == "controlled" else {},
+                         resource_guard={"enabled": False, "max_task_seconds": timeout,
+                             "min_available_gib": monitor.thresholds.min_available_gib,
+                             "max_swap_growth_mib": monitor.thresholds.max_swap_growth_mib,
+                             "allow_memory_warning": monitor.thresholds.allow_memory_warning} if mode == "controlled" else {"enabled": False})
     metrics = new_metrics()
     metrics["_request_pause_seconds"] = request_pause_seconds
     clients = {role: MeteredModel(configured, metrics) for role in ("planner", "coder", "reviewer")}
     engine = AgentEngine(configured, model=MeteredModel(configured, metrics),
-                         role_models=RoleModelPool(configured, clients=clients))
+                         role_models=RoleModelPool(configured, clients=clients),
+                         **({"resource_monitor": monitor} if mode == "controlled" else {}))
+    if mode == "controlled":
+        # The inner gate and comparison watcher enforce the same reported limits.
+        engine.resource_gate.thresholds = monitor.thresholds
     stop = asyncio.Event()
     abort = []
     started = time.monotonic()
     try:
         created = await engine.create("benchmark", case["prompt"] + "\n/no_think", memory=False,
-                                      read_only=case["read_only"], orchestrated=mode == "specialists")
+                                      read_only=case["read_only"], orchestrated=mode == "specialists",
+                                      **({"controlled": True} if mode == "controlled" else {}))
     except BaseException:
         await engine.close()
         raise
@@ -217,7 +233,17 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
             timed_out = True
             await engine.cancel(created["id"])
         elapsed = time.monotonic() - started
+        # Measurement ends with generation. Drain the watcher before deciding
+        # whether it is safe to grade, so its last callback cannot change an
+        # already recorded success or permit the comparison to keep running.
+        stop.set()
+        resources = await watcher
         task = engine.task(created["id"])
+        for event in task.get("events", []):
+            if event["type"] == "resources":
+                codes = event.get("data", {}).get("reasons", [])
+                timed_out = timed_out or "resource_task_timeout" in codes
+                abort.extend(code for code in codes if code != "resource_task_timeout" and code not in abort)
         task["benchmark_case"] = case["id"]
         diff = engine.diff(task["id"])
         if not abort:
@@ -231,12 +257,14 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
                   "timeout_seconds": timeout, "max_calls": max_calls,
                   "seconds": round(elapsed, 3), "completed": completed, "task_status": task["status"],
                   "oracle_passed": oracle["passed"], "usable_passed": completed and oracle["passed"] and (not case["read_only"] or not diff["changed_files"]),
-                  "oracle": oracle, "timeout": timed_out, "safety_abort": bool(abort), "safety_reasons": abort,
+                  "oracle": oracle, "timeout": timed_out, "safety_abort": bool(abort), "safety_reasons": list(abort),
                   "logical_calls": len(calls), "calls_by_role": {role: calls.count(role) for role in sorted(set(calls))},
                   "tool_failures": sum(event["type"] == "tool_result" and bool(event["data"].get("result", {}).get("error")) for event in events),
-                  "checks": len(task.get("checks", [])), "review_decisions": len(task.get("orchestration", {}).get("reviews", [])),
+                  "checks": len(task.get("checks", [])), "review_decisions":
+                      sum(event["type"] == "review" for event in events) if mode == "controlled"
+                      else len(task.get("orchestration", {}).get("reviews", [])),
                   "changed_files": [path for path in diff["changed_files"] if path in source_manifest(suite / "repository")],
-                  "unexpected_changed_files": sum(path not in source_manifest(suite / "repository") for path in diff["changed_files"]),
+                  "unexpected_changed_files": sum(path not in (case.get("allowed_changes") or source_manifest(suite / "repository")) for path in diff["changed_files"]),
                   "read_only_integrity": not diff["changed_files"] if case["read_only"] else None,
                   **{key: value for key, value in metrics.items() if not key.startswith("_")}}
     finally:
@@ -244,12 +272,15 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
         resources = await watcher
         await engine.close()
     record["resources"] = resources["summary"]
+    if mode == "controlled":
+        stages = [event.get("data", {}).get("phase") for event in events if event["type"] == "model"]
+        record["calls_by_stage"] = {phase: stages.count(phase) for phase in sorted(set(stages)) if isinstance(phase, str)}
     return record
 
 
 def aggregate(records: list[dict]) -> dict:
     summary = {}
-    for mode in ("single", "specialists"):
+    for mode in ("single", "specialists", *(["controlled"] if any(row["mode"] == "controlled" for row in records) else [])):
         rows = [row for row in records if row["mode"] == mode]
         summary[mode] = {"attempted": len(rows), "completed": sum(row["completed"] for row in rows),
                          "oracle_passed": sum(row["oracle_passed"] for row in rows), "usable_passed": sum(row["usable_passed"] for row in rows),
@@ -265,20 +296,36 @@ def aggregate(records: list[dict]) -> dict:
     pairs = {}
     for row in records:
         pairs.setdefault(row["id"], {})[row["mode"]] = row
-    paired = [rows for rows in pairs.values() if set(rows) == {"single", "specialists"}]
-    both = [rows for rows in paired if all(row["usable_passed"] for row in rows.values())]
+    paired = [rows for rows in pairs.values() if {"single", "specialists"} <= set(rows)]
+    both = [rows for rows in paired if rows["single"]["usable_passed"] and rows["specialists"]["usable_passed"]]
     summary["paired"] = {"count": len(paired), "specialist_wins": sum(rows["specialists"]["usable_passed"] and not rows["single"]["usable_passed"] for rows in paired),
                          "single_wins": sum(rows["single"]["usable_passed"] and not rows["specialists"]["usable_passed"] for rows in paired),
                          "ties": sum(rows["single"]["usable_passed"] == rows["specialists"]["usable_passed"] for rows in paired),
                          "both_usable": len(both), "median_seconds_both_usable": {
                              mode: round(statistics.median(rows[mode]["seconds"] for rows in both), 3) if both else None
                              for mode in ("single", "specialists")}}
+    if "controlled" in summary:
+        controlled_pairs = [rows for rows in pairs.values() if {"single", "controlled"} <= set(rows)]
+        controlled_both = [rows for rows in controlled_pairs if rows["single"]["usable_passed"] and rows["controlled"]["usable_passed"]]
+        summary["controlled_paired"] = {"count": len(controlled_pairs),
+            "controlled_wins": sum(rows["controlled"]["usable_passed"] and not rows["single"]["usable_passed"] for rows in controlled_pairs),
+            "single_wins": sum(rows["single"]["usable_passed"] and not rows["controlled"]["usable_passed"] for rows in controlled_pairs),
+            "ties": sum(rows["single"]["usable_passed"] == rows["controlled"]["usable_passed"] for rows in controlled_pairs),
+            "both_usable": len(controlled_both), "median_seconds_both_usable": {
+                mode: round(statistics.median(rows[mode]["seconds"] for rows in controlled_both), 3) if controlled_both else None
+                for mode in ("single", "controlled")}}
     return summary
 
 
 async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None, limit=0, rest_seconds=20,
                   timeout=150, max_calls=24, max_tokens=768, context_chars=14000, metadata=None, progress=None,
-                  request_pause_seconds=3, protocol="json", case_timeout_override=None, case_call_override=None):
+                  request_pause_seconds=3, protocol="json", case_timeout_override=None, case_call_override=None,
+                  modes=("single", "specialists"), controlled_checks=None, case_ids=None, initial_baseline=None):
+    if (not isinstance(modes, (list, tuple)) or not 1 <= len(modes) <= 3 or len(set(modes)) != len(modes)
+            or any(mode not in {"single", "specialists", "controlled"} for mode in modes)):
+        raise ValueError("Benchmark modes must be distinct supported workflows")
+    if "controlled" in modes and not controlled_checks:
+        raise ValueError("Controlled comparison requires operator-owned check commands")
     if protocol not in ("json", "native"):
         raise ValueError("Benchmark protocol must be explicitly json or native")
     if (not math.isfinite(rest_seconds) or rest_seconds < 10 or timeout <= 0 or not 1 <= max_calls <= 100 or not 32 <= max_tokens <= 2048
@@ -289,10 +336,20 @@ async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None
     effective_case_calls(max_calls, {}, case_call_override)
     suite = suite.resolve()
     cases = load_cases(suite)
+    if case_ids is not None:
+        if (not isinstance(case_ids, (list, tuple)) or not case_ids
+                or any(not isinstance(value, str) for value in case_ids)
+                or len(set(case_ids)) != len(case_ids)
+                or set(case_ids) - {case["id"] for case in cases}):
+            raise ValueError("case_ids must be distinct IDs in the frozen suite")
+        selected = {case["id"]: case for case in cases}
+        cases = [selected[value] for value in case_ids]
     if limit:
         cases = cases[:limit]
     monitor = monitor or ResourceMonitor()
-    baseline = await monitor.sample()
+    if initial_baseline is not None and not isinstance(initial_baseline, dict):
+        raise ValueError("initial_baseline must be a resource sample object")
+    baseline = dict(initial_baseline) if initial_baseline is not None else await monitor.sample()
     blocked = reasons(baseline, baseline, monitor.thresholds)
     report = {"schema": 1, "date_utc": datetime.now(timezone.utc).isoformat(), "suite": suite.name,
               "suite_sha256": fingerprint(suite), "source_sha256": fingerprint(suite / "repository"),
@@ -311,10 +368,16 @@ async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None
                          "Temperature and RAM temperature are not measured; OS thermal limits may be unavailable.",
                          "Client cancellation cannot guarantee cancellation of an existing external server request."]}
     report["settings"]["between_requests_seconds"] = request_pause_seconds
+    report["settings"]["modes"] = list(modes)
+    report["settings"]["selected_case_ids"] = [case["id"] for case in cases]
+    report["settings"]["resource_measurement"] = "Generation only; watcher drained before external CPU grading."
+    report["settings"]["timeout_grading"] = "Partial work is graded after deadlines in every mode; timeout is never usable and stops the comparison. Resource aborts are ungraded."
+    if "controlled" in modes:
+        report["settings"]["controlled_checks"] = controlled_checks
 
     def save():
         report["summary"] = aggregate(report["records"])
-        report["unattempted_runs"] = 2 * len(cases) - len(report["records"])
+        report["unattempted_runs"] = len(modes) * len(cases) - len(report["records"])
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
 
@@ -322,8 +385,8 @@ async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None
     if blocked:
         return report
     for index, case in enumerate(cases):
-        modes = ("single", "specialists") if index % 2 == 0 else ("specialists", "single")
-        for mode in modes:
+        case_modes = tuple(modes) if index % 2 == 0 else tuple(reversed(modes))
+        for mode in case_modes:
             admission = await monitor.sample()
             blocked = reasons(admission, baseline, monitor.thresholds)
             if blocked:
@@ -332,7 +395,8 @@ async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None
                 progress({"event": "started", "id": case["id"], "mode": mode, "attempted": len(report["records"])})
             record = await run_case(settings, suite, case, mode, monitor, baseline, timeout=effective_case_timeout(timeout, case, case_timeout_override),
                                     max_calls=effective_case_calls(max_calls, case, case_call_override), max_tokens=max_tokens, context_chars=context_chars,
-                                    request_pause_seconds=request_pause_seconds, protocol=protocol, case_timeout_override=case_timeout_override)
+                                    request_pause_seconds=request_pause_seconds, protocol=protocol, case_timeout_override=case_timeout_override,
+                                    **({"controlled_checks": controlled_checks} if "controlled" in modes else {}))
             report["records"].append(record); save()
             if progress:
                 progress({"event": "finished", "id": case["id"], "mode": mode, "seconds": record["seconds"],

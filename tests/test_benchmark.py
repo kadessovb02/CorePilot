@@ -5,6 +5,7 @@ import runpy
 import shutil
 import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import httpx
 import pytest
@@ -586,8 +587,9 @@ def fake_runtime(monkeypatch, suite, *, hang=False, change=False):
         async def close(self):
             self.closed = True
     class Engine:
-        def __init__(self, settings, model, role_models):
+        def __init__(self, settings, model, role_models, **kwargs):
             self.settings, self.model, self.role_models = settings, model, role_models
+            self.resource_gate = SimpleNamespace(thresholds=None)
             self.cancelled = 0
             self.closed = False
             self.jobs = {}
@@ -801,9 +803,10 @@ def test_read_only_changed_workspace_cannot_be_a_usable_pass_even_if_oracle_appr
 
 def grade_tools(monkeypatch, response, *, inspect_copy=None):
     class Tools:
-        def __init__(self, root, state_root, command_timeout):
+        def __init__(self, root, state_root, command_timeout, *, read_only_commands=False):
             self.root = root
             assert command_timeout == 20
+            assert read_only_commands is True
         async def run_command(self, argv, timeout):
             assert argv[:2] == ["python", "_benchmark_oracle/oracle.py"] and timeout == 20
             if inspect_copy:
@@ -833,7 +836,8 @@ def test_oracle_is_added_only_to_grading_copy_and_cannot_mutate_generated_source
         (root / "module.py").write_text("value = 99\n")
     grade_tools(monkeypatch, {"exit_code": 0, "timed_out": False, "output": json.dumps({"passed": True, "failures": []})}, inspect_copy=inspect)
     report = asyncio.run(benchmark.grade(suite, task, tmp_path / "state"))
-    assert report["passed"]
+    assert report["passed"] is False
+    assert report["failures"] == ["oracle_source_integrity_changed"]
     assert source_manifest(workspace) == original and source_manifest(suite) == original_fixture
     assert not (workspace / "_benchmark_oracle").exists()
     assert "Synthetic answer" not in json.dumps(report)
@@ -880,3 +884,87 @@ def test_invalid_request_pause_never_starts_model_execution(tmp_path, suite, mon
         asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, tmp_path / "report.json",
                                       monitor=Monitor(), request_pause_seconds=pause))
     assert not (tmp_path / "report.json").exists()
+
+
+def test_controlled_pair_scores_only_matched_completed_outcomes():
+    def row(mode, usable, seconds):
+        return {"id": "shared", "mode": mode, "category": "edit", "read_only": False, "completed": usable, "oracle_passed": True, "usable_passed": usable, "seconds": seconds, "http_attempts": 4, "timeout": False, "safety_abort": False}
+    result = benchmark.aggregate([row("single", False, 25), row("controlled", True, 14)])
+    assert result["controlled"]["usable_passed"] == 1
+    assert result["controlled_paired"]["count"] == 1
+    assert result["controlled_paired"]["controlled_wins"] == 1
+    assert result["controlled_paired"]["both_usable"] == 0
+    assert result["controlled_paired"]["median_seconds_both_usable"] == {"single": None, "controlled": None}
+
+
+@pytest.mark.parametrize("modes,checks", [(["controlled"], None), (["controlled", "controlled"], [["python", "-m", "unittest"]]), (["unknown"], [])])
+def test_controlled_comparison_rejects_invalid_contract_before_sampling(tmp_path, suite, modes, checks):
+    monitor = Monitor()
+    with pytest.raises(ValueError):
+        asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, tmp_path / "report.json", monitor=monitor, modes=modes, controlled_checks=checks))
+    assert monitor.sample_count == 0
+
+
+def test_three_modes_keep_each_successful_pair_independent():
+    rows = [result("one", "single", seconds=10), result("one", "specialists", seconds=20),
+            result("one", "controlled", passed=False, seconds=1)]
+    summary = benchmark.aggregate(rows)
+    assert summary["paired"]["count"] == summary["paired"]["both_usable"] == 1
+    assert summary["paired"]["median_seconds_both_usable"] == {"single": 10, "specialists": 20}
+    assert summary["controlled_paired"]["both_usable"] == 0
+
+
+def test_final_watcher_callback_cannot_turn_unsafe_work_into_success(tmp_path, suite, monkeypatch):
+    fake_runtime(monkeypatch, suite)
+    class LateMonitor(Monitor):
+        async def watch(self, stop_event, **kwargs):
+            await stop_event.wait()
+            await kwargs["on_unsafe"](["swap_growth_limit"], safe(used_swap_gib=5))
+            self.stopped = True
+            return {"summary": summarize([safe()], safe())}
+    async def forbidden(*args):
+        pytest.fail("Last unsafe callback was ignored before grading")
+    monkeypatch.setattr(benchmark, "grade", forbidden)
+    record = asyncio.run(benchmark.run_case(Settings(root=tmp_path / "state"), suite,
+        benchmark.load_cases(suite)[0], "single", LateMonitor(), safe(), timeout=1,
+        max_calls=8, max_tokens=768, context_chars=14000))
+    assert record["safety_abort"] and not record["usable_passed"]
+    assert record["safety_reasons"] == ["swap_growth_limit"]
+
+
+def test_controlled_deadline_and_thresholds_match_comparison(tmp_path, suite, monkeypatch):
+    _, engines = fake_runtime(monkeypatch, suite)
+    original_create = benchmark.AgentEngine.create
+    async def create(self, *args, **kwargs):
+        task = await original_create(self, *args, **kwargs)
+        self.data["events"].append({"type": "resources", "data": {"reasons": ["resource_task_timeout"]}})
+        return task
+    monkeypatch.setattr(benchmark.AgentEngine, "create", create)
+    grades = []
+    async def grade(*args):
+        grades.append(True)
+        return {"passed": True, "failures": []}
+    monkeypatch.setattr(benchmark, "grade", grade)
+    monitor = Monitor()
+    monitor.thresholds = ResourceThresholds(max_own_rss_gib=3, max_physical_footprint_gib=4, min_performance_limit=95)
+    record = asyncio.run(benchmark.run_case(Settings(root=tmp_path / "state"), suite,
+        benchmark.load_cases(suite)[0], "controlled", monitor, safe(), timeout=1, max_calls=8,
+        max_tokens=768, context_chars=14000, controlled_checks=[["python", "-m", "unittest"]]))
+    assert engines[0].resource_gate.thresholds is monitor.thresholds
+    assert record["timeout"] and not record["safety_abort"] and not record["usable_passed"]
+    assert grades == [True] and record["oracle_passed"]
+
+
+def test_case_selection_keeps_full_frozen_suite_and_session_baseline(tmp_path, suite, monkeypatch, no_rest):
+    calls = []
+    async def run(settings, selected, case, mode, monitor, baseline, **caps):
+        calls.append((case["id"], mode, baseline["used_swap_gib"]))
+        return result(case["id"], mode)
+    monkeypatch.setattr(benchmark, "run_case", run)
+    frozen = benchmark.fingerprint(suite)
+    report = asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, tmp_path / "report.json",
+        monitor=Monitor(), case_ids=["inspect_beta", "edit_alpha"], initial_baseline=safe(used_swap_gib=1.8)))
+    assert calls == [("inspect_beta", "single", 1.8), ("inspect_beta", "specialists", 1.8),
+                     ("edit_alpha", "specialists", 1.8), ("edit_alpha", "single", 1.8)]
+    assert report["suite_sha256"] == frozen == benchmark.fingerprint(suite)
+    assert report["settings"]["selected_case_ids"] == ["inspect_beta", "edit_alpha"]

@@ -74,6 +74,16 @@ def parser():
     router.add_argument("--url"); router.add_argument("--model"); router.add_argument("--api-key-env")
     router.add_argument("--min-confidence", type=float, default=.8); router.add_argument("--timeout", type=float, default=5)
     router.add_argument("--disable", action="store_true")
+    controlled = sub.add_parser("workflow", help="Configure a bounded workflow with operator-owned checks")
+    csub = controlled.add_subparsers(dest="action", required=True)
+    configure = csub.add_parser("configure")
+    configure.add_argument("--project", required=True)
+    configure.add_argument("--check-json", action="append", required=True, help="One exact command argv as a JSON array; repeat for multiple checks")
+    configure.add_argument("--test-root", action="append")
+    configure.add_argument("--read-path", action="append", default=[])
+    configure.add_argument("--edit-path", action="append", default=[])
+    configure.add_argument("--max-repairs", type=int, default=1)
+    csub.add_parser("disable"); csub.add_parser("show")
     history = sub.add_parser("history", help="Register explicit history paths for the UI")
     hs = history.add_subparsers(dest="action", required=True)
     ha = hs.add_parser("add"); ha.add_argument("--provider", choices=["codex", "claude", "canonical"], required=True)
@@ -153,6 +163,7 @@ def main(argv=None):
             elif args.action == "enable":
                 state.update(enabled=True, max_review_rounds=args.max_review_rounds,
                              role_max_steps=args.role_max_steps, max_concurrent_tasks=args.max_concurrent_tasks)
+                config.setdefault("controlled", {})["enabled"] = False
             elif args.action == "disable":
                 state["enabled"] = False
             elif args.action == "router":
@@ -166,6 +177,27 @@ def main(argv=None):
             normalized = orchestration_config(state)
             if args.action != "show":
                 config["orchestration"] = normalized
+                write_config(config_path, config)
+            print(json.dumps(normalized, indent=2))
+        elif args.command == "workflow":
+            from .config import controlled_config, relative_path, resource_guard_config
+            state = config.setdefault("controlled", {})
+            if args.action == "configure":
+                if args.project not in config.get("projects", {}):
+                    raise ValueError("Register the project first with corepilot setup or project add")
+                state.setdefault("profiles", {})[args.project] = {
+                    "checks": [json.loads(value) for value in args.check_json],
+                    "test_roots": args.test_root or ["tests"], "read_paths": args.read_path,
+                    "allowed_edit_paths": args.edit_path}
+                state.update(enabled=True, max_repairs=args.max_repairs)
+                config.setdefault("orchestration", {})["enabled"] = False
+                config["resource_guard"] = resource_guard_config({**config.get("resource_guard", {}), "enabled": True})
+            elif args.action == "disable":
+                state["enabled"] = False
+            normalized = controlled_config(state, {key: relative_path(path, config_path.parent)
+                                                     for key, path in config.get("projects", {}).items()})
+            if args.action != "show":
+                config["controlled"] = normalized
                 write_config(config_path, config)
             print(json.dumps(normalized, indent=2))
         elif args.command == "history":

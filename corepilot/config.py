@@ -13,6 +13,58 @@ from urllib.parse import urlparse
 MODEL_ROLES = ("planner", "coder", "reviewer")
 
 
+def controlled_config(value: dict, projects: dict) -> dict:
+    """Operator-owned check commands; a model may never extend this profile."""
+    from .workspace import safe_path
+    if not isinstance(value, dict) or set(value) - {"enabled", "max_repairs", "profiles"}:
+        raise ValueError("controlled contains unsupported settings")
+    enabled = value.get("enabled", False)
+    repairs = value.get("max_repairs", 1)
+    if not isinstance(enabled, bool) or isinstance(repairs, bool) or not isinstance(repairs, int) or not 0 <= repairs <= 2:
+        raise ValueError("controlled needs a boolean enabled and max_repairs from 0 to 2")
+    profiles = value.get("profiles", {})
+    if not isinstance(profiles, dict) or set(profiles) - set(projects):
+        raise ValueError("controlled.profiles must name registered projects")
+    normalized = {}
+    for project, profile in profiles.items():
+        if not isinstance(profile, dict) or set(profile) - {"checks", "test_roots", "read_paths", "allowed_edit_paths"}:
+            raise ValueError("controlled project profile contains unsupported fields")
+        checks = profile.get("checks", [])
+        if (not isinstance(checks, list) or len(checks) > 5 or any(
+                not isinstance(argv, list) or not argv or len(argv) > 64 or any(
+                    not isinstance(arg, str) or not arg or len(arg) > 4000 or "\x00" in arg for arg in argv)
+                for argv in checks)):
+            raise ValueError("controlled checks must contain at most five nonempty argv arrays")
+        result = {"checks": checks}
+        for field, default in (("test_roots", ["tests"]), ("read_paths", []), ("allowed_edit_paths", [])):
+            paths = profile.get(field, default)
+            if not isinstance(paths, list) or len(paths) > 100 or any(not isinstance(path, str) or not path or path == "." for path in paths):
+                raise ValueError("controlled profile paths must be bounded relative path lists")
+            for path in paths:
+                if Path(path).as_posix() != path or "\\" in path:
+                    raise ValueError("controlled paths must use normalized relative forward slashes")
+                safe_path(projects[project], path)
+            result[field] = list(dict.fromkeys(paths))
+        normalized[project] = result
+    return {"enabled": enabled, "max_repairs": repairs, "profiles": normalized}
+
+
+def resource_guard_config(value: dict) -> dict:
+    """Legacy tasks opt in; the controlled workflow always uses these limits."""
+    from .benchmark_resources import ResourceThresholds
+    fields = {"enabled", "max_task_seconds", "min_available_gib", "max_swap_growth_mib", "allow_memory_warning"}
+    if not isinstance(value, dict) or set(value) - fields:
+        raise ValueError("resource_guard contains unsupported settings")
+    enabled = value.get("enabled", False)
+    duration = value.get("max_task_seconds", 180)
+    if (not isinstance(enabled, bool) or isinstance(duration, bool) or not isinstance(duration, (int, float))
+            or not math.isfinite(duration) or not 0 < duration <= 3600):
+        raise ValueError("resource_guard requires boolean enabled and positive max_task_seconds at most 3600")
+    limits = ResourceThresholds(**{key: value[key] for key in fields - {"enabled", "max_task_seconds"} if key in value})
+    return {"enabled": enabled, "max_task_seconds": float(duration),
+            **{key: getattr(limits, key) for key in fields - {"enabled", "max_task_seconds"}}}
+
+
 def router_config(value: dict) -> dict:
     """Validate an optional local typed-decision endpoint and bounded timeout."""
     fields = {"enabled", "url", "model", "min_confidence", "timeout", "api_key_env"}
@@ -119,6 +171,8 @@ class Settings:
     history_sources: list[dict] = field(default_factory=list)
     config_path: Path | None = None
     orchestration: dict = field(default_factory=dict)
+    controlled: dict = field(default_factory=dict)
+    resource_guard: dict = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         self.root = self.root.expanduser().resolve()
@@ -137,6 +191,10 @@ class Settings:
                 raise ValueError(f"{name} must be an integer from {minimum} to {maximum}")
         self.projects = {key: relative_path(path, self.config_path.parent) for key, path in self.projects.items()}
         self.orchestration = orchestration_config(self.orchestration)
+        self.controlled = controlled_config(self.controlled, self.projects)
+        self.resource_guard = resource_guard_config(self.resource_guard)
+        if self.controlled["enabled"] and self.orchestration["enabled"]:
+            raise ValueError("Choose either controlled or specialist orchestration as the default workflow")
 
     @property
     def runtime(self) -> Path:
@@ -174,4 +232,5 @@ class Settings:
                    protocol=model.get("protocol", "auto"),
                    max_tokens=model.get("max_tokens", 2048), context_chars=model.get("context_chars", 22000),
                    max_steps=raw.get("max_steps", 24), command_timeout=raw.get("command_timeout", 60),
-                   projects=projects, history_sources=history, orchestration=raw.get("orchestration", {}))
+                   projects=projects, history_sources=history, orchestration=raw.get("orchestration", {}),
+                   controlled=raw.get("controlled", {}), resource_guard=raw.get("resource_guard", {}))

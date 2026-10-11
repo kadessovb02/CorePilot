@@ -12,6 +12,7 @@ The project is an **alpha research tool**. Inference quality depends on the mode
 - Redacts common secrets, excludes hidden reasoning, deduplicates examples, and separates training, validation and held-out sessions.
 - Builds local retrieval memory from selected conversations and current source files.
 - Runs a tool loop against a **loopback OpenAI-compatible server**: read/search files, edit an isolated workspace, run supported sandboxed commands, inspect a diff, cancel and resume a task.
+- Provides an opt-in [controlled workflow](docs/controlled-workflow.md): the host bounds file edits, owns check commands and records completion from fresh checks plus structured review. Controlled tasks include a resource guard. This architecture is experimental; local-model task quality still needs evaluation.
 - Offers an experimental **planner → coder → reviewer** workflow with explicit specialist models, bounded repair, independent-task concurrency, and optional local **Laya / Jev-compatible** typed routing. See [specialist orchestration](docs/orchestration.md).
 - Offers optional **MLX LoRA training through Soup** on Apple Silicon. Standard messages JSONL can also be used with other SFT trainers.
 
@@ -132,7 +133,7 @@ The complete 1.5B trial scored **0/12 edits and 0/8 inspections per mode**. Late
 
 The latest v1 4B development pilot scored **1/2 oracle passes per mode**, with **1/2 usable for single and 0/2 for specialists**. The completed task passed three external behavior tests; its own check asserted positive cases but only printed negative cases. Specialists did not finish review, and the other single-agent edit removed existing functions and broke package imports. All four attempts were graded, with no timeout or resource abort. This small development pilot does not establish dependable coding or Codex parity. Protocols are selected explicitly, with no automatic fallback.
 
-See the [complete trial ledger, failed records, resource observations and methodology](docs/benchmarks.md), the [synthetic suite](benchmarks/synthetic_v1/README.md), and the candidate [4B](docs/local-model.md) / [7B](docs/local-coder-model.md) setup guides. Ordinary serving does not apply the benchmark's resource guard.
+See the [complete trial ledger, failed records, resource observations and methodology](docs/benchmarks.md), the [synthetic suite](benchmarks/synthetic_v1/README.md), and the candidate [4B](docs/local-model.md) / [7B](docs/local-coder-model.md) setup guides. Ordinary free-form serving uses a resource guard when explicitly enabled. The new controlled workflow always applies its runtime guard; this has not retroactively changed recorded benchmark settings.
 
 ## Development
 

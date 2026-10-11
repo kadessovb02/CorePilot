@@ -16,6 +16,7 @@ from . import __version__
 from .config import Settings
 from .engine import AgentEngine
 from .reports import experiment_reports
+from .runtime_resources import ResourceBlocked
 from .store import public_task
 from .workspace import BoundaryError, git_metadata, handoff_source
 
@@ -27,6 +28,7 @@ class NewTask(BaseModel):
     memory: bool = True
     read_only: bool = False
     orchestrated: bool | None = None
+    controlled: bool | None = None
     max_steps: int | None = Field(default=None, ge=1, le=80)
     parent_id: str | None = Field(default=None, pattern=r"^[0-9a-f]{32}$")
 
@@ -44,6 +46,11 @@ class ResumeTask(BaseModel):
     prompt: str | None = Field(default=None, max_length=18000)
 
 
+class ReleaseResources(BaseModel):
+    model_config = {"extra": "forbid"}
+    backend_confirmed_idle: bool = False
+
+
 class ContinueHistoryChat(BaseModel):
     model_config = {"extra": "forbid"}
     project: str = Field(min_length=1, max_length=100)
@@ -51,6 +58,7 @@ class ContinueHistoryChat(BaseModel):
     memory: bool = True
     read_only: bool = False
     orchestrated: bool | None = None
+    controlled: bool | None = None
     max_steps: int | None = Field(default=None, ge=1, le=80)
 
 
@@ -101,6 +109,11 @@ def create_app(settings: Settings | None = None, model=None) -> FastAPI:
     async def invalid(request, exc):
         return JSONResponse({"detail": str(exc)}, status_code=400)
 
+    @app.exception_handler(ResourceBlocked)
+    async def resources_blocked(request, exc):
+        return JSONResponse({"detail": str(exc), "reason_codes": exc.reason_codes,
+                             "backend_completion_unconfirmed": exc.backend_completion_unconfirmed}, status_code=409)
+
     def projects():
         return [{"id": key, "name": key, "path": str(path), "available": path.is_dir(), **git_metadata(path)} for key, path in settings.projects.items()]
 
@@ -112,14 +125,31 @@ def create_app(settings: Settings | None = None, model=None) -> FastAPI:
         orchestration = await pool.health() if pool is not None else {"enabled": False, "configured": False, "ready": False, "default_mode": "single", "roles": {}}
         specialist_health = workflow == "specialists" or (workflow is None and orchestration.get("enabled"))
         model = orchestration.get("roles", {}).get("planner", {}) if specialist_health else await engine.model.health()
-        capacity = {"max_concurrent_tasks": settings.orchestration["max_concurrent_tasks"],
+        guarded_capacity = settings.resource_guard["enabled"] or bool(settings.controlled["profiles"])
+        capacity = {"max_concurrent_tasks": 1 if guarded_capacity else settings.orchestration["max_concurrent_tasks"],
                     "running": sum(task["status"] == "running" for task in engine.tasks.values()),
                     "queued": sum(task["status"] == "queued" for task in engine.tasks.values())}
-        return {"version": __version__, "model": model, "model_mode": "specialists" if specialist_health else "single", "orchestration": orchestration, "task_capacity": capacity, "projects": projects(), "running_task": active, "training": experiment_reports(settings.root)["training"]}
+        return {"version": __version__, "model": model, "model_mode": "specialists" if specialist_health else "single", "orchestration": orchestration,
+                "controlled": {"enabled": settings.controlled["enabled"], "configured": bool(settings.controlled["profiles"]),
+                               "projects": list(settings.controlled["profiles"])},
+                "resource_guard": {"enabled": settings.resource_guard["enabled"] or settings.controlled["enabled"],
+                                   "blocked": engine.resource_gate.blocked},
+                "task_capacity": capacity, "projects": projects(), "running_task": active, "training": experiment_reports(settings.root)["training"]}
 
     @app.get("/api/reports")
     async def reports():
         return experiment_reports(settings.root)
+
+    @app.get("/api/resources")
+    async def resource_status():
+        return engine.resource_gate.snapshot()
+
+    @app.post("/api/resources/release")
+    async def release_resources(body: ReleaseResources):
+        if any(task["status"] in {"queued", "running"} for task in engine.tasks.values()):
+            raise ValueError("Stop active tasks before releasing the resource hold")
+        await engine.resource_gate.release(backend_confirmed_idle=body.backend_confirmed_idle)
+        return engine.resource_gate.snapshot()
 
     @app.get("/api/projects")
     async def list_projects():
@@ -181,7 +211,7 @@ def create_app(settings: Settings | None = None, model=None) -> FastAPI:
         imported = {"history_session_id": handoff.get("id", chat_id), "history_provider": provider, "history_source_cwd": handoff.get("source_cwd"), "import_mode": mode, "source_note": (note + " " + reader_note).strip()}
         if provider == "codex":
             imported.update(codex_session_id=handoff.get("id", chat_id), codex_source_cwd=handoff.get("source_cwd"))
-        return await engine.create(body.project, prompt, body.memory, body.max_steps, source_override=source, import_context=context[:6500], import_metadata=imported, read_only=body.read_only, orchestrated=body.orchestrated)
+        return await engine.create(body.project, prompt, body.memory, body.max_steps, source_override=source, import_context=context[:6500], import_metadata=imported, read_only=body.read_only, orchestrated=body.orchestrated, controlled=body.controlled)
 
     @app.post("/api/history/chats/{chat_id}/continue", status_code=201)
     async def continue_history_chat(chat_id: str, body: ContinueHistoryChat):
@@ -197,7 +227,7 @@ def create_app(settings: Settings | None = None, model=None) -> FastAPI:
 
     @app.post("/api/tasks", status_code=201)
     async def new_task(body: NewTask):
-        return await engine.create(body.project, body.prompt.strip(), body.memory, body.max_steps, body.parent_id, read_only=body.read_only, orchestrated=body.orchestrated)
+        return await engine.create(body.project, body.prompt.strip(), body.memory, body.max_steps, body.parent_id, read_only=body.read_only, orchestrated=body.orchestrated, controlled=body.controlled)
 
     @app.get("/api/tasks/{task_id}")
     async def task(task_id: str, after: int = 0):

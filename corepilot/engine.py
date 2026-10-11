@@ -102,7 +102,7 @@ IMPORT_FIELDS = ("history_session_id", "history_provider", "history_source_cwd",
 
 
 class AgentEngine:
-    def __init__(self, settings: Settings, model=None, role_models=None):
+    def __init__(self, settings: Settings, model=None, role_models=None, *, resource_monitor=None):
         self.settings = settings
         self.store = TaskStore(settings.runtime)
         self.store.recover()
@@ -118,6 +118,10 @@ class AgentEngine:
         # calls/results remain in the persisted checkpoint; resuming starts fresh.
         self.read_streaks: dict[str, dict] = {}
         self.lock = asyncio.Semaphore(settings.orchestration["max_concurrent_tasks"])
+        self.resource_lock = asyncio.Lock()
+        from .runtime_resources import ResourceGate
+        self.resource_gate = ResourceGate(settings.resource_guard, monitor=resource_monitor,
+                                          hold_path=settings.runtime / "resource-hold.json")
 
     def task(self, task_id: str) -> dict:
         if task_id not in self.tasks:
@@ -166,17 +170,22 @@ class AgentEngine:
         await self.role_models.close()
         await self.router.close()
 
-    async def create(self, project: str, prompt: str, memory: bool = True, max_steps: int | None = None, parent_id: str | None = None, *, read_only: bool = False, orchestrated: bool | None = None, source_override: Path | None = None, import_context: str | None = None, import_metadata: dict | None = None) -> dict:
+    async def create(self, project: str, prompt: str, memory: bool = True, max_steps: int | None = None, parent_id: str | None = None, *, read_only: bool = False, orchestrated: bool | None = None, controlled: bool | None = None, source_override: Path | None = None, import_context: str | None = None, import_metadata: dict | None = None) -> dict:
         if project not in self.settings.projects:
             raise ValueError("Unknown project")
         if not isinstance(read_only, bool):
             raise ValueError("read_only must be a boolean")
         if orchestrated is not None and not isinstance(orchestrated, bool):
             raise ValueError("orchestrated must be a boolean or null")
-        specialist_mode = self.settings.orchestration["enabled"] if orchestrated is None else orchestrated
+        if controlled is not None and not isinstance(controlled, bool):
+            raise ValueError("controlled must be a boolean or null")
+        parent = self.task(parent_id) if parent_id else None
+        specialist_mode = (bool(parent.get("orchestration", {}).get("enabled")) if parent else self.settings.orchestration["enabled"]) if orchestrated is None else orchestrated
+        controlled_mode = (bool(parent.get("controlled", {}).get("enabled")) if parent else self.settings.controlled["enabled"]) if controlled is None else controlled
+        if controlled_mode and specialist_mode:
+            raise ValueError("Controlled workflow and specialist orchestration cannot be combined")
         if specialist_mode and not all(role in self.settings.orchestration["roles"] for role in workflow.ROLES):
             raise ValueError("Specialist mode needs explicit planner, coder and reviewer model configuration")
-        parent = self.task(parent_id) if parent_id else None
         if parent:
             self.validate_task_paths(parent, check_source=True)
         if parent and (parent["project"] != project or parent["status"] in {"queued", "running"}):
@@ -209,6 +218,9 @@ class AgentEngine:
                 "wants_edits": not read_only and editing_intent(prompt), "wants_check": explicit_check_intent(prompt)}
         if specialist_mode:
             task["orchestration"] = workflow.new_state(self.settings.orchestration)
+        if controlled_mode:
+            task["controlled"] = {"version": 1, "enabled": True, "phase": "select", "round": 0,
+                                  "retry_counts": {}, "summaries": {}, "feedback": []}
         if parent:
             for key in IMPORT_FIELDS:
                 if key in parent:
@@ -223,7 +235,7 @@ class AgentEngine:
             if not specialist_mode and task["messages"] and task["messages"][0].get("role") == "system":
                 task["messages"][0] = {"role": "system", "content": SYSTEM}
             request = prompt + ("\nThis task is explicitly read-only: file edit tools are unavailable. Inspect and explain the current files." if read_only else "")
-            task["messages"].append({"role": "user", "content": request, "_corepilot_kind": "request"})
+            task["messages"].append({"role": "user", "content": request, "_corepilot_kind": "request", "_corepilot_request": prompt})
             if parent.get("applied"):
                 task["baseline"] = str(self.settings.runtime / "tasks" / task_id / "baseline")
                 await asyncio.to_thread(snapshot, Path(task["workspace"]), Path(task["baseline"]))
@@ -276,6 +288,10 @@ class AgentEngine:
         task["error"] = None
         task["completion_retries"] = 0
         task["length_retries"] = 0
+        if task.get("controlled", {}).get("enabled"):
+            state = task["controlled"]
+            state.update(phase="select", round=0, retry_counts={})
+            state.pop("selection", None)
         if workflow.current_role(task):
             task["orchestration"]["phase_steps"] = 0
         task["status"] = "queued"
@@ -332,7 +348,7 @@ class AgentEngine:
             task["messages"] = [{"role": "system", "content": SYSTEM},
                                 {"role": "user", "content": context, "_corepilot_kind": "context"},
                                 *repository_guidance(Path(task["workspace"])),
-                                {"role": "user", "content": request, "_corepilot_kind": "objective"}]
+                                {"role": "user", "content": request, "_corepilot_kind": "objective", "_corepilot_request": task["prompt"]}]
             self.store.event(task, "memory", f"Retrieved {len(memory)} project memory records", {"records": [{"id": row["id"], "kind": row["kind"], "source": row["source"]} for row in memory]})
         if "initial_workspace_manifest" not in task:
             initial_root = Path(task["baseline"]) if task["step"] > 0 and task.get("last_edit_step") is not None else Path(task["workspace"])
@@ -634,12 +650,39 @@ class AgentEngine:
                                  {"reason": "repeated_successful_read", "name": state["name"], "count": state["count"], "role": workflow.current_role(task)})
 
     async def run(self, task: dict) -> None:
+        """Admission and live resource cancellation surround every guarded task."""
+        from .runtime_resources import ResourceBlocked
+        guarded = self.resource_gate.blocked or self.settings.resource_guard["enabled"] or task.get("controlled", {}).get("enabled")
+        if not guarded:
+            await self._run_unchecked(task)
+            return
+        try:
+            async with self.resource_lock:
+                await self.resource_gate.run(lambda: self._run_unchecked(task))
+        except ResourceBlocked as exc:
+            task["status"] = "interrupted"
+            task["error"] = str(exc)
+            self.store.event(task, "resources", task["error"], {
+                "status": "interrupted", "reasons": exc.reason_codes,
+                "sample": exc.sample, "backend_completion_unconfirmed": exc.backend_completion_unconfirmed})
+        except asyncio.CancelledError:
+            self.store.save(task)
+            raise
+
+    async def _run_unchecked(self, task: dict) -> None:
         try:
             async with self.lock:
                 self.validate_task_paths(task, check_source=True)
                 task["status"] = "running"
                 self.store.event(task, "status", "Inspecting and editing the isolated workspace", {"status": "running"})
                 await self.setup(task)
+                if task.get("controlled", {}).get("enabled"):
+                    from .controlled import run_controlled
+                    tools = WorkspaceTools(Path(task["workspace"]), self.settings.root, self.settings.command_timeout,
+                                           source_root=Path(task["source_path"]), read_only_commands=True)
+                    self.tools[task["id"]] = tools
+                    await run_controlled(self, task, tools)
+                    return
                 if workflow.current_role(task):
                     await self.initialize_workflow(task)
                     if workflow.current_role(task) in {"planner", "reviewer"}:

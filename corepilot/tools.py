@@ -32,7 +32,7 @@ def trim(value: str, limit: int = 8000) -> str:
     return value if len(value) <= limit else value[:limit] + f"\n[truncated; {len(value)} characters total]"
 
 
-def sandbox_command(argv: list[str], root: Path, app_root: Path, temporary: Path, *, trusted_git_root: Path | None = None) -> tuple[list[str], str]:
+def sandbox_command(argv: list[str], root: Path, app_root: Path, temporary: Path, *, trusted_git_root: Path | None = None, read_only: bool = False) -> tuple[list[str], str]:
     executable = Path(argv[0]).resolve()
     if sys.platform != "darwin" or not Path("/usr/bin/sandbox-exec").exists():
         # No silent unrestricted execution on an unsupported platform.
@@ -55,16 +55,29 @@ def sandbox_command(argv: list[str], root: Path, app_root: Path, temporary: Path
     if trusted_git_root is not None:
         denied.append(trusted_git_root / "config")
     profile += "".join(f"(deny file-read* (literal {quote(str(path))}))" for path in denied)
+    if read_only:
+        # Validation can write temporary artifacts, never the implementation,
+        # tests or Git metadata that it is supposed to verify.
+        profile += f"(deny file-write* (require-all (subpath {quote(str(root))}) (require-not (subpath {quote(str(temporary))}))))"
+        profile += f"(deny file-read* (subpath {quote(str(root / '.git'))}))"
+        if trusted_git_root is not None:
+            profile += f"(deny file-read* (subpath {quote(str(trusted_git_root))}))"
+        for directory, directories, names in os.walk(root, followlinks=False):
+            directories[:] = [name for name in directories if name not in {'.git', '.venv', 'node_modules', '.corepilot-tmp'} and not (Path(directory) / name).is_symlink()]
+            for name in names:
+                if secret_path(Path(name)):
+                    profile += f"(deny file-read* (literal {quote(str(Path(directory) / name))}))"
     return ["/usr/bin/sandbox-exec", "-p", profile, *argv], profile
 
 
 class WorkspaceTools:
-    def __init__(self, root: Path, app_root: Path, command_timeout: int = 60, source_root: Path | None = None):
+    def __init__(self, root: Path, app_root: Path, command_timeout: int = 60, source_root: Path | None = None, *, read_only_commands: bool = False):
         self.root = root.resolve()
         self.app_root = app_root.resolve()
         self.command_timeout = command_timeout
         self.source_root = source_root.resolve() if source_root is not None else None
         self.trusted_git_root = git_common_root(self.source_root) if self.source_root is not None else None
+        self.read_only_commands = read_only_commands
         self.process: asyncio.subprocess.Process | None = None
 
     async def execute(self, name: str, arguments: dict) -> dict:
@@ -259,7 +272,10 @@ class WorkspaceTools:
             raise BoundaryError("cwd must be a directory")
         temporary = self.root / ".corepilot-tmp"
         temporary.mkdir(exist_ok=True)
-        wrapped, _ = sandbox_command(command, self.root, self.app_root, temporary, trusted_git_root=self.trusted_git_root)
+        if self.read_only_commands and Path(argv[0]).name == "git":
+            raise BoundaryError("Controlled checks cannot access Git metadata")
+        wrapped, _ = sandbox_command(command, self.root, self.app_root, temporary, trusted_git_root=self.trusted_git_root,
+                                     **({"read_only": True} if self.read_only_commands else {}))
         if self.source_root and (self.source_root / ".venv").is_dir():
             # The original project's interpreter/dependencies are read-only; source
             # files and credentials outside the worktree remain inaccessible.
