@@ -1098,3 +1098,42 @@ def test_native_stage_posts_and_auto_fallback_are_metered_without_workspace_tool
         assert metrics['usage_responses'] == 1 and metrics['prompt_tokens'] == 7
         assert metrics['completion_tokens'] == 3 and metrics['inference_seconds'] > 0
     asyncio.run(exercise())
+
+
+@pytest.mark.parametrize("artifact_protocol", ["stage", "documents"])
+def test_controlled_artifact_protocol_reaches_effective_settings_and_record(tmp_path, suite, monkeypatch, artifact_protocol):
+    _, engines = fake_runtime(monkeypatch, suite)
+    async def grade(*args):
+        return {"passed": True, "failures": []}
+    monkeypatch.setattr(benchmark, "grade", grade)
+    record = asyncio.run(benchmark.run_case(Settings(root=tmp_path / "state"), suite,
+        benchmark.load_cases(suite)[0], "controlled", Monitor(), safe(), timeout=1, max_calls=8,
+        max_tokens=768, context_chars=14000, controlled_checks=[["python", "-m", "unittest"]],
+        controlled_artifact_protocol=artifact_protocol))
+    assert engines[0].settings.controlled["artifact_protocol"] == artifact_protocol
+    assert record["controlled_artifact_protocol"] == artifact_protocol
+
+
+def test_controlled_documents_comparison_and_cli_record_explicit_mode(tmp_path, suite, monkeypatch, no_rest):
+    calls = []
+    async def run(settings, selected, case, mode, monitor, baseline, **caps):
+        calls.append(caps["controlled_artifact_protocol"])
+        return result(case["id"], mode)
+    monkeypatch.setattr(benchmark, "run_case", run)
+    report = asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, tmp_path / "report.json",
+        monitor=Monitor(), modes=["controlled"], controlled_checks=[["python", "-m", "unittest"]],
+        controlled_artifact_protocol="documents"))
+    assert calls == ["documents", "documents"]
+    assert report["settings"]["controlled_artifact_protocol"] == "documents"
+    main, invocations = benchmark_cli(monkeypatch, ["--state", tmp_path / "cli-state", "--output", tmp_path / "cli.json",
+        "--mode", "controlled", "--check-json", '["python","-m","unittest"]',
+        "--controlled-artifact-protocol", "documents"])
+    assert main() == 0 and invocations[0][3]["controlled_artifact_protocol"] == "documents"
+
+
+def test_invalid_controlled_artifact_protocol_stops_before_sampling(tmp_path, suite):
+    monitor = Monitor()
+    with pytest.raises(ValueError, match="artifact protocol"):
+        asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, tmp_path / "report.json",
+            monitor=monitor, controlled_artifact_protocol="repair-json"))
+    assert monitor.sample_count == 0

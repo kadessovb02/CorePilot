@@ -29,6 +29,8 @@ def main():
     parser.add_argument("--case-id", action="append", help="Frozen case ID; repeat in declared order")
     parser.add_argument("--check-json", action="append", default=[],
                         help="Operator-owned argv array for controlled checks; repeat for each command")
+    parser.add_argument("--controlled-artifact-protocol", choices=("stage", "documents"), default="stage",
+                        help="Controlled edit/test response format; documents returns one complete host-selected file")
     parser.add_argument("--rest-seconds", type=float, default=20)
     parser.add_argument("--request-pause-seconds", type=float, default=3,
                         help="Pause between model calls (0–60 seconds); resource guards remain active")
@@ -91,6 +93,7 @@ def main():
                                 timeout=args.timeout, case_timeout_override=args.case_timeout_override, max_calls=args.max_calls,
                                 case_call_override=args.case_call_override,
                                 max_tokens=args.max_tokens, context_chars=args.context_chars, metadata=metadata,
+                                controlled_artifact_protocol=args.controlled_artifact_protocol,
                                 **({"modes": args.mode, "controlled_checks": checks} if args.mode else {}),
                                 **({"case_ids": args.case_id} if args.case_id else {}),
                                 progress=lambda row: print(json.dumps(row), flush=True)))

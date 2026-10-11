@@ -16,10 +16,13 @@ MODEL_ROLES = ("planner", "coder", "reviewer")
 def controlled_config(value: dict, projects: dict) -> dict:
     """Operator-owned check commands; a model may never extend this profile."""
     from .workspace import safe_path
-    if not isinstance(value, dict) or set(value) - {"enabled", "max_repairs", "profiles"}:
+    if not isinstance(value, dict) or set(value) - {"enabled", "max_repairs", "profiles", "artifact_protocol"}:
         raise ValueError("controlled contains unsupported settings")
     enabled = value.get("enabled", False)
     repairs = value.get("max_repairs", 1)
+    artifact_protocol = value.get("artifact_protocol", "stage")
+    if not isinstance(artifact_protocol, str) or artifact_protocol not in {"stage", "documents"}:
+        raise ValueError("controlled.artifact_protocol must be stage or documents")
     if not isinstance(enabled, bool) or isinstance(repairs, bool) or not isinstance(repairs, int) or not 0 <= repairs <= 2:
         raise ValueError("controlled needs a boolean enabled and max_repairs from 0 to 2")
     profiles = value.get("profiles", {})
@@ -46,7 +49,7 @@ def controlled_config(value: dict, projects: dict) -> dict:
                 safe_path(projects[project], path)
             result[field] = list(dict.fromkeys(paths))
         normalized[project] = result
-    return {"enabled": enabled, "max_repairs": repairs, "profiles": normalized}
+    return {"enabled": enabled, "max_repairs": repairs, "artifact_protocol": artifact_protocol, "profiles": normalized}
 
 
 def resource_guard_config(value: dict) -> dict:

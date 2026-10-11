@@ -324,6 +324,30 @@ class ModelClient:
                 **({"_corepilot_finish_reason": choice["finish_reason"]} if isinstance(choice.get("finish_reason"), str) else {}),
                 **({"tool_calls": calls} if calls else {})}
 
+    async def complete_document(self, messages: list[dict]) -> dict:
+        """Collect one raw document without tools or action extraction.
+
+        The host validates the whole JSON adapter envelope, when configured,
+        after recording the exact response. Native content is never stripped,
+        scanned for JSON, or interpreted as an action.
+        """
+        protocol_messages = cap_messages(messages, self.settings.context_chars)
+        json_adapter = self.protocol == "json"
+        if json_adapter:
+            protocol_messages = self.as_json_messages(protocol_messages, tool_names=[])
+        payload = {"model": self.settings.model_name, "messages": protocol_messages,
+                   "temperature": 0.15, "max_tokens": self.settings.max_tokens, "stream": False}
+        response = await self.http.post(self.settings.model_url + "/chat/completions", json=payload)
+        response.raise_for_status()
+        choice = response.json()["choices"][0]
+        message = deepcopy(choice["message"])
+        message.update(role="assistant", content=message.get("content") or "")
+        if json_adapter:
+            message["_corepilot_document_json"] = True
+        if isinstance(choice.get("finish_reason"), str):
+            message["_corepilot_finish_reason"] = choice["finish_reason"]
+        return message
+
     async def complete_stage(self, stage: str, messages: list[dict]) -> dict:
         """Collect a typed stage submission; it grants no workspace capability."""
         from .stage_submission import stage_tool
