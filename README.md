@@ -96,6 +96,12 @@ corepilot doctor
 
 See [example configuration](examples/config.example.json), [architecture](docs/architecture.md), and the CLI's `--help` output. Settings never need to contain an API secret. A local server requiring authentication can use the documented `model.api_key_env` setting.
 
+CorePilot includes bounded excerpts from the selected checkout's root `AGENTS.md` and `CLAUDE.md` as untrusted project guidance, before the task request. Compaction reserves space for this guidance and marks shortened excerpts; the agent can read the files for their full, current contents. Server-reported output truncation cannot complete a task or specialist phase: bounded continuations use recorded tool results, and repeated truncation leaves an interrupted checkpoint.
+
+Each model request receives current global and role call counters in a transient SYSTEM paragraph. Planning is scoped to the request, with a soft target of at most six calls or roughly a third of the available global allowance, reserving room for implementation and review. These are guidance, not automatic phase transitions or permission to skip required reads and checks; command success does not independently prove correctness.
+
+The planner also sees which root instruction files still require successful reads in its current phase; automatic excerpts do not satisfy that evidence. At least three consecutive identical successful inspection calls trigger one coaching prompt for the next model request. Continuing that same unchanged streak after coaching interrupts the task with its checkpoint and tool pairs preserved. This detects exact repetitions, while other loops remain bounded by call/time limits. For read-only tasks, the review summary is instructed to answer the user's question using observed files and relevant references.
+
 ## Platform support
 
 | Capability | macOS Apple Silicon | Linux / other platforms |
@@ -110,22 +116,22 @@ Commands fail closed when the supported sandbox is missing. There is no unsandbo
 
 ## Comparative benchmarks
 
-The public harness compares a single agent with **planner → coder → reviewer** on the same 20 held-out synthetic tasks: 12 independently checked code changes and 8 read-only inspections with bounded answer criteria. Both modes use the same weights, identical per-case call/time caps, fresh workspaces and no retrieval or training data. Order alternates AB/BA; model requests run sequentially with cooling pauses.
+The harness compares a single agent with **planner → coder → reviewer** using the same stock weights, fresh workspaces, equal per-case budgets and no training or retrieval memory. The v1 suite contains 12 edits and 8 inspections. A **usable pass** requires both completed status and an external oracle pass; resource-cancelled attempts count as failures, while unstarted runs remain separate.
 
-Measured on **2026-10-11, Apple M2 Pro, 16 GiB**, using public stock 4-bit weights without adapters:
+Selected evidence from **2026-10-11, Apple M2 Pro, 16 GiB**:
 
-| Configuration / report | Single usable passes | Specialists usable passes | Attempts / planned | Stop |
-|---|---:|---:|---:|---|
-| [Qwen2.5-Coder 1.5B, KV4 diagnostic](benchmarks/results/2026-10-11-qwen15b-kv4-pilot.json) | 0/4 | 0/4 | 8/40 | Adaptively stopped after repetitive generation |
-| [1.5B, unquantized KV, before tool-description fix](benchmarks/results/2026-10-11-qwen15b-full-kv.json) | 0/8 | 0/8 | 16/40 | 150-second timeout |
-| [Qwen3 4B, before fix](benchmarks/results/2026-10-11-qwen4b-full-kv.json) | 0/2 | 0/2 | 4/40 | Memory pressure warning / low headroom |
-| [1.5B, tool descriptions preserved](benchmarks/results/2026-10-11-qwen15b-tool-descriptions.json) | **0/20** | **0/20** | **40/40** | Complete experiment; no timeout or resource abort |
+| Configuration / report | Single usable | Specialists usable | Coverage | Main limitation |
+|---|---:|---:|---|---|
+| [1.5B, JSON with tool descriptions](benchmarks/results/2026-10-11-qwen15b-tool-descriptions.json) | **0/20** | **0/20** | 40/40 graded | No completed tasks; all specialist calls stayed in planning |
+| [Qwen3.5 4B, native recovery pilot](benchmarks/results/2026-10-11-qwen35-recovery-pilot.json) | 1/2 | 0/2 | 4/4 graded | Unfinished review; both other edits hit repeated output limits |
+| [Qwen2.5-Coder 7B, native](benchmarks/results/2026-10-11-coder7b-native-plan-pilot.json) | 0/2 | 0/2 | 4/4 graded | Format failures; zero executed tools |
+| [Qwen2.5-Coder 7B, JSON with console resolution](benchmarks/results/2026-10-11-coder7b-console-json-pilot.json) | 0/2 | 0/2 | 4/4 graded | Oracle 1/2 per mode; no completed tasks; one timeout |
 
-The complete experiment scored **0/12 edits and 0/8 inspections per mode**. Specialists spent all 294 model calls in the planner; coder and reviewer were never reached. These tested JSON-action configurations did not demonstrate reliable task completion or a specialist advantage. There were no both-successful pairs for a meaningful speed comparison. Fast failures and both-failed ties are not evidence of speed or quality parity.
+The complete 1.5B trial scored **0/12 edits and 0/8 inspections per mode**. Later pilots are small, adaptive development trials: v1 was initially held out, but its failures have since informed fixes. Their scores are not pooled or a reliable model ranking. No trial had a both-usable pair for a speed comparison. The fresh v2 suite is frozen before inference; its score is still pending.
 
-Trials were exploratory: failures informed later configuration changes, and the final trial also reduced request pauses to zero and task rests to ten seconds. Scores from different configurations are not pooled. The 4B resource cancellation counts as a failed attempt but its patch was not graded; unattempted runs remain explicit. Software tests and the suite's reference-fix audit remain separate from model quality.
+The latest 4B native pilot scored **1/2 oracle passes per mode**, with **1/2 usable for single and 0/2 for specialists**. The completed task passed three external behavior tests; its own inline check only printed results, with no assertions. Specialists did not finish review, and both other edits hit repeated output limits. No timeout or resource abort occurred. This small development pilot does not establish dependable coding or Codex parity. Protocols are selected explicitly, with no automatic fallback.
 
-In the complete trial, sampled combined runner/server physical footprint reached **1.69 GiB**, estimated available memory stayed at least **3.75 GiB**, pressure remained normal and measured swap growth was **0**. Temperature was unavailable. The runner retains resource admission and stops on pressure, low headroom, swap growth or observed throttling. The earlier [admission probe](benchmarks/results/2026-10-11-admission.json) made zero inference requests; all failed and partial trials are preserved. See [methodology, pinned configurations and reproduction](docs/benchmarks.md) and the [synthetic suite](benchmarks/synthetic_v1/README.md).
+See the [complete trial ledger, failed records, resource observations and methodology](docs/benchmarks.md), the [synthetic suite](benchmarks/synthetic_v1/README.md), and the candidate [4B](docs/local-model.md) / [7B](docs/local-coder-model.md) setup guides. Ordinary serving does not apply the benchmark's resource guard.
 
 ## Development
 

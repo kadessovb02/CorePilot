@@ -160,17 +160,34 @@ def new_metrics() -> dict:
                           "cached_prompt_tokens", "length_limited_responses", "inference_seconds"), 0)
 
 
+def effective_case_timeout(timeout, case, override):
+    if override is not None and (not isinstance(override, (int, float)) or isinstance(override, bool)
+                                 or not math.isfinite(override) or override <= 0):
+        raise ValueError("case_timeout_override must be a finite positive number")
+    return min(timeout, case.get("timeout_seconds", timeout) if override is None else override)
+
+
+def effective_case_calls(max_calls, case, override):
+    if override is not None and (not isinstance(override, int) or isinstance(override, bool)
+                                 or not 1 <= override <= 100):
+        raise ValueError("case_call_override must be an integer from 1 to 100")
+    return min(max_calls, case.get("max_calls", max_calls) if override is None else override)
+
+
 async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, max_calls, max_tokens, context_chars,
-                   request_pause_seconds=3):
+                   request_pause_seconds=3, protocol="json", case_timeout_override=None):
+    if protocol not in ("json", "native"):
+        raise ValueError("Benchmark protocol must be explicitly json or native")
+    timeout = effective_case_timeout(timeout, case, case_timeout_override)
     root = settings.root / "runs" / (case["id"] + "-" + mode)
     if root.exists():
         raise ValueError("Benchmark run directory already exists; use a fresh state directory")
     configured = replace(settings, root=root, projects={"benchmark": suite / "repository"}, max_steps=max_calls,
-                         max_tokens=max_tokens, context_chars=context_chars, protocol="json", command_timeout=20,
+                         max_tokens=max_tokens, context_chars=context_chars, protocol=protocol, command_timeout=20,
                          orchestration={"enabled": False, "role_max_steps": max_calls, "max_review_rounds": 2,
                                         "max_concurrent_tasks": 1, "roles": {
                                             role: {"url": settings.model_url, "name": settings.model_name,
-                                                   "protocol": "json", "max_tokens": max_tokens, "context_chars": context_chars}
+                                                   "protocol": protocol, "max_tokens": max_tokens, "context_chars": context_chars}
                                             for role in ("planner", "coder", "reviewer")}})
     metrics = new_metrics()
     metrics["_request_pause_seconds"] = request_pause_seconds
@@ -210,7 +227,8 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
         events = task.get("events", [])
         calls = [event.get("data", {}).get("role", "single") for event in events if event["type"] == "model"]
         completed = task["status"] == "completed" and not timed_out and not abort
-        record = {"id": case["id"], "category": case["category"], "read_only": case["read_only"], "mode": mode,
+        record = {"id": case["id"], "category": case["category"], "read_only": case["read_only"], "mode": mode, "protocol": protocol,
+                  "timeout_seconds": timeout, "max_calls": max_calls,
                   "seconds": round(elapsed, 3), "completed": completed, "task_status": task["status"],
                   "oracle_passed": oracle["passed"], "usable_passed": completed and oracle["passed"] and (not case["read_only"] or not diff["changed_files"]),
                   "oracle": oracle, "timeout": timed_out, "safety_abort": bool(abort), "safety_reasons": abort,
@@ -260,11 +278,15 @@ def aggregate(records: list[dict]) -> dict:
 
 async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None, limit=0, rest_seconds=20,
                   timeout=150, max_calls=24, max_tokens=768, context_chars=14000, metadata=None, progress=None,
-                  request_pause_seconds=3):
+                  request_pause_seconds=3, protocol="json", case_timeout_override=None, case_call_override=None):
+    if protocol not in ("json", "native"):
+        raise ValueError("Benchmark protocol must be explicitly json or native")
     if (not math.isfinite(rest_seconds) or rest_seconds < 10 or timeout <= 0 or not 1 <= max_calls <= 100 or not 32 <= max_tokens <= 2048
             or not 4000 <= context_chars <= 24000 or limit < 0 or not math.isfinite(timeout)
             or not math.isfinite(request_pause_seconds) or not 0 <= request_pause_seconds <= 60):
         raise ValueError("Invalid benchmark budgets; sequential runs require at least ten seconds rest")
+    effective_case_timeout(timeout, {}, case_timeout_override)
+    effective_case_calls(max_calls, {}, case_call_override)
     suite = suite.resolve()
     cases = load_cases(suite)
     if limit:
@@ -275,9 +297,11 @@ async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None
     report = {"schema": 1, "date_utc": datetime.now(timezone.utc).isoformat(), "suite": suite.name,
               "suite_sha256": fingerprint(suite), "source_sha256": fingerprint(suite / "repository"),
               "platform": {"system": platform.system(), "release": platform.release(), "python": platform.python_version()},
-              "metadata": metadata or {}, "settings": {"protocol": "json", "memory": False, "router": False,
+              "metadata": metadata or {}, "settings": {"protocol": protocol, "memory": False, "router": False,
                   "same_weights_all_roles": True, "max_calls": max_calls, "role_max_steps": max_calls, "max_tokens": max_tokens,
-                  "context_chars": context_chars, "timeout_seconds": timeout, "rest_seconds": rest_seconds,
+                  "context_chars": context_chars, "timeout_seconds": timeout, "case_timeout_override": case_timeout_override,
+                  "case_call_override": case_call_override,
+                  "rest_seconds": rest_seconds,
                   "temperature": 0.15, "prompt_suffix": "/no_think", "repeats": 1, "cache_policy": "Existing server caches are not reset; AB/BA order alternates."},
               "planned_cases": len(cases), "baseline_resources": baseline, "records": [], "stop_reasons": blocked,
               "resource_thresholds": vars(monitor.thresholds),
@@ -306,9 +330,9 @@ async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None
                 report["stop_reasons"] = blocked; save(); return report
             if progress:
                 progress({"event": "started", "id": case["id"], "mode": mode, "attempted": len(report["records"])})
-            record = await run_case(settings, suite, case, mode, monitor, baseline, timeout=min(timeout, case.get("timeout_seconds", timeout)),
-                                    max_calls=min(max_calls, case.get("max_calls", max_calls)), max_tokens=max_tokens, context_chars=context_chars,
-                                    request_pause_seconds=request_pause_seconds)
+            record = await run_case(settings, suite, case, mode, monitor, baseline, timeout=effective_case_timeout(timeout, case, case_timeout_override),
+                                    max_calls=effective_case_calls(max_calls, case, case_call_override), max_tokens=max_tokens, context_chars=context_chars,
+                                    request_pause_seconds=request_pause_seconds, protocol=protocol, case_timeout_override=case_timeout_override)
             report["records"].append(record); save()
             if progress:
                 progress({"event": "finished", "id": case["id"], "mode": mode, "seconds": record["seconds"],

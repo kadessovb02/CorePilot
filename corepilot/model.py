@@ -10,6 +10,7 @@ import httpx
 
 from .config import Settings
 from .tools import TOOL_SPECS
+from .orchestration import CONTROL_TOOL_SPECS
 
 
 def selected_tools(tool_names=None) -> list[dict]:
@@ -18,11 +19,12 @@ def selected_tools(tool_names=None) -> list[dict]:
         return TOOL_SPECS
     if not isinstance(tool_names, (list, tuple, set, frozenset)) or any(not isinstance(name, str) for name in tool_names):
         raise ValueError("tool_names must be a collection of supported tool names")
-    known = {spec["function"]["name"] for spec in TOOL_SPECS}
+    available = [*TOOL_SPECS, *CONTROL_TOOL_SPECS]
+    known = {spec["function"]["name"] for spec in available}
     unknown = set(tool_names) - known
     if unknown:
         raise ValueError("Unsupported tool names: " + ", ".join(sorted(unknown)))
-    return [spec for spec in TOOL_SPECS if spec["function"]["name"] in tool_names]
+    return [spec for spec in available if spec["function"]["name"] in tool_names]
 
 
 def extract_action(content: str) -> dict | None:
@@ -137,6 +139,24 @@ def _fit_group(group: list[dict], budget: int) -> list[dict] | None:
     return shortened
 
 
+def _fit_guidance(group: list[dict], budget: int) -> list[dict] | None:
+    if _size(group) <= budget:
+        return group
+    message = deepcopy(group[0])
+    content = message.get("content") or ""
+    marker = "\n[Guidance excerpt compacted; read the named file for full/current text.]"
+    lower, upper, fitted = 0, len(content), None
+    while lower <= upper:
+        middle = (lower + upper) // 2
+        message["content"] = content[:middle] + marker
+        if _size([message]) <= budget:
+            fitted = deepcopy(message)
+            lower = middle + 1
+        else:
+            upper = middle - 1
+    return [fitted] if fitted is not None else None
+
+
 def cap_messages(messages: list[dict], limit: int) -> list[dict]:
     """Retain current user intent and evidence while keeping native calls paired.
 
@@ -145,6 +165,21 @@ def cap_messages(messages: list[dict], limit: int) -> list[dict]:
     """
     if not messages:
         return []
+    cue_kinds = {"planner_cue", "role_cue"}
+    cues = [message for message in messages if message.get("_corepilot_kind") in cue_kinds]
+    if cues:
+        # Rendered harness guidance is ephemeral, never a task correction or
+        # observed evidence. Reserve its own bounded space and keep it after
+        # complete history groups in both native and JSON request adapters.
+        cue = {key: deepcopy(value) for key, value in cues[-1].items() if not key.startswith("_corepilot_")}
+        label = "planner" if cues[-1].get("_corepilot_kind") == "planner_cue" else "role"
+        if cue.get("role") != "user" or not isinstance(cue.get("content"), str) or _size([cue]) > 1200:
+            raise ValueError(f"Transient {label} cue must be a user message of at most 1200 serialized characters")
+        history = [message for message in messages if message.get("_corepilot_kind") not in cue_kinds]
+        capped = cap_messages(history, limit - _size([cue]) - 2)
+        if _size([*capped, cue]) > limit:
+            raise ValueError(f"Context budget cannot retain {label} instructions and the transient cue")
+        return [*capped, cue]
     if _size(messages) <= limit:
         return [{key: deepcopy(value) for key, value in message.items() if not key.startswith("_corepilot_")} for message in messages]
     clean = [{key: deepcopy(value) for key, value in message.items() if not key.startswith("_corepilot_")} for message in messages]
@@ -160,7 +195,9 @@ def cap_messages(messages: list[dict], limit: int) -> list[dict]:
             groups.append([message])
             indices.append([index])
     requests = [i for i, group in enumerate(groups) if group[0].get("role") == "user" and
-                messages[indices[i][0]].get("_corepilot_kind") not in {"context", "verification"}]
+                messages[indices[i][0]].get("_corepilot_kind") not in {"context", "guidance", "verification"}]
+    guidance = [i for i, group in enumerate(groups) if group[0].get("role") == "user" and
+                messages[indices[i][0]].get("_corepilot_kind") == "guidance"]
     pinned = set(([requests[0]] + requests[-3:]) if requests else [])
     selected = {}
     request_budget = min(limit // 2, max(200, limit - _size(first) - 800))
@@ -175,24 +212,34 @@ def cap_messages(messages: list[dict], limit: int) -> list[dict]:
         message["content"] = _excerpt(content, allowance)
         selected[index] = [message]
     used = _size([first, *[message for index in sorted(selected) for message in selected[index]]])
+    guidance_budget = min(6000, limit // 3, max(0, limit - used - 600))
+    whole_guidance = sum(_size(groups[index]) + 2 for index in guidance) <= guidance_budget
+    for offset, index in enumerate(guidance):
+        allowance = guidance_budget if whole_guidance else guidance_budget // (len(guidance) - offset)
+        fitted = _fit_guidance(groups[index], max(0, allowance - 2))
+        if fitted:
+            selected[index] = fitted
+            size = _size(fitted) + 2
+            guidance_budget -= size
+            used += size
     latest = groups[requests[-1]][0].get("content") or "" if requests else ""
     evidence = _evidence(messages, min(limit // 3, max(0, limit - used - 600)), latest)
     if evidence:
         used += _size(evidence) + 2
     for index in reversed(range(len(groups))):
-        if index in selected:
+        if index in selected or index in guidance:
             continue
         fitted = _fit_group(groups[index], limit - used - 20)
         if fitted:
             selected[index] = fitted
             used += _size(fitted) + 2
-    # Objective stays second. Evidence is data; it never becomes a system rule.
+    # Evidence is project data and precedes the objective, never a system rule.
     result = [first]
     for index in sorted(selected):
-        result.extend(selected[index])
         if evidence and pinned and index == min(pinned):
             result.append(evidence)
             evidence = None
+        result.extend(selected[index])
     if evidence:
         result.insert(1, evidence)
     return result
@@ -245,7 +292,8 @@ class ModelClient:
             return await self.complete(messages, tool_names=tool_names)
         response.raise_for_status()
         result = response.json()
-        message = result["choices"][0]["message"]
+        choice = result["choices"][0]
+        message = choice["message"]
         content = message.get("content") or ""
         if isinstance(content, list):
             content = "\n".join(part.get("text", "") for part in content if isinstance(part, dict))
@@ -272,7 +320,9 @@ class ModelClient:
         for call in calls:
             if tool_names is not None and call["function"]["name"] not in allowed:
                 raise ValueError("Model requested a tool not allowed for this response: " + call["function"]["name"])
-        return {"role": "assistant", "content": content, **({"tool_calls": calls} if calls else {})}
+        return {"role": "assistant", "content": content,
+                **({"_corepilot_finish_reason": choice["finish_reason"]} if isinstance(choice.get("finish_reason"), str) else {}),
+                **({"tool_calls": calls} if calls else {})}
 
     @staticmethod
     def as_json_messages(messages: list[dict], *, tool_names=None) -> list[dict]:
@@ -290,7 +340,13 @@ class ModelClient:
             names = [{"name": row["function"]["name"], "description": row["function"].get("description", ""),
                       "parameters": row["function"]["parameters"]} for row in selected_tools(tool_names)]
             if names:
-                adapted[0]["content"] += "\nOutput exactly one JSON object per response: {\"tool\":\"name\",\"arguments\":{...}} to use a tool, or {\"final\":\"answer\"} when done. Available tools: " + json.dumps(names, ensure_ascii=False)
+                adapted[0]["content"] += (
+                    '\nOutput exactly one JSON object per response: {"tool":"name","arguments":{...}} to use a tool. '
+                    'To finish the current phase, output a JSON object whose "final" value is your actual task-specific result string. '
+                    'Replace example values; never copy schema placeholders. Available tools: '
+                    + json.dumps(names, ensure_ascii=False))
             else:
-                adapted[0]["content"] += '\nNo tools are available. Output exactly one JSON object: {"final":"answer"}. Do not request a tool.'
+                adapted[0]["content"] += (
+                    '\nNo tools are available. Output exactly one JSON object with a "final" string containing your actual task-specific result. '
+                    'Do not copy examples or placeholders, or request a tool.')
         return adapted

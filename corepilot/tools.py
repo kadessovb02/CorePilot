@@ -18,13 +18,13 @@ def function(name: str, description: str, properties: dict, required: list[str])
 
 
 TOOL_SPECS = [
-    function("list_files", "List files relative to the checkout root. Use path '.' for the root, never prefix the project name; generated files and credentials are excluded. Use this to recover after a nonexistent path.", {"path": {"type": "string"}, "limit": {"type": "integer"}}, []),
-    function("read_file", "Read a UTF-8 file with line numbers. path is relative to the checkout root, e.g. module.py, never a project-name prefix.", {"path": {"type": "string"}, "start_line": {"type": "integer"}, "end_line": {"type": "integer"}}, ["path"]),
-    function("search", "Search a literal string in UTF-8 files; returns paths and line numbers. Use path '.' to search the checkout root, without any project-name prefix.", {"query": {"type": "string"}, "path": {"type": "string"}, "limit": {"type": "integer"}}, ["query"]),
-    function("apply_patch", "Replace one exact unique block in a UTF-8 file. Read the file first and provide the exact old_text including indentation. Use write_file to create new files.", {"path": {"type": "string"}, "old_text": {"type": "string"}, "new_text": {"type": "string"}}, ["path", "old_text", "new_text"]),
+    function("list_files", "List files relative to the checkout root; generated files and credentials are excluded. Omit optional arguments unless needed: path defaults to '.', limit to 200 (range 1-500). Never prefix the project name. Use this to recover after a nonexistent path.", {"path": {"type": "string", "default": "."}, "limit": {"type": "integer", "default": 200, "minimum": 1, "maximum": 500}}, []),
+    function("read_file", "Read a UTF-8 file. content is exact source text with original newlines and no added line-number labels; line numbers are separate metadata. Use content literally in apply_patch old_text. path is relative to the checkout root, e.g. module.py, never a project-name prefix. Omit optional line arguments unless needed: start_line defaults to 1; an omitted end_line reads up to 160 lines. Explicit end_line is inclusive; each read is capped at 160 lines, 8000 content characters, and a 10000-character serialized reply. content_truncated marks a size-limited prefix of the selected page; selected_chars reports its full length. Use a later start_line for the next page.", {"path": {"type": "string"}, "start_line": {"type": "integer", "default": 1, "minimum": 1}, "end_line": {"type": "integer", "minimum": 1}}, ["path"]),
+    function("search", "Search a literal string in UTF-8 files; returns paths and line numbers. Omit optional arguments unless needed: path defaults to '.', limit to 60 (range 1-100). Use paths relative to the checkout root, without a project-name prefix.", {"query": {"type": "string", "minLength": 1, "maxLength": 500}, "path": {"type": "string", "default": "."}, "limit": {"type": "integer", "default": 60, "minimum": 1, "maximum": 100}}, ["query"]),
+    function("apply_patch", "Replace one exact unique block in a UTF-8 file. Read the file first and copy literal source text from read_file.content into old_text, including indentation and newlines. Do not add line-number labels or other annotations. No normalization or fuzzy matching is applied. Use write_file to create new files.", {"path": {"type": "string"}, "old_text": {"type": "string"}, "new_text": {"type": "string"}}, ["path", "old_text", "new_text"]),
     function("write_file", "Create or replace a UTF-8 file in the isolated task workspace.", {"path": {"type": "string"}, "content": {"type": "string"}}, ["path", "content"]),
     function("delete_file", "Delete one file in the isolated task workspace. Directories and credentials cannot be deleted.", {"path": {"type": "string"}}, ["path"]),
-    function("run_command", "Run a local project test/check without a shell. Use argv such as [\"python\",\"-m\",\"unittest\",\"discover\",\"-s\",\"tests\"]. Network access is denied. Programs are confined by the OS sandbox on macOS.", {"argv": {"type": "array", "items": {"type": "string"}}, "cwd": {"type": "string"}, "timeout": {"type": "integer"}}, ["argv"]),
+    function("run_command", "Run a local project test/check without a shell; argv is an array of the program name and arguments. Allowed: python/python3 -m pytest/unittest/compileall, python/python3 -c CODE (one nonempty code argument, at most 4000 characters), or relative .py scripts; pytest, ruff, mypy, rg; git diff/status/log/show/ls-files/rev-parse/check-ignore; npm run test/lint/typecheck/check/build; relative node scripts; make test/check/lint/build; go/cargo test/check/build/fmt. Choose checks from observed repository files and instructions; do not assume a tests directory exists. Follow the existing test layout; if none exists, use a dedicated tests directory for scoped tests when edits are permitted. Omit optional arguments unless needed: cwd defaults to '.', timeout uses the configured command limit (at most 120 seconds). Network access is denied. All commands, including Python code, use the same OS sandbox on macOS.", {"argv": {"type": "array", "minItems": 1, "maxItems": 64, "items": {"type": "string", "maxLength": 4000}}, "cwd": {"type": "string", "default": "."}, "timeout": {"type": "integer", "minimum": 1, "maximum": 120}}, ["argv"]),
 ]
 
 
@@ -47,6 +47,8 @@ def sandbox_command(argv: list[str], root: Path, app_root: Path, temporary: Path
     if trusted_git_root is not None:
         readable += f" (subpath {quote(str(trusted_git_root))})"
     profile = f"(version 1)(allow default)(deny network*)(deny file-link)(deny file-read-data (require-not (require-any {readable})))(deny file-write* (require-not (require-any {writable})))"
+    # Keep signals inside the command sandbox while allowing subprocess cleanup.
+    profile += "(deny signal (require-not (require-any (target self) (target same-sandbox))))"
     profile += f"(deny file-write* (subpath {quote(str(root / '.git'))}))"
     # Even within the checkout, files containing credentials are denied.
     denied = [root / ".env", root / ".git" / "config"]
@@ -88,11 +90,32 @@ class WorkspaceTools:
         target = safe_path(self.root, path, False)
         if not target.is_file() or target.stat().st_size > MAX_FILE:
             raise BoundaryError("Expected a file smaller than 2 MB")
-        lines = target.read_text(encoding="utf-8").splitlines()
+        with target.open(encoding="utf-8", newline="") as source:
+            lines = source.read().splitlines(keepends=True)
         start_line = max(1, int(start_line))
         end_line = min(len(lines), start_line + 159, int(end_line) if end_line else len(lines))
-        result = "\n".join(f"{index + 1}: {lines[index]}" for index in range(start_line - 1, end_line))
-        return {"path": str(target.relative_to(self.root)), "content": trim(result), "total_lines": len(lines), "start_line": start_line, "end_line": end_line}
+        result = "".join(lines[start_line - 1:end_line])
+        response = {"path": str(target.relative_to(self.root)), "content": result[:8000],
+                    "total_lines": len(lines), "start_line": start_line, "end_line": end_line,
+                    "content_truncated": len(result) > 8000, "selected_chars": len(result)}
+        # The engine stores at most 10000 serialized characters per tool reply.
+        # Escapes can enlarge raw source; shorten its exact prefix rather than
+        # allowing a cut JSON object or inserting annotations into source text.
+        if len(json.dumps(response, ensure_ascii=False)) > 10000:
+            prefix = response["content"]
+            response.update(content="", content_truncated=True)
+            if len(json.dumps(response, ensure_ascii=False)) > 10000:
+                raise BoundaryError("File metadata exceeds the tool reply limit")
+            lower, upper = 0, len(prefix)
+            while lower < upper:
+                middle = (lower + upper + 1) // 2
+                response["content"] = prefix[:middle]
+                if len(json.dumps(response, ensure_ascii=False)) <= 10000:
+                    lower = middle
+                else:
+                    upper = middle - 1
+            response["content"] = prefix[:lower]
+        return response
 
     def search(self, query: str, path: str = ".", limit: int = 60) -> dict:
         if not isinstance(query, str) or not query or len(query) > 500:
@@ -116,7 +139,8 @@ class WorkspaceTools:
         if not old_text:
             raise BoundaryError("old_text must be nonempty; use write_file for a new file")
         target = safe_path(self.root, path, False)
-        text = target.read_text(encoding="utf-8")
+        with target.open(encoding="utf-8", newline="") as source:
+            text = source.read()
         count = text.count(old_text)
         if count != 1:
             raise BoundaryError(f"old_text must occur exactly once; found {count}. Read the file again.")
@@ -128,7 +152,7 @@ class WorkspaceTools:
             raise BoundaryError("content must be a UTF-8 string smaller than 2 MB")
         target = safe_path(self.root, path)
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(content, encoding="utf-8")
+        target.write_text(content, encoding="utf-8", newline="")
         return {"path": path, "bytes": len(content.encode("utf-8")), "saved": True}
 
     def delete_file(self, path: str) -> dict:
@@ -149,18 +173,41 @@ class WorkspaceTools:
             except ProcessLookupError:
                 pass
 
+    def python_console(self, program: str) -> str | None:
+        """Find an installed console tool without requiring shell activation."""
+        bins = [self.source_root / ".venv" / "bin"] if self.source_root else []
+        # Retain the interpreter's venv path instead of resolving its symlink
+        # into a base Python installation with different console entrypoints.
+        bins.append(Path(sys.executable).absolute().parent)
+        for directory in bins:
+            candidate = directory / program
+            if candidate.is_file() and os.access(candidate, os.X_OK):
+                return str(candidate)
+        candidate = shutil.which(program)
+        return candidate if candidate and Path(candidate).is_file() and os.access(candidate, os.X_OK) else None
+
     def validate_command(self, argv: list[str]) -> list[str]:
         if not isinstance(argv, list) or not argv or len(argv) > 64 or any(not isinstance(arg, str) or "\x00" in arg or len(arg) > 4000 for arg in argv):
             raise BoundaryError("argv must be an array of 1-64 strings")
         program = Path(argv[0]).name
+        code_index = None
         if Path(argv[0]).is_absolute() or "/" in argv[0]:
             raise BoundaryError("Specify a supported command by name, without a path")
         if program in {"python", "python3"}:
-            if len(argv) < 2 or "-c" in argv or "-" in argv:
-                raise BoundaryError("Use python -m pytest/unittest/compileall or a relative project script")
-            if argv[1] == "-m" and (len(argv) < 3 or argv[2] not in {"pytest", "unittest", "compileall"}):
-                raise BoundaryError("Only pytest, unittest and compileall modules are allowed")
-            if argv[1] != "-m":
+            if len(argv) < 2 or "-" in argv:
+                raise BoundaryError("Use python -m pytest/unittest/compileall, python -c CODE, or a relative project script")
+            if argv[1] == "-c":
+                if len(argv) < 3 or not argv[2] or "-c" in argv[3:]:
+                    raise BoundaryError("Use exactly python -c CODE followed by optional workspace-local arguments")
+                code_index = 2
+            elif "-c" in argv[1:]:
+                raise BoundaryError("Python -c must immediately follow the program name")
+            elif argv[1] == "-m":
+                if len(argv) < 3 or argv[2] not in {"pytest", "unittest", "compileall"}:
+                    raise BoundaryError("Only pytest, unittest and compileall modules are allowed")
+            else:
+                if argv[1].startswith("-"):
+                    raise BoundaryError("Python interpreter flags and stdin execution are disabled")
                 script = safe_path(self.root, argv[1], False)
                 if script.suffix != ".py":
                     raise BoundaryError("Expected a relative Python script")
@@ -172,7 +219,9 @@ class WorkspaceTools:
             if any(arg.startswith(("--output", "--ext-diff", "--textconv", "--exec", "--config")) or arg == "-c" for arg in argv[1:]):
                 raise BoundaryError("External Git commands/configuration are disabled")
             executable = shutil.which(program)
-        elif program in {"pytest", "ruff", "mypy", "rg"}:
+        elif program in {"pytest", "ruff", "mypy"}:
+            executable = self.python_console(program)
+        elif program == "rg":
             executable = shutil.which(program)
         elif program == "npm":
             if len(argv) < 3 or argv[1] != "run" or argv[2] not in {"test", "lint", "typecheck", "check", "build"}:
@@ -192,7 +241,11 @@ class WorkspaceTools:
             raise BoundaryError(f"Unsupported program: {program}")
         if not executable:
             raise BoundaryError(f"Program is not installed: {program}")
-        for arg in argv[1:]:
+        for index, arg in enumerate(argv[1:], 1):
+            # Only the exact Python -c payload is code, not a filesystem path.
+            # Execution still passes through sandbox_command and the same timeout.
+            if index == code_index:
+                continue
             if arg.startswith("/") or ".." in Path(arg).parts or "\n" in arg:
                 raise BoundaryError("Command arguments must stay inside the workspace")
             if secret_path(Path(arg)):

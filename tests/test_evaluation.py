@@ -13,7 +13,7 @@ class InspectionModel:
     def __init__(self):
         self.calls = 0
 
-    async def complete(self, messages):
+    async def complete(self, messages, *, tool_names=None):
         self.calls += 1
         if self.calls == 1:
             return {"role": "assistant", "content": "", "tool_calls": [{

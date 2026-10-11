@@ -1,0 +1,260 @@
+[
+  {
+    "id": "fix_duration_ceiling",
+    "prompt": "Fix duration_minutes in scheduling/time_math.py: nonnegative elapsed time must be rounded up to a whole minute, including seconds/microseconds and durations over one day. Zero elapsed time remains zero. Preserve datetime type validation, ValueError when end precedes start, the function signature and timezone-aware elapsed-time behavior. Change only the relevant module and validate boundary cases. Read these files before answering: scheduling/time_math.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/time_math.py"
+    ],
+    "oracle": "fix_duration_ceiling",
+    "category": "elapsed_time",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "fix_half_open_overlap",
+    "prompt": "Fix overlaps in scheduling/time_math.py to honor half-open Window intervals: windows meeting at an endpoint do not overlap, while any positive shared duration does. Preserve the signature, symmetric behavior, naive and compatible aware datetimes, containment cases and input immutability. Change only the relevant module and validate boundaries. Read these files before answering: scheduling/time_math.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/time_math.py"
+    ],
+    "oracle": "fix_half_open_overlap",
+    "category": "interval_relation",
+    "max_calls": 12,
+    "timeout_seconds": 90
+  },
+  {
+    "id": "fix_empty_intersection",
+    "prompt": "Fix clip_window in scheduling/time_math.py to return None when a Window has no positive intersection with a horizon, including touching endpoints and either disjoint ordering. Otherwise return the clipped Window with the exact intersection boundaries. Preserve the signature, frozen records and inputs; validate containment and partial overlap without changing other helpers. Read these files before answering: scheduling/time_math.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/time_math.py"
+    ],
+    "oracle": "fix_empty_intersection",
+    "category": "interval_intersection",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "fix_recurrence_end",
+    "prompt": "Fix expand_dates in scheduling/recurrence.py so both date boundaries are inclusive, subject to the existing weekday filter. A same-day range emits its date when allowed; an empty weekday selection emits nothing. Preserve Monday=0 through Sunday=6, existing input validation, date ordering, defaults, generator weekday support and the public facade. Validate endpoint cases without changing monthly recurrence. Read these files before answering: scheduling/recurrence.py, scheduling/__init__.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/recurrence.py",
+      "scheduling/__init__.py"
+    ],
+    "oracle": "fix_recurrence_end",
+    "category": "daily_recurrence",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "fix_month_rollover",
+    "prompt": "Fix monthly_occurrences in scheduling/recurrence.py to emit the requested count starting with start, advancing through year boundaries. Retain start's original day when possible and clamp only in shorter months, so a month-end date returns to its original day after February. Support leap years, zero months, and existing date/month-count validation. Preserve signature and other recurrence behavior; validate year and month-end boundaries. Read these files before answering: scheduling/recurrence.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/recurrence.py"
+    ],
+    "oracle": "fix_month_rollover",
+    "category": "monthly_recurrence",
+    "max_calls": 24,
+    "timeout_seconds": 150
+  },
+  {
+    "id": "fix_adjacent_merge",
+    "prompt": "Fix merge_windows in scheduling/availability.py to merge touching as well as overlapping windows, including transitive chains and nested intervals. Preserve chronological order, distinct gaps, generator input, a fresh result list, frozen input records and the signature. Validate unsorted, nested and adjacent cases without changing other availability helpers. Read these files before answering: scheduling/availability.py, scheduling/time_math.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/availability.py",
+      "scheduling/time_math.py"
+    ],
+    "oracle": "fix_adjacent_merge",
+    "category": "window_union",
+    "max_calls": 20,
+    "timeout_seconds": 130
+  },
+  {
+    "id": "fix_exact_fit_slot",
+    "prompt": "Fix find_slot in scheduling/availability.py so a duration fitting exactly to a window's end is accepted. Return the earliest feasible start, respecting not_before, chronological ordering and a positive timedelta duration. Keep None when no window fits, generator support, aware datetime identity/offset semantics, validation and defaults. Change only the relevant module and validate exact fits and exhaustion. Read these files before answering: scheduling/availability.py, scheduling/time_math.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/availability.py",
+      "scheduling/time_math.py"
+    ],
+    "oracle": "fix_exact_fit_slot",
+    "category": "availability_search",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "fix_resource_capacity",
+    "prompt": "Fix remaining_capacity in scheduling/availability.py to count only active bookings for the requested resource. Cancelled bookings and other resources do not consume its capacity; clamp the result at zero. Keep generator support, integer/nonnegative capacity validation, return type, input records and signature compatible. Validate mixed resources and cancelled records without changing booking policy. Read these files before answering: scheduling/availability.py, scheduling/time_math.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/availability.py",
+      "scheduling/time_math.py"
+    ],
+    "oracle": "fix_resource_capacity",
+    "category": "resource_accounting",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "fix_utc_conversion",
+    "prompt": "Fix utc_timestamp in scheduling/reminders.py to convert the instant of an aware datetime to UTC rather than merely replacing its timezone label. Preserve the seconds-precision ISO string with +00:00, type/awareness validation and signature; leave the input unchanged. Validate positive and negative offsets crossing date boundaries without changing reminder calculations. Read these files before answering: scheduling/reminders.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/reminders.py"
+    ],
+    "oracle": "fix_utc_conversion",
+    "category": "timezone_conversion",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "fix_reminder_direction",
+    "prompt": "Fix reminder_time in scheduling/reminders.py to return start minus its nonnegative lead, so reminders precede bookings. Preserve the default 15 minutes, zero lead, timedelta type validation, negative-lead ValueError, timezone-aware arithmetic and signature. Validate Scheduler.reminders integration and input immutability without changing other modules. Read these files before answering: scheduling/reminders.py, scheduling/service.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/reminders.py",
+      "scheduling/service.py"
+    ],
+    "oracle": "fix_reminder_direction",
+    "category": "reminder_offset",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "fix_single_cancellation",
+    "prompt": "Fix drop_booking in scheduling/service.py to remove only the requested booking identifier, retaining other bookings even on the same resource. Preserve original record identities/order, a fresh list, generator support and no-op behavior for an unknown identifier. Keep Scheduler.cancel behavior compatible and independent instances isolated. Validate repeated cancellations without changing agenda or reminder helpers. Read these files before answering: scheduling/service.py, scheduling/time_math.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/service.py",
+      "scheduling/time_math.py"
+    ],
+    "oracle": "fix_single_cancellation",
+    "category": "cancellation_scope",
+    "max_calls": 20,
+    "timeout_seconds": 130
+  },
+  {
+    "id": "fix_chronological_agenda",
+    "prompt": "Fix sorted_agenda in scheduling/service.py to sort by booking start time rather than identifier. Preserve input order for equal starts, original record identities, generator support, a fresh list and compatible aware datetimes. Keep Scheduler.agenda integration and other functions unchanged. Validate shuffled identifiers, ties and an empty iterable. Read these files before answering: scheduling/service.py, scheduling/time_math.py.",
+    "read_only": false,
+    "required_reads": [
+      "scheduling/service.py",
+      "scheduling/time_math.py"
+    ],
+    "oracle": "fix_chronological_agenda",
+    "category": "agenda_ordering",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "inspect_booking_storage",
+    "prompt": "Read only: trace Scheduler.book from its arguments to stored state. Explain validation, whether records are frozen, replacement for an existing identifier, and isolation between instances. Identify the package's declared public facade and use current source evidence. Keep every file unchanged. Read these files before answering: scheduling/service.py, scheduling/time_math.py, scheduling/__init__.py.",
+    "read_only": true,
+    "required_reads": [
+      "scheduling/service.py",
+      "scheduling/time_math.py",
+      "scheduling/__init__.py"
+    ],
+    "oracle": "inspect_booking_storage",
+    "category": "booking_dataflow",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "inspect_policy_boundary",
+    "prompt": "Read only: verify the claim 'Scheduler.book automatically rejects overlapping bookings and applies resource capacity'. Inspect book and the availability helpers, distinguish storage from policy enforcement, and explain the consequence for two overlapping records on one resource. Keep files unchanged and state only what the fixture establishes. Read these files before answering: scheduling/service.py, scheduling/availability.py, contracts.md.",
+    "read_only": true,
+    "required_reads": [
+      "scheduling/service.py",
+      "scheduling/availability.py",
+      "contracts.md"
+    ],
+    "oracle": "inspect_policy_boundary",
+    "category": "negative_policy_claim",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "inspect_endpoint_behavior",
+    "prompt": "Read only: compare the half-open interval contract with the current overlaps and clip_window implementations. What happens when two positive windows touch at an endpoint, and when clipping has no positive intersection? Explain actual behavior rather than describing a completed fix. Keep source files unchanged. Read these files before answering: scheduling/time_math.py, contracts.md.",
+    "read_only": true,
+    "required_reads": [
+      "scheduling/time_math.py",
+      "contracts.md"
+    ],
+    "oracle": "inspect_endpoint_behavior",
+    "category": "current_interval_behavior",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "inspect_recurrence_behavior",
+    "prompt": "Read only: explain current daily and monthly recurrence. Are daily end dates included? How does weekday numbering/filtering work? Does monthly recurrence already handle December rollover and month-end clamping? Cite actual code and distinguish desired behavior in contracts from today's implementation. Keep every file unchanged. Read these files before answering: scheduling/recurrence.py, contracts.md.",
+    "read_only": true,
+    "required_reads": [
+      "scheduling/recurrence.py",
+      "contracts.md"
+    ],
+    "oracle": "inspect_recurrence_behavior",
+    "category": "current_recurrence_behavior",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "inspect_timezone_behavior",
+    "prompt": "Read only: verify whether utc_timestamp preserves the instant for an input at UTC+02:00. Explain its current timezone operation, awareness checks, seconds precision and UTC suffix. Explain the practical discrepancy from a true UTC conversion, without changing code. Read these files before answering: scheduling/reminders.py.",
+    "read_only": true,
+    "required_reads": [
+      "scheduling/reminders.py"
+    ],
+    "oracle": "inspect_timezone_behavior",
+    "category": "negative_timezone_claim",
+    "max_calls": 12,
+    "timeout_seconds": 90
+  },
+  {
+    "id": "inspect_notification_boundary",
+    "prompt": "Read only: trace Scheduler.reminders through reminder_time. Does it send email, start a worker or consult the live clock? Describe returned data, default lead and whether current arithmetic places a reminder before or after start. Keep files unchanged and distinguish calculation from delivery. Read these files before answering: scheduling/service.py, scheduling/reminders.py, contracts.md.",
+    "read_only": true,
+    "required_reads": [
+      "scheduling/service.py",
+      "scheduling/reminders.py",
+      "contracts.md"
+    ],
+    "oracle": "inspect_notification_boundary",
+    "category": "notification_boundary",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "inspect_cancellation_behavior",
+    "prompt": "Read only: trace cancellation of one booking when another booking shares its resource. Does current drop_booking filter by identifier or by the matched resource? Explain Scheduler.cancel state replacement, unknown-id behavior, and whether it modifies a frozen Booking's cancelled field. Keep code unchanged and describe today's behavior. Read these files before answering: scheduling/service.py, scheduling/time_math.py.",
+    "read_only": true,
+    "required_reads": [
+      "scheduling/service.py",
+      "scheduling/time_math.py"
+    ],
+    "oracle": "inspect_cancellation_behavior",
+    "category": "current_cancellation_behavior",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  },
+  {
+    "id": "inspect_external_dependencies",
+    "prompt": "Read only: assess the assertion 'these bookings and reminders are stored durably in a database and dispatched by an HTTP service'. Identify the actual persistence/transport boundary and dependencies of this fixture. Explain the limits of concluding anything about uninspected external deployment systems. Keep every source file unchanged. Read these files before answering: scheduling/service.py, scheduling/__init__.py, contracts.md.",
+    "read_only": true,
+    "required_reads": [
+      "scheduling/service.py",
+      "scheduling/__init__.py",
+      "contracts.md"
+    ],
+    "oracle": "inspect_external_dependencies",
+    "category": "negative_infrastructure_claim",
+    "max_calls": 16,
+    "timeout_seconds": 110
+  }
+]

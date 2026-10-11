@@ -1,0 +1,20 @@
+{
+  "stage": "warmup_admission",
+  "scored_model_requests": 0,
+  "warmup_requests": 0,
+  "reasons": [
+    "memory_pressure_warning"
+  ],
+  "original_server_restored": true,
+  "purpose": "Unscored startup admission failure; no quality conclusion.",
+  "model": {
+    "repository": "mlx-community/Qwen3-4B-4bit",
+    "revision": "4dcb3d101c2a062e5c1d4bb173588c54ea6c4d25"
+  },
+  "settings": {
+    "protocol": "native",
+    "kv_bits": 8,
+    "quantized_kv_start": 256,
+    "allow_memory_warning": false
+  }
+}

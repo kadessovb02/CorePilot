@@ -19,11 +19,15 @@ This combines the established [orchestrator-workers and evaluator-optimizer patt
 
 | Role | Work | Available tools |
 |---|---|---|
-| Planner | Read repository instructions, current architecture, nearby code and tests; produce compatibility and style constraints | List, search, read |
+| Planner | Read repository instructions, current architecture, nearby code and tests; produce compatibility and style constraints | List, search, read, `submit_plan` control tool |
 | Coder | Implement the request according to the contract; validate actual changes | List, search, read, edit, sandboxed commands |
 | Reviewer | Read current changed files and diff; check compatibility, style and observed validation; produce a structured decision | List, search, read, sandboxed commands; source writes interrupt the task |
 
 The planner must read existing root `AGENTS.md` and `CLAUDE.md` plus source evidence. The reviewer must read existing changed files. A prose claim does not count as a read or a passing check. Failed or stale required validation prevents completion, even if the reviewer approves. The reviewer returns `{"approved": true, "summary": "Observed result", "issues": []}`; invalid decisions receive bounded correction attempts and then interrupt the task. Rejections return to the coder only within the configured budget.
+
+The planner can explicitly hand off with `submit_plan` using exactly `{"contract": "Observed interfaces, constraints, changes and validation approach"}`. The contract must be a nonempty string of at most 6,000 characters, with no extra fields. This is a planner-only control tool, not a file edit or task approval. It must be the only call in its assistant batch, and the response must not report `finish_reason: "length"`. Before acceptance, the engine requires successful current-phase reads of each existing root `AGENTS.md`/`CLAUDE.md` file and at least one non-guidance project file, plus unchanged phase source. Automatically supplied guidance excerpts do not count as reads. Plain-text planning handoffs remain supported under the same evidence gates.
+
+An accepted call receives the paired result `{"accepted": true, "transition": "pending paired handoff", "completes_task": false}`. A persisted pending-plan intent is consumed once, after tool replies are drained, to enter coding or the inspection reviewer. Cancellation before acceptance records an interrupted tool result; cancellation after pairing preserves the intent for explicit resume, which rechecks the gates before transitioning. User steering clears that intent and starts planning again. Unpaired or corrupt intent interrupts the task and cannot advance it. Acceptance permits a phase handoff, not task completion or a judgment that the contract is correct. Budget pressure never forces a transition; source-integrity, validation and reviewer requirements remain active. Its protocol support does not demonstrate a model-quality gain; that requires a separate [evaluation](benchmarks.md).
 
 Checks are bound to the observed source fingerprint before execution. A subsequent source change, including a writing command, requires fresh validation. Older checkpoints without this fingerprint can be resumed but must rerun required checks.
 

@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "suite_id": "synthetic_v2",
+  "repository": "repository",
+  "cases": "cases.json",
+  "case_count": 20,
+  "edit_count": 12,
+  "inspection_count": 8,
+  "training_allowed": false,
+  "memory_allowed": false,
+  "reset_strategy": "fresh_copy_of_repository_for_every_case",
+  "oracle_visibility": "outside_agent_workspace_until_generation_finishes",
+  "inspection_grade": "bounded_semantic_proxy_with_source_facts_and_required_reads",
+  "inspection_limitations": "Explicit source-fact assertions and finite answer criteria do not prove complete semantic correctness. Inspect answers and tool traces independently."
+}

@@ -1,0 +1,90 @@
+{
+  "schema": 1,
+  "trial": 19,
+  "audit": {
+    "new_inference_requests": 0,
+    "server_actions": 0,
+    "runtime_edits": 0,
+    "suite_edits": 0
+  },
+  "attempts": {
+    "single": 1,
+    "specialists": 0,
+    "completed": 0,
+    "oracle_passed": 0,
+    "usable_passed": 0,
+    "timeouts": 1,
+    "safety_aborts": 0,
+    "seconds": 300.092,
+    "case_budget_seconds": 300.0,
+    "case_budget_calls": 24
+  },
+  "protocol": {
+    "model_steps": 23,
+    "http_attempts": 23,
+    "usage_responses": 22,
+    "http_errors": 0,
+    "length_limited_responses": 0,
+    "tool_calls": 22,
+    "tool_replies": 22,
+    "invalid_tool_json": 0,
+    "unpaired_calls": 0,
+    "orphan_replies": 0,
+    "pending_calls": 0
+  },
+  "raw_read": {
+    "successful_reads": 1,
+    "selected_lines": 50,
+    "total_lines": 50,
+    "selected_characters": 1551,
+    "returned_characters": 1551,
+    "serialized_reply_characters": 1780,
+    "content_truncations": 0,
+    "raw_content_matches_baseline": true
+  },
+  "patch": {
+    "attempts": 1,
+    "successes": 1,
+    "first_edit_operation": 2,
+    "literal_old_block_occurrences": 1,
+    "literal_replacement_matches_final_source": true,
+    "only_change_is_upper_return": true,
+    "unicode_upper_return_in_ast": true
+  },
+  "validation": {
+    "agent_recorded_checks": 0,
+    "successful_agent_checks": 0,
+    "missing_console_failures": 7,
+    "unique_failed_command_shapes": 1,
+    "external_tests_run": 3,
+    "external_test_failures": 0,
+    "external_test_errors": 0,
+    "external_integrity_errors": 1,
+    "external_style_errors": 0,
+    "required_reads_missing": 0,
+    "overall_external_passed": false
+  },
+  "failure_loop": {
+    "list_calls": 7,
+    "dependency_manifest_writes": 6,
+    "identical_noop_manifest_rewrites": 5,
+    "failure_history_resets_by_manifest_writes": 6,
+    "checkpoint_max_failure_streak": 1,
+    "implementation_target_pytest_attempts": 7,
+    "test_functions_in_target": 0
+  },
+  "integrity": {
+    "expected_implementation_changes": 1,
+    "unexpected_files": 1,
+    "unexpected_dependency_manifest_files": 1,
+    "original_fixture_files": 8,
+    "original_fixture_files_unchanged": true,
+    "applied_to_source": false
+  },
+  "privacy": {
+    "source_text_values": 0,
+    "model_text_values": 0,
+    "absolute_path_values": 0,
+    "runtime_identifier_values": 0
+  }
+}

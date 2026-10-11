@@ -171,7 +171,7 @@ def test_command_timeout_and_invalid_shell(tmp_path):
         result = await tools.run_command(["python", "slow.py"], timeout=1)
         assert result["timed_out"]
         assert result["exit_code"] != 0
-        for argv in [["sh", "-c", "echo hello"], ["python", "-c", "print(1)"], ["git", "push"], ["python", "../outside.py"]]:
+        for argv in [["sh", "-c", "echo hello"], ["python", "-I", "-c", "print(1)"], ["git", "push"], ["python", "../outside.py"]]:
             with pytest.raises(BoundaryError):
                 tools.validate_command(argv)
     asyncio.run(run())

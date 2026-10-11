@@ -37,9 +37,14 @@ class ResourceThresholds:
     max_physical_footprint_gib: float = 6.0
     max_swap_growth_mib: float = 512.0
     min_performance_limit: float = 100.0
+    allow_memory_warning: bool = False
 
     def __post_init__(self):
+        if not isinstance(self.allow_memory_warning, bool):
+            raise ValueError("allow_memory_warning must be a boolean")
         for name, value in vars(self).items():
+            if name == "allow_memory_warning":
+                continue
             if not numeric(value):
                 raise ValueError(name + " must be a finite nonnegative number")
         if self.min_performance_limit > 100:
@@ -132,8 +137,10 @@ def reasons(sample: dict, baseline: dict | None = None, thresholds: ResourceThre
     level = sample.get("pressure_level")
     if not isinstance(level, int) or isinstance(level, bool) or level not in {1, 2, 4}:
         result.append("memory_pressure_unknown")
-    elif level != 1:
-        result.append("memory_pressure_critical" if level == 4 else "memory_pressure_warning")
+    elif level == 4:
+        result.append("memory_pressure_critical")
+    elif level == 2 and not limits.allow_memory_warning:
+        result.append("memory_pressure_warning")
     available = sample.get("available_estimate_gib")
     if not numeric(available):
         result.append("available_memory_unknown")

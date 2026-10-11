@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "audit_kind": "oracle_selfcheck_not_model_score",
+  "suite": "synthetic_v2",
+  "suite_sha256": "8bf8752d9b1e63acaeb5c6937f3fe78e4564fac540346e6471052480c36f6b62",
+  "source_sha256": "8babc77140ebffe6de311cd1108cdacdb5538e937367c1ecb2496f6aa4bf4ecc",
+  "date_utc": "2026-10-11T13:33:22.481710+00:00",
+  "model_inference": false,
+  "gpu_used": false,
+  "case_count": 20,
+  "fixture_files": 8,
+  "suite_unchanged": true,
+  "fixture_unchanged": true,
+  "edits": {
+    "cases": 12,
+    "baseline_target_failures": 12,
+    "reference_passes": 12,
+    "incomplete_fixes_rejected": 12
+  },
+  "inspections": {
+    "cases": 8,
+    "source_fact_passes": 8,
+    "reference_answer_passes": 8,
+    "empty_answers_rejected": 8,
+    "missing_read_evidence_rejected": 8
+  },
+  "oracle_regressions": {
+    "tests_run": 17,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "passed": true
+  },
+  "passed": true
+}

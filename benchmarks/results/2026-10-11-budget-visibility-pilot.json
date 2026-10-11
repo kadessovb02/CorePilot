@@ -1,0 +1,392 @@
+{
+  "schema": 1,
+  "date_utc": "2026-10-11T13:40:05.721576+00:00",
+  "suite": "synthetic_v1",
+  "suite_sha256": "b5401b866e89bac019358ecd940f503f6841daf5221ac0546fd049358aa225af",
+  "source_sha256": "093e99d499012acbff2e5ba7b9fbe5e1832c4843dcac235201432e6009020b37",
+  "platform": {
+    "system": "Darwin",
+    "release": "25.2.0",
+    "python": "3.14.0"
+  },
+  "metadata": {
+    "hardware": {
+      "chip": "Apple M2 Pro",
+      "logical_cpus": 10,
+      "memory_gib": 16
+    },
+    "model": {
+      "repository": "mlx-community/Qwen3.5-4B-4bit",
+      "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+      "weights": "4-bit",
+      "adapter": null,
+      "download_bytes": 3061129077
+    },
+    "server_packages": {
+      "mlx": "0.32.3",
+      "mlx-lm": "0.32.0",
+      "transformers": "5.19.0",
+      "huggingface-hub": "1.33.0"
+    },
+    "server_settings": {
+      "prefill_step_size": 512,
+      "prompt_concurrency": 1,
+      "prompt_cache_size": 1,
+      "prompt_cache_bytes": 67108864,
+      "kv_bits": 8,
+      "quantized_kv_start": 256,
+      "max_tokens": 768,
+      "cpu_thread_environment": 2,
+      "allocator_cache_limit_bytes": 134217728,
+      "enable_thinking": false,
+      "top_p": 0.8,
+      "top_k": 20
+    },
+    "corepilot_base_commit": "b586b55e0066f0641a90cc8bf18e4ca061c90cac",
+    "code_sha256": {
+      "corepilot/__init__.py": "0f9bccde2c828bd2cfeeb2f98017cb02846424b9cfd0a9b858f24fac11af8992",
+      "corepilot/__main__.py": "79ee6f134c5c5193377cf9b189cbdcc3e2095e49ba9cec310114441c15a917c4",
+      "corepilot/app.py": "9166318174bee507e07073d7715c985f8aac57938dc8791878e3f997c7c09be4",
+      "corepilot/benchmark.py": "4c5fbc678af32d61f529deed712f2c033a263dbc8971d12fb5d52f021a9cfb98",
+      "corepilot/benchmark_resources.py": "937810e7ee935cb6f13ed3c9d7332620b093f9897ba4dc6220dc60d1ab977803",
+      "corepilot/cli.py": "2a812f1f9fc43bd00c9610c25b7dbc96369676aa8d3e3b7d4ffc133eae1cfea6",
+      "corepilot/codex_history.py": "44930f17ce40de612f69d562a8e9d167380563e2a4141cea1601e260f7941a9a",
+      "corepilot/config.py": "293a7b35a575e7b921dfb1ffaa97e04c7251a781c3ffb7bd88be409797a8dbf6",
+      "corepilot/dataset.py": "35344501847cc141cc22f65cb35c555d938a6b0befa786ca91923d8b7987e11a",
+      "corepilot/decision.py": "aa6839ff66a40c75a566e5508d590704b8db7962cf562a785640600c04b286dc",
+      "corepilot/engine.py": "56c44bc0b7d6102529cbe1186fc252afb259d598f3a8b1d432e8d710af1094e6",
+      "corepilot/evaluation.py": "3c6f37a6a0d858a03986b6e2d1adaefdef89c5c84f87fb280405870124eda1ff",
+      "corepilot/history.py": "51fec5e64283db1e4be4ed338f596a6694c11d36dcf14897c8c3677b3277f4c1",
+      "corepilot/indexing.py": "64fdc40e6ee3100832271debf290d53641bc24ff40b17533d946f4073f31a6a3",
+      "corepilot/memory.py": "9ea59293a7894cba9c7e5aa3ec58e6bdfe3dfb0ae8a364fe4e772bc7e1e22d59",
+      "corepilot/model.py": "0135ae25210b748336969cf516772e17b896e05c2430894d7f641d3017a86546",
+      "corepilot/model_pool.py": "f0f62d7809bd17b98b3e639a3e6978805773bec986bd7be090f9c59c41c7a8a9",
+      "corepilot/orchestration.py": "65ba3b21cfa87c75ad84649b014d4c160bd5c0a73f7a9a9e02b29909ddfc70a6",
+      "corepilot/redaction.py": "8b50c3e41bdbd72ff2209a56fbff8265445c80b351ca756ae357f400c156028d",
+      "corepilot/reports.py": "c4a32a5b1e12469bb6775ce5acc9100e6266f73a1913a3ea1c0dbccfe34e75e3",
+      "corepilot/setup.py": "a962e7f37aa3a7a62511733c4bb322ae854e99dbde95064d47fd4b09e5953d2d",
+      "corepilot/store.py": "744a5861562a84e1b93ffca0ad51b11337a021633fbeeb1b0bdc81eeabd58321",
+      "corepilot/tools.py": "69d4db5cde6943cc11b0c10fe16a6dc8233380267134fd791699e735a576cd95",
+      "corepilot/training.py": "2ca947757ec21f380ed75978baf5977ec782bafb2ed48fbf406608e655cbb5bb",
+      "corepilot/workspace.py": "b2feb8751f24e481c27c206819510a77b8388210a40b1e7ceb9af6dec98ab38f",
+      "scripts/run_benchmark.py": "a5ed0c4bd5e9f90ba70e8ad992489cd9bf8092c090d9622ac301f3980334aa61"
+    },
+    "warmup": {
+      "scored": false,
+      "max_tokens": 16,
+      "seconds": 1.759,
+      "usage": {
+        "prompt_tokens": 16,
+        "completion_tokens": 3,
+        "total_tokens": 19,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "resources": {
+        "samples": 1,
+        "max_rss_gib": 1.74798583984375,
+        "max_physical_footprint_gib": 1.42900390625,
+        "max_reported_peak_footprint_gib": 1.42900390625,
+        "physical_footprint_samples": 1,
+        "max_compressor_gib": 4.96331787109375,
+        "max_used_swap_gib": 9.840029296875,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 3.207183837890625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "postflight": {
+        "timestamp": 1791725984.241772,
+        "available_estimate_gib": 2.8444366455078125,
+        "compressor_gib": 4.7292327880859375,
+        "purgeable_gib": 0.0003662109375,
+        "used_swap_gib": 9.840029296875,
+        "own_rss_gib": 2.00048828125,
+        "process_count": 2,
+        "physical_footprint_gib": 1.42900390625,
+        "peak_physical_footprint_gib": 1.42900390625,
+        "footprint_age_seconds": 2.086517374991672,
+        "pressure_level": 1,
+        "pressure_some_avg10": null,
+        "pressure_full_avg10": null,
+        "speed_limit": null,
+        "scheduler_limit": null,
+        "thermal_warning_level": null,
+        "load_1m": null,
+        "supported": true,
+        "platform": "darwin",
+        "rss_complete": true,
+        "footprint_available": true
+      }
+    },
+    "experiment_design": {
+      "adapted_after_prior_pilot": true,
+      "prior_pilot": "All preceding JSON1.5B and nativeQwen3/Qwen3.5 pilots are preserved. V1 is development data; no v2 inference has occurred.",
+      "change": "Qwen3.5 stock4B native; budget visibility and scoped planner stopping rule; process signals limited to self/same sandbox; shared total24call override and300s timeout override. Explicit2048MiB system swap-growth threshold after prior512MiB abort. Token/context/server caps unchanged. Adaptive v1 development; no causal attribution or speed claim.",
+      "full_suite_planned": false,
+      "purpose": "Development pilot; v1 has been used for harness diagnosis.",
+      "resource_policy_change": "User allowed necessary load; allow warning pressure only. Critical pressure, 1.5GiB headroom, 6GiB own footprint, 2048MiB maximum system-wide swap growth and thermal checks remain active; swap threshold increased from512MiB explicitly before this experiment."
+    },
+    "setup": "Existing idle model server temporarily stopped; only one model server loaded."
+  },
+  "settings": {
+    "protocol": "native",
+    "memory": false,
+    "router": false,
+    "same_weights_all_roles": true,
+    "max_calls": 24,
+    "role_max_steps": 24,
+    "max_tokens": 768,
+    "context_chars": 14000,
+    "timeout_seconds": 300.0,
+    "case_timeout_override": 300.0,
+    "case_call_override": 24,
+    "rest_seconds": 10.0,
+    "temperature": 0.15,
+    "prompt_suffix": "/no_think",
+    "repeats": 1,
+    "cache_policy": "Existing server caches are not reset; AB/BA order alternates.",
+    "between_requests_seconds": 0.0
+  },
+  "planned_cases": 2,
+  "baseline_resources": {
+    "timestamp": 1791726005.721348,
+    "available_estimate_gib": 4.4522552490234375,
+    "compressor_gib": 4.073333740234375,
+    "purgeable_gib": 0.002716064453125,
+    "used_swap_gib": 9.832216796875,
+    "own_rss_gib": 1.966705322265625,
+    "process_count": 2,
+    "physical_footprint_gib": 2.62548828125,
+    "peak_physical_footprint_gib": 2.6255859375,
+    "footprint_age_seconds": 2.6250199880450964e-06,
+    "pressure_level": 1,
+    "pressure_some_avg10": null,
+    "pressure_full_avg10": null,
+    "speed_limit": null,
+    "scheduler_limit": null,
+    "thermal_warning_level": null,
+    "load_1m": null,
+    "supported": true,
+    "platform": "darwin",
+    "rss_complete": true,
+    "footprint_available": true
+  },
+  "records": [
+    {
+      "id": "edit_sku_normalization",
+      "category": "normalization",
+      "read_only": false,
+      "mode": "single",
+      "protocol": "native",
+      "timeout_seconds": 300.0,
+      "max_calls": 24,
+      "seconds": 50.417,
+      "completed": true,
+      "task_status": "completed",
+      "oracle_passed": true,
+      "usable_passed": true,
+      "oracle": {
+        "passed": true,
+        "metric": "unittest",
+        "failures": [],
+        "exit_code": 0,
+        "tests_run": 3,
+        "failure_count": 0,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 4,
+      "calls_by_role": {
+        "single": 4
+      },
+      "tool_failures": 0,
+      "checks": 1,
+      "review_decisions": 0,
+      "changed_files": [
+        "inventory/catalog.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 4,
+      "http_errors": 0,
+      "usage_responses": 4,
+      "prompt_tokens": 11391,
+      "completion_tokens": 904,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 50.13733479200164,
+      "resources": {
+        "samples": 17,
+        "max_rss_gib": 1.9742279052734375,
+        "max_physical_footprint_gib": 2.7335937500000003,
+        "max_reported_peak_footprint_gib": 3.63369140625,
+        "physical_footprint_samples": 17,
+        "max_compressor_gib": 4.4538726806640625,
+        "max_used_swap_gib": 9.832216796875,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 2.4842529296875,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_sku_normalization",
+      "category": "normalization",
+      "read_only": false,
+      "mode": "specialists",
+      "protocol": "native",
+      "timeout_seconds": 300.0,
+      "max_calls": 24,
+      "seconds": 250.899,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_sku_normalization",
+          "edit_sku_normalization",
+          "edit_sku_normalization"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 3,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 24,
+      "calls_by_role": {
+        "planner": 24
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 24,
+      "http_errors": 0,
+      "usage_responses": 24,
+      "prompt_tokens": 83923,
+      "completion_tokens": 1338,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 250.519052499003,
+      "resources": {
+        "samples": 84,
+        "max_rss_gib": 1.7523345947265625,
+        "max_physical_footprint_gib": 3.63681640625,
+        "max_reported_peak_footprint_gib": 3.7369140625000004,
+        "physical_footprint_samples": 84,
+        "max_compressor_gib": 5.1915435791015625,
+        "max_used_swap_gib": 10.14697265625,
+        "peak_swap_growth_mib": 322.3099999999995,
+        "pressure_levels": [
+          1,
+          2
+        ],
+        "min_available_estimate_gib": 1.765960693359375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    }
+  ],
+  "stop_reasons": [],
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_own_rss_gib": 6.0,
+    "max_physical_footprint_gib": 6.0,
+    "max_swap_growth_mib": 2048.0,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "limits": [
+    "Small synthetic sample; one stochastic trial per case/mode; not a commercial-agent comparison.",
+    "Read-only semantic proxies are constrained checks, not a comprehensive language judge.",
+    "The reviewer uses the same weights; external oracles provide behavioral checks.",
+    "Temperature and RAM temperature are not measured; OS thermal limits may be unavailable.",
+    "Client cancellation cannot guarantee cancellation of an existing external server request."
+  ],
+  "summary": {
+    "single": {
+      "attempted": 1,
+      "completed": 1,
+      "oracle_passed": 1,
+      "usable_passed": 1,
+      "median_seconds_all": 50.417,
+      "http_attempts": 4,
+      "timeouts": 0,
+      "safety_aborts": 0,
+      "by_kind": {
+        "edits": {
+          "attempted": 1,
+          "oracle_passed": 1,
+          "usable_passed": 1
+        },
+        "inspections": {
+          "attempted": 0,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        }
+      }
+    },
+    "specialists": {
+      "attempted": 1,
+      "completed": 0,
+      "oracle_passed": 0,
+      "usable_passed": 0,
+      "median_seconds_all": 250.899,
+      "http_attempts": 24,
+      "timeouts": 0,
+      "safety_aborts": 0,
+      "by_kind": {
+        "edits": {
+          "attempted": 1,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        },
+        "inspections": {
+          "attempted": 0,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        }
+      }
+    },
+    "paired": {
+      "count": 1,
+      "specialist_wins": 0,
+      "single_wins": 1,
+      "ties": 0,
+      "both_usable": 0,
+      "median_seconds_both_usable": {
+        "single": null,
+        "specialists": null
+      }
+    }
+  },
+  "unattempted_runs": 2
+}

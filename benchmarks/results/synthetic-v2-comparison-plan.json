@@ -1,0 +1,93 @@
+{
+  "schema": 1,
+  "kind": "preregistered_synthetic_v2_comparison_plan",
+  "is_model_score": false,
+  "model_inference": false,
+  "suite": "synthetic_v2",
+  "suite_sha256": "8bf8752d9b1e63acaeb5c6937f3fe78e4564fac540346e6471052480c36f6b62",
+  "cases": 20,
+  "edit_cases": 12,
+  "inspection_cases": 8,
+  "planned_attempts": 80,
+  "repeats": 1,
+  "models": [
+    {
+      "repository": "mlx-community/Qwen2.5-Coder-7B-Instruct-4bit",
+      "revision": "019cc73c45c770444708a6dd8690c66243cc5c80",
+      "adapter": null
+    },
+    {
+      "repository": "mlx-community/Qwen3.5-4B-4bit",
+      "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+      "adapter": null
+    }
+  ],
+  "modes": [
+    "single",
+    "specialists"
+  ],
+  "settings": {
+    "protocol": "native",
+    "same_weights_all_roles": true,
+    "memory": false,
+    "router": false,
+    "total_model_calls": 24,
+    "role_max_steps": 24,
+    "timeout_seconds": 600,
+    "max_tokens": 768,
+    "context_chars": 14000,
+    "temperature": 0.15,
+    "request_pause_seconds": 0,
+    "rest_seconds": 10,
+    "kv_bits": 8,
+    "quantized_kv_start": 256,
+    "prefill_step_size": 512,
+    "prompt_cache_size": 1,
+    "prompt_cache_bytes_configured": 67108864,
+    "allocator_cache_limit_bytes": 134217728
+  },
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_physical_footprint_gib": 6,
+    "max_own_rss_gib": 6,
+    "max_swap_growth_mib": 2048,
+    "allow_memory_warning": true
+  },
+  "code_sha256": {
+    "corepilot/__init__.py": "0f9bccde2c828bd2cfeeb2f98017cb02846424b9cfd0a9b858f24fac11af8992",
+    "corepilot/__main__.py": "79ee6f134c5c5193377cf9b189cbdcc3e2095e49ba9cec310114441c15a917c4",
+    "corepilot/app.py": "9166318174bee507e07073d7715c985f8aac57938dc8791878e3f997c7c09be4",
+    "corepilot/benchmark.py": "4c5fbc678af32d61f529deed712f2c033a263dbc8971d12fb5d52f021a9cfb98",
+    "corepilot/benchmark_resources.py": "937810e7ee935cb6f13ed3c9d7332620b093f9897ba4dc6220dc60d1ab977803",
+    "corepilot/cli.py": "2a812f1f9fc43bd00c9610c25b7dbc96369676aa8d3e3b7d4ffc133eae1cfea6",
+    "corepilot/codex_history.py": "44930f17ce40de612f69d562a8e9d167380563e2a4141cea1601e260f7941a9a",
+    "corepilot/config.py": "293a7b35a575e7b921dfb1ffaa97e04c7251a781c3ffb7bd88be409797a8dbf6",
+    "corepilot/dataset.py": "35344501847cc141cc22f65cb35c555d938a6b0befa786ca91923d8b7987e11a",
+    "corepilot/decision.py": "aa6839ff66a40c75a566e5508d590704b8db7962cf562a785640600c04b286dc",
+    "corepilot/engine.py": "c910252e2a479f8cbbea3df05c6fb2df4dd25535824657b525014809cc65d991",
+    "corepilot/evaluation.py": "3c6f37a6a0d858a03986b6e2d1adaefdef89c5c84f87fb280405870124eda1ff",
+    "corepilot/history.py": "51fec5e64283db1e4be4ed338f596a6694c11d36dcf14897c8c3677b3277f4c1",
+    "corepilot/indexing.py": "64fdc40e6ee3100832271debf290d53641bc24ff40b17533d946f4073f31a6a3",
+    "corepilot/memory.py": "9ea59293a7894cba9c7e5aa3ec58e6bdfe3dfb0ae8a364fe4e772bc7e1e22d59",
+    "corepilot/model.py": "3e6b7db4d664a65b76aff74cab5b7b5edbf997ddc589639a0907f3b57f39eaf6",
+    "corepilot/model_pool.py": "f0f62d7809bd17b98b3e639a3e6978805773bec986bd7be090f9c59c41c7a8a9",
+    "corepilot/orchestration.py": "ceada4f5d2f4d665e9e31792b5d2b06b0fb42651732f8a47a885f0aa3756e07e",
+    "corepilot/redaction.py": "8b50c3e41bdbd72ff2209a56fbff8265445c80b351ca756ae357f400c156028d",
+    "corepilot/reports.py": "c4a32a5b1e12469bb6775ce5acc9100e6266f73a1913a3ea1c0dbccfe34e75e3",
+    "corepilot/setup.py": "a962e7f37aa3a7a62511733c4bb322ae854e99dbde95064d47fd4b09e5953d2d",
+    "corepilot/store.py": "744a5861562a84e1b93ffca0ad51b11337a021633fbeeb1b0bdc81eeabd58321",
+    "corepilot/tools.py": "69d4db5cde6943cc11b0c10fe16a6dc8233380267134fd791699e735a576cd95",
+    "corepilot/training.py": "2ca947757ec21f380ed75978baf5977ec782bafb2ed48fbf406608e655cbb5bb",
+    "corepilot/workspace.py": "b2feb8751f24e481c27c206819510a77b8388210a40b1e7ceb9af6dec98ab38f",
+    "scripts/run_benchmark.py": "a5ed0c4bd5e9f90ba70e8ad992489cd9bf8092c090d9622ac301f3980334aa61"
+  },
+  "design": [
+    "Configuration and both model selections fixed before any v2 inference. Harness fixes used v1 development traces only.",
+    "Same frozen cases, runtime source, tool contract and total call/time caps in both workflows and model comparisons. Order alternates AB/BA within each model; models execute sequentially.",
+    "One stochastic trial per case/mode/model. Do not pool scores from earlier adaptive trials.",
+    "External edit oracles and finite inspection answer/read criteria remain frozen after outcomes. Independent CPU audit of actual answers, patches and checks follows inference.",
+    "Any resource guard stops the experiment and preserves attempted/ungraded/unstarted counts. Case timeout stops further calls when external backend idle cannot be confirmed.",
+    "One model server at a time; existing idle user server is restored between experiments and after final evaluation.",
+    "Results measure stock model and workflow quality on small synthetic tasks, not training gains, separately trained experts, distributed routing or commercial-agent parity."
+  ]
+}

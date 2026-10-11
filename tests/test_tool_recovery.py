@@ -12,7 +12,7 @@ class Model:
     def __init__(self, responses):
         self.responses = list(responses)
 
-    async def complete(self, messages):
+    async def complete(self, messages, *, tool_names=None):
         return self.responses.pop(0)
 
     async def close(self):

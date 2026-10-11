@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "date_utc": "2026-10-11T13:48:26.143140+00:00",
+  "report": "2026-10-11-budget-visibility-pilot.json",
+  "operator_terminated": true,
+  "reason": "repeated_successful_read_loop",
+  "completed_graded_records": 2,
+  "inflight_ungraded_runs": 1,
+  "truly_unstarted_runs": 1,
+  "snapshot_unattempted_runs_includes_inflight": true,
+  "source_changed_during_inference": false,
+  "original_server_restored": true,
+  "interpretation": "Development pilot adaptively stopped after repeated identical successful reads consumed the planner budget; not a completed four-run experiment."
+}

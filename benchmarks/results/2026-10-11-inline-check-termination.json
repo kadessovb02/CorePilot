@@ -1,0 +1,11 @@
+{
+  "reason": "inline_check_accounting_defect",
+  "operator_terminated_owned_supervisor": true,
+  "completed_records": 2,
+  "in_flight_attempts_without_final_record": 1,
+  "truly_unstarted_planned_attempts": 1,
+  "in_flight_graded": false,
+  "source_changed_during_inference": false,
+  "original_server_restored": true,
+  "interpretation": "Raw comparison is an interrupted progress snapshot. Its unattempted count includes one in-flight attempt terminated before a record could be written. Both recorded tasks passed external oracles but were interrupted because successful inline checks were not recorded by the engine."
+}

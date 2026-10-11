@@ -217,7 +217,7 @@ def test_three_distinct_roles_inspect_style_and_never_apply_automatically(tmp_pa
             for call in pool.calls:
                 paired(call["messages"])
                 if call["role"] == "planner":
-                    assert set(call["tool_names"]) == {"list_files", "read_file", "search"}
+                    assert set(call["tool_names"]) == {"list_files", "read_file", "search", "submit_plan"}
                 elif call["role"] == "reviewer":
                     assert set(call["tool_names"]) == {"list_files", "read_file", "search", "run_command"}
         finally:

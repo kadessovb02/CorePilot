@@ -1,7 +1,10 @@
 """Synthetic counters and mock readers; tests never launch inference or vmmap."""
 import asyncio
 import json
+import runpy
 import subprocess
+import sys
+from pathlib import Path
 
 import pytest
 
@@ -87,6 +90,75 @@ def test_admission_uses_swap_growth_not_absolute_swap_and_adjustable_bounds():
                     {"max_swap_growth_mib": True}, {"min_performance_limit": 101}):
         with pytest.raises(ValueError):
             ResourceThresholds(**invalid)
+
+
+def test_memory_warning_requires_explicit_opt_in():
+    assert ResourceThresholds().allow_memory_warning is False
+    assert reasons(safe(pressure_level=2)) == ["memory_pressure_warning"]
+    assert reasons(safe(pressure_level=2), thresholds=ResourceThresholds(allow_memory_warning=False)) == ["memory_pressure_warning"]
+    assert reasons(safe(pressure_level=2), thresholds=ResourceThresholds(allow_memory_warning=True)) == []
+
+
+@pytest.mark.parametrize("invalid", [None, 0, 1, 2, "true", "false", [], {}])
+def test_memory_warning_opt_in_is_strictly_boolean(invalid):
+    with pytest.raises(ValueError, match="allow_memory_warning must be a boolean"):
+        ResourceThresholds(allow_memory_warning=invalid)
+
+
+@pytest.mark.parametrize("changed,expected", [
+    ({"pressure_level": 4}, "memory_pressure_critical"),
+    ({"pressure_level": None}, "memory_pressure_unknown"),
+    ({"pressure_level": True}, "memory_pressure_unknown"),
+    ({"pressure_level": 3}, "memory_pressure_unknown"),
+    ({"supported": False}, "resource_monitor_unavailable"),
+    ({"available_estimate_gib": 1.99}, "available_memory_low"),
+    ({"available_estimate_gib": None}, "available_memory_unknown"),
+    ({"used_swap_gib": 12.6}, "swap_growth_limit"),
+    ({"used_swap_gib": None}, "swap_usage_unknown"),
+    ({"own_rss_gib": 6.01}, "own_rss_limit"),
+    ({"rss_complete": False}, "own_rss_unknown"),
+    ({"physical_footprint_gib": 6.01}, "physical_footprint_limit"),
+    ({"speed_limit": 99}, "speed_limit_throttled"),
+    ({"scheduler_limit": 99}, "scheduler_limit_throttled"),
+    ({"thermal_warning_level": 1}, "thermal_warning"),
+])
+def test_warning_opt_in_preserves_other_resource_stops(changed, expected):
+    limits = ResourceThresholds(allow_memory_warning=True)
+    observed = reasons(safe(pressure_level=2, **changed) if "pressure_level" not in changed else safe(**changed),
+                       safe(), limits)
+    assert expected in observed
+    assert "memory_pressure_warning" not in observed
+    assert limits.min_available_gib == 2
+    assert limits.max_physical_footprint_gib == 6
+
+
+@pytest.mark.parametrize("opt_in", [False, True])
+def test_cli_records_warning_opt_in_and_still_blocks_critical_without_inference(tmp_path, monkeypatch, capsys, opt_in):
+    suite = tmp_path / "synthetic-suite"
+    repository = suite / "repository"
+    repository.mkdir(parents=True)
+    (repository / "module.py").write_text("value = 1\n")
+    (suite / "cases.json").write_text(json.dumps([{
+        "id": "inspect", "prompt": "Inspect module.py", "read_only": True,
+        "required_reads": ["module.py"], "oracle": "synthetic", "category": "inspection",
+    }]))
+    output = tmp_path / "report.json"
+    namespace = runpy.run_path(str(Path(__file__).resolve().parents[1] / "scripts" / "run_benchmark.py"))
+    main = namespace["main"]
+    monkeypatch.setitem(main.__globals__, "ResourceMonitor", lambda **kwargs: ResourceMonitor(
+        thresholds=kwargs["thresholds"], sampler=lambda: safe(pressure_level=4)))
+    arguments = ["run_benchmark.py", "--suite", str(suite), "--state", str(tmp_path / "new-state"),
+                 "--output", str(output)]
+    if opt_in:
+        arguments.append("--allow-memory-warning")
+    monkeypatch.setattr(sys, "argv", arguments)
+    assert main() == 2
+    report = json.loads(output.read_text())
+    assert report["stop_reasons"] == ["memory_pressure_critical"]
+    assert report["records"] == []
+    assert report["resource_thresholds"]["allow_memory_warning"] is opt_in
+    assert report["resource_thresholds"]["min_available_gib"] == 2
+    capsys.readouterr()
 
 
 def test_missing_optional_footprint_and_thermal_are_explicit_unknowns():

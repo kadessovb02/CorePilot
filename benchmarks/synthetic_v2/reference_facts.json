@@ -1,0 +1,43 @@
+{
+  "inspect_booking_storage": [
+    "Scheduler.book constructs a Booking and stores it in a dictionary keyed by identifier after record validation.",
+    "Booking and Window are frozen dataclasses; Window requires datetime boundaries and a positive duration.",
+    "Booking again with the same identifier replaces the existing record; separate instances retain independent dictionaries.",
+    "The public exports are Scheduler, Window, Booking and expand_dates."
+  ],
+  "inspect_policy_boundary": [
+    "Scheduler.book does not enforce overlap or capacity policy; it validates and stores a record.",
+    "Availability and remaining_capacity are separate calculation helpers that book does not call.",
+    "Two overlapping records on the same resource are both accepted and stored in this fixture."
+  ],
+  "inspect_endpoint_behavior": [
+    "The contract describes half-open windows, but current overlaps returns True for touching endpoints because its comparisons are inclusive.",
+    "clip_window constructs a Window even for a nonpositive intersection and therefore raises ValueError.",
+    "Window validates that its datetime boundaries have positive duration; this validation explains the rejection."
+  ],
+  "inspect_recurrence_behavior": [
+    "The daily end date is excluded because expand_dates uses a strict less-than loop; weekday filtering uses Monday 0 through Sunday 6.",
+    "Monthly recurrence uses date.replace with start.month plus offset, without year rollover or day clamping.",
+    "December rollover and month-end dates fail with ValueError rather than being handled by the implementation."
+  ],
+  "inspect_timezone_behavior": [
+    "utc_timestamp uses replace(tzinfo=timezone.utc) to relabel the timezone rather than convert the original instant.",
+    "Its instant is changed incorrectly for a nonzero offset: local 09:00 at UTC+02 remains 09:00 UTC rather than 07:00 UTC.",
+    "An aware datetime is required; naive datetimes are rejected with ValueError. Formatting uses seconds precision and the +00:00 suffix."
+  ],
+  "inspect_notification_boundary": [
+    "Scheduler.reminders returns a dictionary mapping booking identifiers to calculated datetimes by calling reminder_time.",
+    "The default lead is 15 minutes, but current start + lead arithmetic places the reminder after start.",
+    "There is no email dispatch, background worker or notification delivery; no live clock or now call is consulted."
+  ],
+  "inspect_cancellation_behavior": [
+    "drop_booking locates the identifier but filters out every booking on the matched resource, so other same-resource bookings are removed too.",
+    "Scheduler.cancel rebuilds the bookings dictionary from the resulting records; an unknown identifier leaves records unchanged.",
+    "It does not mutate a Booking's cancelled field; the retained frozen records still have cancelled False."
+  ],
+  "inspect_external_dependencies": [
+    "Bookings live in an instance dictionary in memory, with no durable database persistence.",
+    "There is no HTTP transport or dispatch implementation; helper results remain local calculations.",
+    "Imports use the standard library and this local package. External deployment systems are unverified by the inspected fixture."
+  ]
+}

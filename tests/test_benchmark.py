@@ -90,7 +90,10 @@ def test_blocked_admission_never_constructs_engine_or_calls_inference(tmp_path, 
     assert report == json.loads(output.read_text())
 
 
-def test_ab_ba_pairs_receive_identical_case_budgets_and_original_source_is_unchanged(tmp_path, suite, monkeypatch, no_rest):
+@pytest.mark.parametrize("protocol", ["json", "native"])
+@pytest.mark.parametrize("timeout,override,expected", [(150, None, (90, 130)), (80, None, (80, 80)),
+                                                       (300, 300, (300, 300)), (120, 300, (120, 120)), (300, 45, (45, 45))])
+def test_ab_ba_pairs_receive_identical_case_budgets_and_original_source_is_unchanged(tmp_path, suite, monkeypatch, no_rest, protocol, timeout, override, expected):
     calls = []
     initial = source_manifest(suite / "repository")
     async def run(settings, selected, case, mode, monitor, baseline, **caps):
@@ -99,16 +102,47 @@ def test_ab_ba_pairs_receive_identical_case_budgets_and_original_source_is_uncha
         return result(case["id"], mode)
     monkeypatch.setattr(benchmark, "run_case", run)
     report = asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, tmp_path / "report.json",
-                                          monitor=Monitor(), rest_seconds=10, request_pause_seconds=0))
+                                          monitor=Monitor(), rest_seconds=10, request_pause_seconds=0, protocol=protocol,
+                                          timeout=timeout, case_timeout_override=override))
     assert [(case, mode) for case, mode, _ in calls] == [("edit_alpha", "single"), ("edit_alpha", "specialists"),
                                                        ("inspect_beta", "specialists"), ("inspect_beta", "single")]
-    assert calls[0][2] == calls[1][2] == {"timeout": 90, "max_calls": 12, "max_tokens": 768, "context_chars": 14000, "request_pause_seconds": 0}
-    assert calls[2][2] == calls[3][2] == {"timeout": 130, "max_calls": 20, "max_tokens": 768, "context_chars": 14000, "request_pause_seconds": 0}
+    assert calls[0][2] == calls[1][2] == {"timeout": expected[0], "max_calls": 12, "max_tokens": 768, "context_chars": 14000, "request_pause_seconds": 0, "protocol": protocol, "case_timeout_override": override}
+    assert calls[2][2] == calls[3][2] == {"timeout": expected[1], "max_calls": 20, "max_tokens": 768, "context_chars": 14000, "request_pause_seconds": 0, "protocol": protocol, "case_timeout_override": override}
     assert report["settings"]["between_requests_seconds"] == 0
+    assert report["settings"]["protocol"] == protocol
+    assert report["settings"]["case_timeout_override"] == override
     assert report["summary"]["paired"]["both_usable"] == 2
     assert not report["stop_reasons"] and report["unattempted_runs"] == 0
     assert source_manifest(suite / "repository") == initial
     assert no_rest and all(delay == 10 for delay in no_rest)
+
+
+@pytest.mark.parametrize("global_cap,override,expected", [(24, None, (12, 20)), (24, 24, (24, 24)),
+                                                          (18, 24, (18, 18)), (24, 8, (8, 8))])
+def test_explicit_call_budget_override_is_shared_by_both_modes_and_capped(tmp_path, suite, monkeypatch, no_rest, global_cap, override, expected):
+    calls = []
+    initial = source_manifest(suite)
+    async def run(settings, selected, case, mode, monitor, baseline, **caps):
+        calls.append(caps["max_calls"])
+        return result(case["id"], mode)
+    monkeypatch.setattr(benchmark, "run_case", run)
+    report = asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, tmp_path / "report.json",
+                                          monitor=Monitor(), rest_seconds=10, max_calls=global_cap,
+                                          case_call_override=override))
+    assert calls == [expected[0], expected[0], expected[1], expected[1]]
+    assert report["settings"]["case_call_override"] == override
+    assert report["settings"]["max_calls"] == global_cap
+    assert source_manifest(suite) == initial
+
+
+@pytest.mark.parametrize("override", [True, False, 0, -1, 101, 1.5, float("nan"), float("inf"), "24"])
+def test_invalid_call_budget_override_is_rejected_before_inference(tmp_path, monkeypatch, override):
+    def forbidden(*args, **kwargs):
+        pytest.fail("Invalid call budget started evaluation")
+    monkeypatch.setattr(benchmark, "load_cases", forbidden)
+    with pytest.raises(ValueError, match="case_call_override"):
+        asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), tmp_path / "suite", tmp_path / "out.json",
+                                      case_call_override=override))
 
 
 @pytest.mark.parametrize("stop", ["timeout", "safety_abort"])
@@ -262,19 +296,285 @@ def test_cli_rejects_nonobject_metadata_before_comparison(tmp_path, monkeypatch,
     assert not state.exists()
 
 
-def test_cli_forwards_reviewed_metadata_and_fresh_external_state(tmp_path, suite, monkeypatch):
+@pytest.mark.parametrize("protocol", [None, "json", "native"])
+def test_cli_forwards_reviewed_metadata_and_fresh_external_state(tmp_path, suite, monkeypatch, protocol):
     state = tmp_path / "fresh-state"
     metadata = tmp_path / "metadata.json"
     reviewed = {"model": "synthetic-model", "adapter_identity": "unknown", "trial": 1}
     metadata.write_text(json.dumps(reviewed))
     output = tmp_path / "report.json"
-    main, calls = benchmark_cli(monkeypatch, ["--state", state, "--suite", suite, "--metadata", metadata,
-                                              "--output", output])
+    arguments = ["--state", state, "--suite", suite, "--metadata", metadata, "--output", output]
+    if protocol is not None:
+        arguments.extend(["--protocol", protocol])
+    main, calls = benchmark_cli(monkeypatch, arguments)
     assert main() == 0 and len(calls) == 1
     settings, selected, destination, options = calls[0]
     assert settings.root == state and selected == suite and destination == output
     assert options["metadata"] == reviewed and options["monitor"] == "synthetic-monitor"
+    assert options["protocol"] == settings.protocol == (protocol or "json")
     assert not state.exists() and not output.exists()
+
+
+def test_cli_rejects_automatic_protocol_before_comparison(tmp_path, monkeypatch, capsys):
+    main, calls = benchmark_cli(monkeypatch, ["--state", tmp_path / "state", "--output", tmp_path / "report.json",
+                                              "--protocol", "auto"])
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2 and not calls
+    assert "invalid choice" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("override", [None, 300.0])
+def test_cli_explicit_case_timeout_override_is_forwarded_without_changing_caps(tmp_path, monkeypatch, override):
+    arguments = ["--state", tmp_path / "state", "--output", tmp_path / "report.json", "--timeout", "300"]
+    if override is not None:
+        arguments += ["--case-timeout-override", str(override)]
+    main, calls = benchmark_cli(monkeypatch, arguments)
+    assert main() == 0 and len(calls) == 1
+    options = calls[0][3]
+    assert options["case_timeout_override"] == override and options["timeout"] == 300
+    assert (options["max_calls"], options["max_tokens"], options["context_chars"]) == (24, 768, 14000)
+
+
+def test_cli_records_call_override_and_only_the_chosen_swap_guard(tmp_path, monkeypatch):
+    main, calls = benchmark_cli(monkeypatch, ["--state", tmp_path / "state", "--output", tmp_path / "report.json",
+                                              "--case-call-override", "24", "--max-swap-growth-mib", "2048"])
+    monitors = []
+    def monitor(**options):
+        monitors.append(options)
+        return "synthetic-monitor"
+    monkeypatch.setitem(main.__globals__, "ResourceMonitor", monitor)
+    assert main() == 0
+    assert calls[0][3]["case_call_override"] == 24
+    expected = vars(ResourceThresholds()).copy()
+    expected["max_swap_growth_mib"] = 2048.0
+    assert vars(monitors[0]["thresholds"]) == expected
+
+
+@pytest.mark.parametrize("flag,value,reason", [("--case-call-override", "0", "case_call_override"),
+                                               ("--case-call-override", "101", "case_call_override"),
+                                               ("--max-swap-growth-mib", "nan", "max_swap_growth_mib"),
+                                               ("--max-swap-growth-mib", "inf", "max_swap_growth_mib"),
+                                               ("--max-swap-growth-mib", "-1", "max_swap_growth_mib")])
+def test_cli_rejects_invalid_call_and_swap_overrides_before_runtime(tmp_path, monkeypatch, capsys, flag, value, reason):
+    main, calls = benchmark_cli(monkeypatch, ["--state", tmp_path / "state", "--output", tmp_path / "report.json", flag + "=" + value])
+    def forbidden(*args, **kwargs):
+        pytest.fail("Invalid budget reached runtime construction")
+    monkeypatch.setitem(main.__globals__, "Settings", forbidden)
+    monkeypatch.setitem(main.__globals__, "ResourceMonitor", forbidden)
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2 and not calls
+    assert reason in capsys.readouterr().err
+    assert not (tmp_path / "state").exists()
+
+
+@pytest.mark.parametrize("override", ["nan", "inf", "-inf", "-1", "0"])
+def test_cli_rejects_invalid_timeout_override_before_runtime_construction(tmp_path, monkeypatch, capsys, override):
+    main, calls = benchmark_cli(monkeypatch, ["--state", tmp_path / "state", "--output", tmp_path / "report.json",
+                                              "--case-timeout-override=" + override])
+    def forbidden(*args, **kwargs):
+        pytest.fail("Invalid timeout override reached runtime construction")
+    monkeypatch.setitem(main.__globals__, "Settings", forbidden)
+    monkeypatch.setitem(main.__globals__, "ResourceMonitor", forbidden)
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2 and not calls
+    assert "case_timeout_override must be a finite positive number" in capsys.readouterr().err
+    assert not (tmp_path / "state").exists()
+
+
+@pytest.mark.parametrize("override", [0, -1, float("nan"), float("inf"), True, "300"])
+def test_invalid_timeout_override_never_reaches_resource_sampling_or_models(tmp_path, suite, monkeypatch, override):
+    def forbidden(*args, **kwargs):
+        pytest.fail("Invalid timeout override reached model construction")
+    monkeypatch.setattr(benchmark, "MeteredModel", forbidden)
+    monitor = Monitor()
+    async def run():
+        settings = Settings(root=tmp_path / "state")
+        with pytest.raises(ValueError, match="case_timeout_override"):
+            await benchmark.compare(settings, suite, tmp_path / "report.json", monitor=monitor,
+                                    case_timeout_override=override)
+        with pytest.raises(ValueError, match="case_timeout_override"):
+            await benchmark.run_case(settings, suite, benchmark.load_cases(suite)[0], "single", monitor, safe(),
+                                     timeout=300, max_calls=24, max_tokens=768, context_chars=14000,
+                                     case_timeout_override=override)
+        assert monitor.sample_count == 0 and not (tmp_path / "report.json").exists()
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("minimum", [None, 1.5, 0.0])
+def test_cli_sets_only_the_explicit_available_memory_threshold(tmp_path, monkeypatch, minimum):
+    arguments = ["--state", tmp_path / "state", "--output", tmp_path / "report.json"]
+    if minimum is not None:
+        arguments += ["--min-available-gib", str(minimum)]
+    main, calls = benchmark_cli(monkeypatch, arguments)
+    monitors = []
+    def monitor(**options):
+        monitors.append(options)
+        return "synthetic-monitor"
+    monkeypatch.setitem(main.__globals__, "ResourceMonitor", monitor)
+    assert main() == 0 and len(calls) == len(monitors) == 1
+    expected = vars(ResourceThresholds()).copy()
+    expected["min_available_gib"] = 2.0 if minimum is None else minimum
+    assert vars(monitors[0]["thresholds"]) == expected
+
+
+@pytest.mark.parametrize("minimum", ["nan", "inf", "-inf", "-1"])
+def test_cli_rejects_unsafe_memory_threshold_before_settings_monitor_or_models(tmp_path, monkeypatch, capsys, minimum):
+    main, calls = benchmark_cli(monkeypatch, ["--state", tmp_path / "state", "--output", tmp_path / "report.json",
+                                              "--min-available-gib=" + minimum])
+    def forbidden(*args, **kwargs):
+        pytest.fail("Invalid threshold reached runtime construction")
+    monkeypatch.setitem(main.__globals__, "Settings", forbidden)
+    monkeypatch.setitem(main.__globals__, "ResourceMonitor", forbidden)
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2 and not calls
+    message = capsys.readouterr().err
+    assert "min_available_gib must be a finite nonnegative number" in message
+    assert "Traceback" not in message
+    assert not (tmp_path / "state").exists()
+
+
+def test_selected_available_memory_threshold_is_recorded_when_admission_blocks(tmp_path, suite, monkeypatch):
+    def forbidden(*args, **kwargs):
+        pytest.fail("Blocked memory admission reached model execution")
+    monkeypatch.setattr(benchmark, "run_case", forbidden)
+    monitor = Monitor([safe(available_estimate_gib=1.0)])
+    monitor.thresholds = ResourceThresholds(min_available_gib=1.5)
+    output = tmp_path / "report.json"
+    report = asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, output, monitor=monitor))
+    assert report["records"] == [] and report["stop_reasons"] == ["available_memory_low"]
+    assert report["resource_thresholds"]["min_available_gib"] == 1.5
+    assert json.loads(output.read_text())["resource_thresholds"] == vars(monitor.thresholds)
+
+
+@pytest.mark.parametrize("protocol", ["auto", "unsupported", None])
+def test_benchmark_rejects_nonexplicit_protocol_before_resources_or_clients(tmp_path, suite, monkeypatch, protocol):
+    def forbidden(*args, **kwargs):
+        pytest.fail("Invalid benchmark protocol reached model construction")
+    monkeypatch.setattr(benchmark, "MeteredModel", forbidden)
+    monitor = Monitor()
+    async def run():
+        settings = Settings(root=tmp_path / "state")
+        with pytest.raises(ValueError, match="protocol"):
+            await benchmark.compare(settings, suite, tmp_path / "report.json", monitor=monitor, protocol=protocol)
+        with pytest.raises(ValueError, match="protocol"):
+            await benchmark.run_case(settings, suite, benchmark.load_cases(suite)[0], "single", monitor, safe(),
+                                     timeout=1, max_calls=24, max_tokens=768, context_chars=14000, protocol=protocol)
+        assert monitor.sample_count == 0
+        assert not (tmp_path / "report.json").exists()
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("protocol", ["json", "native"])
+def test_metered_client_uses_the_selected_http_tool_protocol_for_each_role(tmp_path, protocol):
+    async def run():
+        requests = []
+        def respond(request):
+            payload = json.loads(request.content)
+            requests.append(payload)
+            message = {"content": '{"tool":"read_file","arguments":{"path":"module.py"}}'}
+            if protocol == "native":
+                message = {"content": "", "tool_calls": [{"id": "synthetic-call", "type": "function",
+                    "function": {"name": "read_file", "arguments": '{"path":"module.py"}'}}]}
+            return httpx.Response(200, json={"choices": [{"message": message}]})
+        settings = Settings(root=tmp_path / "state", model_name="synthetic-model", protocol=protocol,
+                            max_tokens=768, context_chars=14000, orchestration={"roles": {
+                                role: {"url": "http://127.0.0.1:8081/v1", "name": "synthetic-model", "protocol": protocol}
+                                for role in ("planner", "coder", "reviewer")}})
+        metrics = benchmark.new_metrics()
+        metrics["_request_pause_seconds"] = 0
+        clients = {role: benchmark.MeteredModel(settings, metrics) for role in ("planner", "coder", "reviewer")}
+        single = benchmark.MeteredModel(settings, metrics)
+        pool = benchmark.RoleModelPool(settings, clients=clients)
+        try:
+            for client in [single, *clients.values()]:
+                await client.http.aclose()
+                client.http = httpx.AsyncClient(transport=httpx.MockTransport(respond),
+                    event_hooks={"request": [client.requested], "response": [client.received]})
+            messages = [{"role": "system", "content": "Synthetic rules"}, {"role": "user", "content": "Read module.py"}]
+            results = [await single.complete(messages, tool_names=["read_file"])]
+            for role in ("planner", "coder", "reviewer"):
+                results.append(await pool.complete(role, messages, tool_names=["read_file"]))
+            assert len(requests) == 4 and metrics["http_attempts"] == 4
+            assert all(result["tool_calls"][0]["function"]["name"] == "read_file" for result in results)
+            for payload in requests:
+                assert (payload["model"], payload["max_tokens"], payload["temperature"], payload["stream"]) == (
+                    "synthetic-model", 768, 0.15, False)
+                if protocol == "native":
+                    assert payload["tool_choice"] == "auto"
+                    assert [tool["function"]["name"] for tool in payload["tools"]] == ["read_file"]
+                    assert "Available tools:" not in payload["messages"][0]["content"]
+                else:
+                    assert "tools" not in payload and "tool_choice" not in payload
+                    assert '"name": "read_file"' in payload["messages"][0]["content"]
+                    assert "Available tools:" in payload["messages"][0]["content"]
+        finally:
+            await single.close()
+            await pool.close()
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("override,expected", [(None, 130), (300, 300), (75, 75)])
+def test_real_native_clients_use_identical_caps_and_effective_task_timeout_for_both_modes(tmp_path, suite, monkeypatch, override, expected):
+    async def run():
+        requests, waits, unused_http = [], [], []
+        original_model = benchmark.MeteredModel
+        original_wait = asyncio.wait_for
+        counters = {}
+
+        def respond(request):
+            payload = json.loads(request.content)
+            requests.append(payload)
+            system = payload["messages"][0]["content"]
+            role = "planner" if "planning specialist" in system else "reviewer" if "verification specialist" in system else "single"
+            counters[role] = counters.get(role, 0) + 1
+            if counters[role] == 1:
+                message = {"role": "assistant", "content": "", "tool_calls": [{"id": role + "-read", "type": "function",
+                    "function": {"name": "read_file", "arguments": json.dumps({"path": "module.py"})}}]}
+                reason = "tool_calls"
+            else:
+                content = json.dumps({"approved": True, "summary": "Observed the module without edits.", "issues": []}) if role == "reviewer" else "Observed module.py and its value without edits."
+                message, reason = {"role": "assistant", "content": content}, "stop"
+            return httpx.Response(200, json={"choices": [{"message": message, "finish_reason": reason}],
+                                            "usage": {"prompt_tokens": 10, "completion_tokens": 5}})
+
+        class Model(original_model):
+            def __init__(self, settings, metrics):
+                super().__init__(settings, metrics)
+                unused_http.append(self.http)
+                self.http = httpx.AsyncClient(transport=httpx.MockTransport(respond),
+                    event_hooks={"request": [self.requested], "response": [self.received]})
+
+        async def observe_wait(awaitable, timeout):
+            waits.append(timeout)
+            return await original_wait(awaitable, timeout)
+
+        async def grade(*args):
+            return {"passed": True, "failures": []}
+
+        monkeypatch.setattr(benchmark, "MeteredModel", Model)
+        monkeypatch.setattr(benchmark, "grade", grade)
+        monkeypatch.setattr(asyncio, "wait_for", observe_wait)
+        settings = Settings(root=tmp_path / "state", model_name="synthetic-model")
+        case = benchmark.load_cases(suite)[1]
+        try:
+            for mode in ("single", "specialists"):
+                record = await benchmark.run_case(settings, suite, case, mode, Monitor(), safe(), timeout=300,
+                    max_calls=24, max_tokens=768, context_chars=14000, request_pause_seconds=0, protocol="native",
+                    case_timeout_override=override)
+                assert record["usable_passed"] and record["timeout_seconds"] == expected
+            assert waits == [expected, expected]
+            assert len(requests) == 6 and counters == {"single": 2, "planner": 2, "reviewer": 2}
+            assert all((payload["model"], payload["max_tokens"], payload["temperature"], payload["stream"]) ==
+                       ("synthetic-model", 768, 0.15, False) for payload in requests)
+            assert all(payload["tool_choice"] == "auto" for payload in requests)
+        finally:
+            for client in unused_http:
+                await client.aclose()
+    asyncio.run(run())
 
 
 def fake_runtime(monkeypatch, suite, *, hang=False, change=False):
@@ -335,7 +635,8 @@ def fake_runtime(monkeypatch, suite, *, hang=False, change=False):
     return models, engines
 
 
-def test_run_case_same_model_caps_and_json_protocol_for_every_role(tmp_path, suite, monkeypatch):
+@pytest.mark.parametrize("protocol", ["json", "native"])
+def test_run_case_same_model_caps_and_explicit_protocol_for_every_role(tmp_path, suite, monkeypatch, protocol):
     models, engines = fake_runtime(monkeypatch, suite)
     async def grade(*args):
         return {"passed": True, "failures": []}
@@ -346,14 +647,16 @@ def test_run_case_same_model_caps_and_json_protocol_for_every_role(tmp_path, sui
         for mode in ("single", "specialists"):
             monitor = Monitor()
             record = await benchmark.run_case(settings, suite, case, mode, monitor, safe(),
-                                               timeout=1, max_calls=24, max_tokens=768, context_chars=14000)
+                                               timeout=1, max_calls=24, max_tokens=768, context_chars=14000, protocol=protocol)
             assert record["usable_passed"] and monitor.stopped
+            assert record["protocol"] == protocol
         assert len(models) == 8 and all(model.closed for model in models)
         for model in models:
             config = model.settings
             assert (config.model_name, config.model_url, config.max_steps, config.max_tokens, config.context_chars, config.protocol) == (
-                "synthetic-model", "http://127.0.0.1:8081/v1", 24, 768, 14000, "json")
+                "synthetic-model", "http://127.0.0.1:8081/v1", 24, 768, 14000, protocol)
             assert config.orchestration["role_max_steps"] == 24
+            assert {role["protocol"] for role in config.orchestration["roles"].values()} == {protocol}
             assert not config.orchestration["router"]["enabled"]
         assert engines[0].options["orchestrated"] is False and engines[1].options["orchestrated"] is True
         assert all(engine.closed for engine in engines)

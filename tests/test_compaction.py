@@ -40,12 +40,12 @@ def test_latest_correction_and_successful_file_evidence_survive_failed_guesses()
     original = deepcopy(messages)
     capped = cap_messages(messages, 7000)
     assert messages == original
-    assert capped[1]["content"] == "Explain the architecture"
+    objective = next(message for message in capped if message.get("content") == "Explain the architecture")
     assert any(message["content"] == correction for message in capped)
     evidence = next(message["content"] for message in capped if "Observed tool evidence" in (message.get("content") or ""))
     assert all(name in evidence for name in names)
     assert "create_table" in evidence
-    assert "there are no migrations" not in capped[1]["content"]
+    assert "there are no migrations" not in objective["content"]
     assert len(json.dumps(capped, ensure_ascii=False)) <= 7000
     assert all(not any(key.startswith("_corepilot_") for key in message) for message in capped)
     assert_calls_paired(capped)

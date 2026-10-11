@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "audit_kind": "independent_cpu_post_run_evidence_review",
+  "date_utc": "2026-10-11T14:13:05.088067+00:00",
+  "run_id": "public12",
+  "public_report": "2026-10-11-read-loop-pilot.json",
+  "public_report_sha256": "e203f5ac4f1f8c47f6f3aaa721792beb2a21ef591eb7fb1a1ec5981d8b282ff7",
+  "record_key": [
+    "id",
+    "mode"
+  ],
+  "suite": "synthetic_v1",
+  "suite_sha256": "b5401b866e89bac019358ecd940f503f6841daf5221ac0546fd049358aa225af",
+  "source_sha256": "093e99d499012acbff2e5ba7b9fbe5e1832c4843dcac235201432e6009020b37",
+  "model": {
+    "repository": "mlx-community/Qwen3.5-4B-4bit",
+    "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+    "weights": "4-bit",
+    "adapter": null
+  },
+  "model_inference": false,
+  "gpu_used": false,
+  "is_model_score": false,
+  "method": [
+    "read_only_recorded_evidence_review",
+    "candidate_source_comparison",
+    "pure_function_cpu_probes"
+  ],
+  "run_owner_verification": {
+    "original_source_unchanged": true,
+    "suite_unchanged": true
+  },
+  "case_audits": [
+    {
+      "id": "edit_sku_normalization",
+      "mode": "single",
+      "status": "completed",
+      "finding": "genuine_behavioral_check_observed",
+      "checks": {
+        "attempted": 1,
+        "exit_codes": [
+          0
+        ],
+        "input_scenarios_checked": 7,
+        "value_scenarios": 4,
+        "exception_scenarios": 3,
+        "fresh_for_final_source": true
+      },
+      "source_review": {
+        "fixture_files": 8,
+        "changed_fixture_files": 1,
+        "unexpected_changed_files": 0,
+        "graded_copy_matches_final_fixture": true
+      },
+      "external_oracle": {
+        "test_methods": 3,
+        "passed": true,
+        "false_positive_identified": false
+      }
+    },
+    {
+      "id": "edit_exact_price",
+      "mode": "single",
+      "status": "cancelled",
+      "checks": {
+        "attempted": 4,
+        "exit_codes": [
+          1,
+          0,
+          1,
+          1
+        ],
+        "common_case_assertions_passed_after_integer_unit_repair": true,
+        "latest_check_passed": false
+      },
+      "cpu_verified_defects": [
+        {
+          "code": "fractional_cent_not_rejected",
+          "required_exception": "ValueError",
+          "observed_behavior": "fractional_cent_truncated_to_integer",
+          "external_oracle_agrees": true
+        },
+        {
+          "code": "nan_comparison_before_finite_validation",
+          "required_exception": "ValueError",
+          "observed_exception": "InvalidOperation",
+          "affected_input_types": [
+            "str",
+            "Decimal"
+          ],
+          "external_oracle_agrees": true
+        }
+      ],
+      "repair_observation": "Exception-chaining suppression was changed in the constructor handler; the failing NaN comparison remained outside that handler.",
+      "external_oracle": {
+        "test_methods": 3,
+        "passed": false,
+        "failure_count": 1,
+        "error_count": 1,
+        "diagnostics_match_cpu_findings": true
+      },
+      "termination": {
+        "wall_timeout": true,
+        "seconds": 300.068,
+        "calls_started": 15,
+        "global_call_cap": 24,
+        "response_cap_tokens": 768,
+        "length_limited_responses": 2,
+        "client_task_cancelled_during_final_request": true,
+        "last_started_request_had_no_recorded_response": true,
+        "final_answer_empty": true,
+        "repeated_read_guard_events": 0
+      },
+      "causal_attribution": "Observed code defects, two truncated responses and wall timeout coexist; a pure-loop explanation or success from a larger budget is not established."
+    },
+    {
+      "id": "edit_sku_normalization",
+      "mode": "specialists",
+      "status": "interrupted",
+      "phase": "planner",
+      "termination_reason": "repeated_successful_read_after_coaching",
+      "model_calls": 5,
+      "coder_calls": 0,
+      "reviewer_calls": 0,
+      "changed_files": 0,
+      "recorded_checks": 0,
+      "final_answer_empty": true,
+      "external_oracle": "Expected target failures on unchanged baseline."
+    },
+    {
+      "id": "edit_exact_price",
+      "mode": "specialists",
+      "status": "interrupted",
+      "phase": "planner",
+      "termination_reason": "repeated_successful_read_after_coaching",
+      "model_calls": 8,
+      "coder_calls": 0,
+      "reviewer_calls": 0,
+      "changed_files": 0,
+      "recorded_checks": 0,
+      "final_answer_empty": true,
+      "external_oracle": "Expected target failures on unchanged baseline."
+    }
+  ],
+  "limitations": [
+    "Adaptive development pilot on synthetic_v1; no held-out generalization claim.",
+    "This audit reviews existing evidence and does not perform model inference or replace the public benchmark score.",
+    "No causal effect of increasing time or token budgets is established."
+  ]
+}
