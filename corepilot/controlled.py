@@ -12,7 +12,7 @@ import re
 import uuid
 from pathlib import Path
 
-from .controlled_contract import (ContractError, parse_stage, prepare_patches,
+from .controlled_contract import (ContractError, MAX_RESPONSE_CHARS, parse_stage, prepare_patches,
                                  prepare_tests, validate_inspection, validate_selection)
 from .workspace import safe_path, source_manifest
 from .navigator import build_navigation
@@ -88,6 +88,23 @@ def _stage_content(content):
     if wrapped is None or re.search(r"(?m)^[ \t]*```", wrapped[1]):
         return content, False
     return wrapped[1], True
+
+
+def _parse_stage_response(stage, content):
+    """Default only nonauthoritative summary metadata in a complete payload."""
+    try:
+        return parse_stage(stage, content), False
+    except ContractError:
+        key = {"edit": "patches", "tests": "tests"}.get(stage)
+        if (key is None or not isinstance(content, str) or len(content) > MAX_RESPONSE_CHARS
+                or not _structured_answer(content)):
+            raise
+        value = json.loads(content)  # Duplicate/nonfinite checks ran above.
+        if not isinstance(value, dict) or set(value) != {key}:
+            raise
+        summary = ("Implementation stage completed." if stage == "edit"
+                   else "Test generation stage completed.")
+        return parse_stage(stage, {**value, "summary": summary}), True
 
 
 class Controller:
@@ -224,7 +241,10 @@ class Controller:
                         self.event("verification", "Normalized whole-answer JSON fence", {
                             "phase": stage, "retry": attempt + 1,
                             "format_normalization": "markdown_json_fence"})
-                    result = parse_stage(stage, content)
+                    result, defaulted = _parse_stage_response(stage, content)
+                    if defaulted:
+                        self.event("verification", "Host supplied neutral stage summary metadata", {
+                            "phase": stage, "metadata_default": True, "field": "summary", "count": 1})
                     return (result, validate(result)) if validate is not None else result
                 except ContractError as exc:
                     reason = str(exc)[:1000]

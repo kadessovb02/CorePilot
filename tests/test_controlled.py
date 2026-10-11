@@ -824,3 +824,131 @@ def test_readonly_projection_does_not_swallow_unsafe_paths(tmp_path, unsafe):
     assert not any(event["data"].get("selection_normalization") == "read_only_write_projection"
                    for event in task["events"])
     assert_paired(task)
+
+
+@pytest.mark.parametrize("protocol", ["native", "json"])
+def test_missing_only_edit_test_summary_uses_host_metadata_and_preserves_raw_proposals(tmp_path, protocol):
+    async def exercise():
+        path = "tests/test_regression.py"
+        selection = {**SELECT, "new_test_paths": [path]}
+        edit = {"patches": EDIT["patches"]}
+        tests = {"tests": [{"path": path, "content": NEW_TEST}]}
+        engine, task, tools = fixture(tmp_path, [])
+        originals = [json.dumps(value) for value in (selection, edit, tests, REVIEW)]
+        outputs, payloads = iter(originals), []
+        def respond(request):
+            payloads.append(json.loads(request.content))
+            content = next(outputs)
+            if protocol == "json":
+                content = json.dumps({"final": content})
+            return httpx.Response(200, json={"choices": [{"finish_reason": "stop", "message": {
+                "role": "assistant", "content": content}}]})
+        client = ModelClient(Settings(root=engine.settings.root, protocol=protocol))
+        await client.http.aclose()
+        client.http = httpx.AsyncClient(transport=httpx.MockTransport(respond))
+        engine.model = client
+        try:
+            await run_controlled(engine, task, tools)
+        finally:
+            await client.close()
+        assert task["status"] == "completed", task["error"]
+        assert task["step"] == 4 and len(payloads) == 4
+        assert (tools.root / path).read_text() == NEW_TEST
+        assert "return value + 2" in (tools.root / "helper.py").read_text()
+        assert len(tools.commands) == 1 and task["checks"][0]["exit_code"] == 0
+        assert task["controlled"]["summaries"]["edit"] == "Implementation stage completed."
+        assert task["controlled"]["summaries"]["tests"] == "Test generation stage completed."
+        persisted = engine.store.load(task["id"])
+        assert [message["content"] for message in persisted["messages"]
+                if message.get("_corepilot_controlled_stage")] == originals
+        events = [event for event in persisted["events"] if event["data"].get("metadata_default")]
+        assert [event["data"]["phase"] for event in events] == ["edit", "tests"]
+        assert all(event["type"] == "verification" and event["data"]["field"] == "summary"
+                   and event["data"]["count"] == 1 for event in events)
+        assert_paired(persisted)
+    asyncio.run(exercise())
+
+
+@pytest.mark.skipif(sys.platform != "darwin", reason="actual supported macOS sandbox")
+def test_missing_summaries_still_requires_real_configured_behavior_check(tmp_path):
+    path = "tests/test_regression.py"
+    engine, task, fake = fixture(tmp_path, [{**SELECT, "new_test_paths": [path]},
+        {"patches": EDIT["patches"]}, {"tests": [{"path": path, "content": NEW_TEST}]}, REVIEW])
+    tools = WorkspaceTools(fake.root, engine.settings.root, command_timeout=15, read_only_commands=True)
+    run(engine, task, tools)
+    assert task["status"] == "completed", task["error"]
+    check = next(event["data"]["result"] for event in task["events"]
+                 if event["type"] == "tool_result" and event["data"]["name"] == "run_command")
+    assert check["exit_code"] == 0 and check["sandbox"] == "macos-seatbelt"
+    assert "Ran 2 tests" in check["output"] and "OK" in check["output"]
+    assert task["controlled"]["verified_manifest"] == source_manifest(tools.root)
+
+
+@pytest.mark.parametrize("stage", ["edit", "tests"])
+@pytest.mark.parametrize("boundary", [
+    "duplicate", "nonfinite", "overflow", "scalar", "extra_key", "nested_key", "truncated",
+    "unsafe_path", "body_type", "missing_body", "null_summary", "malformed", "empty_body",
+])
+def test_summary_default_does_not_repair_json_or_authoritative_stage_fields(tmp_path, stage, boundary):
+    path = "tests/test_regression.py"
+    key = "patches" if stage == "edit" else "tests"
+    body = copy.deepcopy(EDIT["patches"] if stage == "edit" else [{"path": path, "content": NEW_TEST}])
+    value = {key: body}
+    content = None
+    if boundary == "duplicate":
+        fragment = json.dumps(key) + ":" + json.dumps(body)
+        content = "{" + fragment + "," + fragment + "}"
+    elif boundary == "nonfinite":
+        content = '{"' + key + '":[NaN]}'
+    elif boundary == "overflow":
+        content = '{"' + key + '":[1e999]}'
+    elif boundary == "scalar":
+        value = "not a stage object"
+    elif boundary == "extra_key":
+        value["approved"] = True
+    elif boundary == "nested_key":
+        body[0]["extra"] = "must not be dropped"
+    elif boundary == "unsafe_path":
+        body[0]["path"] = "../outside.py"
+    elif boundary == "body_type":
+        value[key] = "not a list"
+    elif boundary == "missing_body":
+        value = {}
+    elif boundary == "null_summary":
+        value["summary"] = None
+    elif boundary == "malformed":
+        content = json.dumps(value)[:-1]
+    elif boundary == "empty_body":
+        value[key] = []
+    response = {"role": "assistant", "content": json.dumps(value) if content is None else content}
+    if boundary == "truncated":
+        response["_corepilot_finish_reason"] = "length"
+    selection = {**SELECT, "new_test_paths": [path]}
+    prefix = [selection] if stage == "edit" else [selection, EDIT]
+    engine, task, tools = fixture(tmp_path, [*prefix, response, response])
+    existing = (tools.root / "tests/test_existing.py").read_bytes()
+    run(engine, task, tools)
+    assert task["status"] == "interrupted" and task["step"] == len(prefix) + 2
+    assert len(engine.model.requests) == len(prefix) + 2 and not tools.commands
+    assert not (tools.root / path).exists()
+    assert (tools.root / "tests/test_existing.py").read_bytes() == existing
+    if stage == "edit":
+        assert "return value + 1" in (tools.root / "helper.py").read_text()
+    if boundary == "truncated":
+        assert not any(event["data"].get("metadata_default") for event in task["events"])
+    assert_paired(task)
+
+
+def test_summary_default_cannot_supply_review_authority_or_test_assertions(tmp_path):
+    missing_review = {"approved": True, "issues": []}
+    engine, task, tools = fixture(tmp_path, [SELECT, EDIT, missing_review, missing_review])
+    run(engine, task, tools)
+    assert task["status"] == "interrupted" and task["step"] == 4
+    assert len(tools.commands) == 1 and not any(event["data"].get("metadata_default") for event in task["events"])
+    path = "tests/test_regression.py"
+    missing_assertion = {"tests": [{"path": path, "content": "import unittest\nfrom helper import transform\nprint(transform(3))\n"}]}
+    engine2, task2, tools2 = fixture(tmp_path / "second", [{**SELECT, "new_test_paths": [path]},
+        EDIT, missing_assertion, missing_assertion])
+    run(engine2, task2, tools2)
+    assert task2["status"] == "interrupted" and task2["step"] == 4
+    assert not (tools2.root / path).exists() and not tools2.commands
