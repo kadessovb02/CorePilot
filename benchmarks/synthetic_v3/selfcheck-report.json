@@ -1,0 +1,146 @@
+{
+  "schema": 1,
+  "kind": "synthetic_v3_cpu_loader_grader_admission",
+  "passed": true,
+  "case_count": 12,
+  "edit_count": 6,
+  "inspection_count": 6,
+  "rows": {
+    "edit-tag-normalization": {
+      "baseline_passed": false,
+      "baseline_behavior_failures": 3,
+      "baseline_behavior_errors": 0,
+      "intended_fix_passed": true,
+      "intended_tests_run": 14,
+      "bad_fix_rejected": true
+    },
+    "edit-page-window": {
+      "baseline_passed": false,
+      "baseline_behavior_failures": 2,
+      "baseline_behavior_errors": 0,
+      "intended_fix_passed": true,
+      "intended_tests_run": 14,
+      "bad_fix_rejected": true
+    },
+    "edit-label-copy": {
+      "baseline_passed": false,
+      "baseline_behavior_failures": 2,
+      "baseline_behavior_errors": 0,
+      "intended_fix_passed": true,
+      "intended_tests_run": 14,
+      "bad_fix_rejected": true
+    },
+    "edit-text-escaping": {
+      "baseline_passed": false,
+      "baseline_behavior_failures": 3,
+      "baseline_behavior_errors": 0,
+      "intended_fix_passed": true,
+      "intended_tests_run": 14,
+      "bad_fix_rejected": true
+    },
+    "edit-sparse-identifiers": {
+      "baseline_passed": false,
+      "baseline_behavior_failures": 4,
+      "baseline_behavior_errors": 0,
+      "intended_fix_passed": true,
+      "intended_tests_run": 14,
+      "bad_fix_rejected": true
+    },
+    "edit-falsey-handler": {
+      "baseline_passed": false,
+      "baseline_behavior_failures": 1,
+      "baseline_behavior_errors": 0,
+      "intended_fix_passed": true,
+      "intended_tests_run": 14,
+      "bad_fix_rejected": true
+    },
+    "inspect-tag-current": {
+      "source_fact_answer_passed": true,
+      "wrong_fact_rejected": true,
+      "missing_read_rejected": true,
+      "bad_reference_rejected": true,
+      "source_change_rejected": true
+    },
+    "inspect-page-validation": {
+      "source_fact_answer_passed": true,
+      "wrong_fact_rejected": true,
+      "missing_read_rejected": true,
+      "bad_reference_rejected": true,
+      "source_change_rejected": true
+    },
+    "inspect-label-aliasing": {
+      "source_fact_answer_passed": true,
+      "wrong_fact_rejected": true,
+      "missing_read_rejected": true,
+      "bad_reference_rejected": true,
+      "source_change_rejected": true
+    },
+    "inspect-escape-order": {
+      "source_fact_answer_passed": true,
+      "wrong_fact_rejected": true,
+      "missing_read_rejected": true,
+      "bad_reference_rejected": true,
+      "source_change_rejected": true
+    },
+    "inspect-handler-current": {
+      "source_fact_answer_passed": true,
+      "wrong_fact_rejected": true,
+      "missing_read_rejected": true,
+      "bad_reference_rejected": true,
+      "source_change_rejected": true
+    },
+    "inspect-creation-boundaries": {
+      "source_fact_answer_passed": true,
+      "wrong_fact_rejected": true,
+      "missing_read_rejected": true,
+      "bad_reference_rejected": true,
+      "source_change_rejected": true
+    }
+  },
+  "extra_negatives": [
+    {
+      "case": "print_only_test",
+      "rejected": true
+    },
+    {
+      "case": "requested_test_missing",
+      "rejected": true
+    },
+    {
+      "case": "existing_test_modified",
+      "rejected": true
+    },
+    {
+      "case": "one_space_indent",
+      "rejected": true
+    },
+    {
+      "case": "syntax_error",
+      "rejected": true
+    },
+    {
+      "case": "many_unexpected_files",
+      "rejected": true
+    },
+    {
+      "case": "integer_is_not_boolean",
+      "rejected": true
+    },
+    {
+      "case": "contradictory_duplicate_keys",
+      "rejected": true
+    }
+  ],
+  "intended_edit_unittest_executions": 84,
+  "external_behavior_test_executions": 36,
+  "existing_api_test_executions": 36,
+  "authored_reference_test_executions": 12,
+  "model_calls": 0,
+  "synthetic_event_fixtures": true,
+  "actual_model_reads": 0,
+  "limits": [
+    "Typed inspection facts and function-range references are bounded proxies, not complete explanatory quality.",
+    "Authored assertion-node counting does not establish mutation coverage or executed assertion count.",
+    "The OS sandbox is required for candidate execution; the in-process oracle is not a hostile-code proof system."
+  ]
+}

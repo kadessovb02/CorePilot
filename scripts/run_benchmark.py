@@ -24,6 +24,11 @@ def main():
     parser.add_argument("--server-pid", type=int, action="append", default=[])
     parser.add_argument("--metadata", type=Path, help="Reviewed generic metadata; never machine paths or credentials")
     parser.add_argument("--limit", type=int, default=0)
+    parser.add_argument("--mode", choices=("single", "specialists", "controlled"), action="append",
+                        help="Workflow arm; repeat in preregistered order (default: single then specialists)")
+    parser.add_argument("--case-id", action="append", help="Frozen case ID; repeat in declared order")
+    parser.add_argument("--check-json", action="append", default=[],
+                        help="Operator-owned argv array for controlled checks; repeat for each command")
     parser.add_argument("--rest-seconds", type=float, default=20)
     parser.add_argument("--request-pause-seconds", type=float, default=3,
                         help="Pause between model calls (0–60 seconds); resource guards remain active")
@@ -42,6 +47,24 @@ def main():
     parser.add_argument("--max-swap-growth-mib", type=float, default=512.0,
                         help="Maximum measured system-wide swap growth from the experiment baseline (finite, nonnegative; default 512 MiB)")
     args = parser.parse_args()
+    checks = []
+    for value in args.check_json:
+        try:
+            command = json.loads(value)
+        except ValueError:
+            parser.error("check-json must be a JSON argv array")
+        if (not isinstance(command, list) or not 1 <= len(command) <= 32
+                or any(not isinstance(part, str) or not part or len(part) > 1000 for part in command)):
+            parser.error("check-json must be a bounded nonempty string argv array")
+        checks.append(command)
+    if len(checks) > 5:
+        parser.error("At most five controlled checks are supported")
+    if args.mode and len(set(args.mode)) != len(args.mode):
+        parser.error("mode arms must be distinct")
+    if args.mode and "controlled" in args.mode and not checks:
+        parser.error("controlled mode requires operator-owned check-json commands")
+    if checks and (not args.mode or "controlled" not in args.mode):
+        parser.error("check-json requires an explicit controlled mode arm")
     if args.case_timeout_override is not None and (not math.isfinite(args.case_timeout_override) or args.case_timeout_override <= 0):
         parser.error("case_timeout_override must be a finite positive number")
     if args.case_call_override is not None and not 1 <= args.case_call_override <= 100:
@@ -68,6 +91,8 @@ def main():
                                 timeout=args.timeout, case_timeout_override=args.case_timeout_override, max_calls=args.max_calls,
                                 case_call_override=args.case_call_override,
                                 max_tokens=args.max_tokens, context_chars=args.context_chars, metadata=metadata,
+                                **({"modes": args.mode, "controlled_checks": checks} if args.mode else {}),
+                                **({"case_ids": args.case_id} if args.case_id else {}),
                                 progress=lambda row: print(json.dumps(row), flush=True)))
     print(json.dumps({"summary": report["summary"], "stop_reasons": report["stop_reasons"]}), flush=True)
     return 2 if report["stop_reasons"] else 0

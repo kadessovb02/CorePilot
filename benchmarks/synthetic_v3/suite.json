@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "suite_id": "synthetic_v3",
+  "repository": "repository",
+  "cases": "cases.json",
+  "case_count": 12,
+  "edit_count": 6,
+  "inspection_count": 6,
+  "training_allowed": false,
+  "memory_allowed": false,
+  "reset_strategy": "fresh_copy_of_repository_for_every_case",
+  "oracle_visibility": "outside_agent_workspace_until_generation_finishes",
+  "inspection_grade": "typed_current_source_facts_with_function_range_references_and_read_paths",
+  "inspection_limitations": "Finite structured source facts and file-read paths do not prove complete semantic correctness, line coverage or explanatory quality. Independently audit answers and traces."
+}

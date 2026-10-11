@@ -1,0 +1,147 @@
+{
+  "schema": 1,
+  "metric": "finite_typed_current_source_fact_proxy",
+  "requires_unchanged_source": true,
+  "requires_all_declared_read_paths": true,
+  "accepts_json_fence": true,
+  "grades_explanation_semantics": false,
+  "limits": [
+    "Only the declared typed facts and relevant function-range references are automatic criteria.",
+    "File-read event paths do not establish full line coverage.",
+    "Manually inspect explanation, omitted context and tool traces before broad quality claims."
+  ],
+  "cases": {
+    "inspect-tag-current": {
+      "expected": {
+        "result": [
+          "sun",
+          "sun",
+          "moon"
+        ],
+        "non_text_error": "TypeError"
+      },
+      "function_reference_ranges": {
+        "notehub/parsing.py": [
+          {
+            "function": "parse_tags",
+            "start": 4,
+            "end": 14
+          }
+        ]
+      }
+    },
+    "inspect-page-validation": {
+      "expected": {
+        "default_limit": 20,
+        "negative_offset_error": "ValueError",
+        "bool_offset_error": "TypeError",
+        "string_limit_error": "TypeError"
+      },
+      "function_reference_ranges": {
+        "notehub/paging.py": [
+          {
+            "function": "page",
+            "start": 4,
+            "end": 10
+          }
+        ]
+      }
+    },
+    "inspect-label-aliasing": {
+      "expected": {
+        "mutates_input_labels": true,
+        "copies_outer_mapping": true,
+        "shares_label_list": true,
+        "duplicate_appends": false
+      },
+      "function_reference_ranges": {
+        "notehub/revision.py": [
+          {
+            "function": "add_label",
+            "start": 4,
+            "end": 16
+          }
+        ]
+      }
+    },
+    "inspect-escape-order": {
+      "expected": {
+        "replacement_order": [
+          "pipe",
+          "backslash",
+          "newline"
+        ],
+        "backslashes_before_escaped_pipe": 2,
+        "non_text_error": "TypeError",
+        "record_delimiter": "|"
+      },
+      "function_reference_ranges": {
+        "notehub/export.py": [
+          {
+            "function": "escape_text",
+            "start": 4,
+            "end": 7
+          },
+          {
+            "function": "render_line",
+            "start": 10,
+            "end": 11
+          }
+        ]
+      }
+    },
+    "inspect-handler-current": {
+      "expected": {
+        "selected": "default",
+        "unknown_action_uses_default": true,
+        "missing_default_error": "KeyError"
+      },
+      "function_reference_ranges": {
+        "notehub/routing.py": [
+          {
+            "function": "choose_handler",
+            "start": 4,
+            "end": 15
+          }
+        ]
+      }
+    },
+    "inspect-creation-boundaries": {
+      "expected": {
+        "calls_in_order": [
+          "parse_tags",
+          "next_identifier"
+        ],
+        "performs_file_or_network_io": false,
+        "mutates_input_note_list": false,
+        "returned_container_types": [
+          "dict",
+          "list"
+        ]
+      },
+      "function_reference_ranges": {
+        "notehub/service.py": [
+          {
+            "function": "create_note",
+            "start": 6,
+            "end": 15
+          }
+        ],
+        "notehub/parsing.py": [
+          {
+            "function": "parse_tags",
+            "start": 4,
+            "end": 14
+          }
+        ],
+        "notehub/counters.py": [
+          {
+            "function": "next_identifier",
+            "start": 4,
+            "end": 13
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,216 @@
+[
+  {
+    "id": "edit-tag-normalization",
+    "category": "edit",
+    "read_only": false,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/parsing.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "external_unittest_contracts_and_scope",
+    "allowed_changes": [
+      "notehub/parsing.py",
+      "tests/test_tag_normalization.py"
+    ],
+    "target_file": "notehub/parsing.py",
+    "new_test_file": "tests/test_tag_normalization.py",
+    "prompt": "Fix parse_tags so normalized duplicates are removed after casefold, preserving first encounter order. Cover mixed case, repeated spellings, Unicode casefold, empty text and invalid input. Preserve whitespace/blanks, TypeError and fresh-list behavior. Read AGENTS.md, contracts.md, notehub/parsing.py and tests/test_public_api.py first. Change only notehub/parsing.py and tests/test_tag_normalization.py. Add meaningful unittest assertions to tests/test_tag_normalization.py and run python -m unittest discover -s tests -v. Existing tests and all other files must remain unchanged. Finish with the actual check result and a short description."
+  },
+  {
+    "id": "edit-page-window",
+    "category": "edit",
+    "read_only": false,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/paging.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "external_unittest_contracts_and_scope",
+    "allowed_changes": [
+      "notehub/paging.py",
+      "tests/test_page_window.py"
+    ],
+    "target_file": "notehub/paging.py",
+    "new_test_file": "tests/test_page_window.py",
+    "prompt": "Fix page so limit is a count from offset, not an absolute end index. Cover nonzero offsets and short final windows. Preserve defaults, validation exception classes, tuple support, zero/empty/out-of-range behavior, and input immutability. Read AGENTS.md, contracts.md, notehub/paging.py and tests/test_public_api.py first. Change only notehub/paging.py and tests/test_page_window.py. Add meaningful unittest assertions to tests/test_page_window.py and run python -m unittest discover -s tests -v. Existing tests and all other files must remain unchanged. Finish with the actual check result and a short description."
+  },
+  {
+    "id": "edit-label-copy",
+    "category": "edit",
+    "read_only": false,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/revision.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "external_unittest_contracts_and_scope",
+    "allowed_changes": [
+      "notehub/revision.py",
+      "tests/test_label_copy.py"
+    ],
+    "target_file": "notehub/revision.py",
+    "new_test_file": "tests/test_label_copy.py",
+    "prompt": "Fix add_label so returned labels are independent of caller labels, including the duplicate-label path. Preserve identity of unrelated values, trimming, insertion order, missing-label behavior and validation exceptions. Never mutate caller labels. Read AGENTS.md, contracts.md, notehub/revision.py and tests/test_public_api.py first. Change only notehub/revision.py and tests/test_label_copy.py. Add meaningful unittest assertions to tests/test_label_copy.py and run python -m unittest discover -s tests -v. Existing tests and all other files must remain unchanged. Finish with the actual check result and a short description."
+  },
+  {
+    "id": "edit-text-escaping",
+    "category": "edit",
+    "read_only": false,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/export.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "external_unittest_contracts_and_scope",
+    "allowed_changes": [
+      "notehub/export.py",
+      "tests/test_text_escaping.py"
+    ],
+    "target_file": "notehub/export.py",
+    "new_test_file": "tests/test_text_escaping.py",
+    "prompt": "Fix escape_text so each original backslash, pipe and LF is escaped exactly once; introduced escape backslashes must not be escaped again. Cover mixed adjacent escapes, trailing backslash and plain text. Preserve TypeError and render_line delimiter/missing fields. Read AGENTS.md, contracts.md, notehub/export.py and tests/test_public_api.py first. Change only notehub/export.py and tests/test_text_escaping.py. Add meaningful unittest assertions to tests/test_text_escaping.py and run python -m unittest discover -s tests -v. Existing tests and all other files must remain unchanged. Finish with the actual check result and a short description."
+  },
+  {
+    "id": "edit-sparse-identifiers",
+    "category": "edit",
+    "read_only": false,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/counters.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "external_unittest_contracts_and_scope",
+    "allowed_changes": [
+      "notehub/counters.py",
+      "tests/test_sparse_identifiers.py"
+    ],
+    "target_file": "notehub/counters.py",
+    "new_test_file": "tests/test_sparse_identifiers.py",
+    "prompt": "Fix next_identifier to choose highest existing id plus one, not collection length plus one. Cover unsorted/gapped/duplicate ids and a generator. Preserve empty input, one-pass iteration, caller data, validation and KeyError behavior. Read AGENTS.md, contracts.md, notehub/counters.py and tests/test_public_api.py first. Change only notehub/counters.py and tests/test_sparse_identifiers.py. Add meaningful unittest assertions to tests/test_sparse_identifiers.py and run python -m unittest discover -s tests -v. Existing tests and all other files must remain unchanged. Finish with the actual check result and a short description."
+  },
+  {
+    "id": "edit-falsey-handler",
+    "category": "edit",
+    "read_only": false,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/routing.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "external_unittest_contracts_and_scope",
+    "allowed_changes": [
+      "notehub/routing.py",
+      "tests/test_falsey_handler.py"
+    ],
+    "target_file": "notehub/routing.py",
+    "new_test_file": "tests/test_falsey_handler.py",
+    "prompt": "Fix choose_handler so a registered callable with false boolean value is returned by identity instead of default. Only absent actions fall back. Preserve required default, noncallable checks, exception classes and normal handler identity. Read AGENTS.md, contracts.md, notehub/routing.py and tests/test_public_api.py first. Change only notehub/routing.py and tests/test_falsey_handler.py. Add meaningful unittest assertions to tests/test_falsey_handler.py and run python -m unittest discover -s tests -v. Existing tests and all other files must remain unchanged. Finish with the actual check result and a short description."
+  },
+  {
+    "id": "inspect-tag-current",
+    "category": "inspection",
+    "read_only": true,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/parsing.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "typed_current_source_facts_with_reference_and_read_checks",
+    "fact_modules": [
+      "notehub/parsing.py"
+    ],
+    "prompt": "For current parse_tags(\"Sun,sun, ,MOON\"), report result as a string list and non_text_error as the exception class for None. Keys: result, non_text_error, refs. Report current duplicates, not desired behavior. Read AGENTS.md, contracts.md, notehub/parsing.py, tests/test_public_api.py. Return one JSON object with requested fields and refs=[{\"path\":\"source module\",\"line\":1}], replacing line with a relevant real one-based function-body line. Optional explanation text is allowed. No files may change; do not install dependencies or start services."
+  },
+  {
+    "id": "inspect-page-validation",
+    "category": "inspection",
+    "read_only": true,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/paging.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "typed_current_source_facts_with_reference_and_read_checks",
+    "fact_modules": [
+      "notehub/paging.py"
+    ],
+    "prompt": "Describe current validation. Keys: default_limit (integer), negative_offset_error, bool_offset_error, string_limit_error (exception class strings), refs. Do not change pagination. Read AGENTS.md, contracts.md, notehub/paging.py, tests/test_public_api.py. Return one JSON object with requested fields and refs=[{\"path\":\"source module\",\"line\":1}], replacing line with a relevant real one-based function-body line. Optional explanation text is allowed. No files may change; do not install dependencies or start services."
+  },
+  {
+    "id": "inspect-label-aliasing",
+    "category": "inspection",
+    "read_only": true,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/revision.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "typed_current_source_facts_with_reference_and_read_checks",
+    "fact_modules": [
+      "notehub/revision.py"
+    ],
+    "prompt": "For existing labels and a new nonblank label, report mutates_input_labels, copies_outer_mapping and shares_label_list as booleans. For an existing label report duplicate_appends as boolean. Include refs; do not repair it. Read AGENTS.md, contracts.md, notehub/revision.py, tests/test_public_api.py. Return one JSON object with requested fields and refs=[{\"path\":\"source module\",\"line\":1}], replacing line with a relevant real one-based function-body line. Optional explanation text is allowed. No files may change; do not install dependencies or start services."
+  },
+  {
+    "id": "inspect-escape-order",
+    "category": "inspection",
+    "read_only": true,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/export.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "typed_current_source_facts_with_reference_and_read_checks",
+    "fact_modules": [
+      "notehub/export.py"
+    ],
+    "prompt": "Inspect current escape order. Keys: replacement_order (list using pipe/backslash/newline), backslashes_before_escaped_pipe (integer for escape_text(\"|\")), non_text_error (exception class for None), record_delimiter (string), refs. Report actual current code. Read AGENTS.md, contracts.md, notehub/export.py, tests/test_public_api.py. Return one JSON object with requested fields and refs=[{\"path\":\"source module\",\"line\":1}], replacing line with a relevant real one-based function-body line. Optional explanation text is allowed. No files may change; do not install dependencies or start services."
+  },
+  {
+    "id": "inspect-handler-current",
+    "category": "inspection",
+    "read_only": true,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/routing.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "typed_current_source_facts_with_reference_and_read_checks",
+    "fact_modules": [
+      "notehub/routing.py"
+    ],
+    "prompt": "A present handler is callable with __bool__ returning False; default is an ordinary callable. Keys: selected (registered or default in current code), unknown_action_uses_default (boolean), missing_default_error (class string), refs. Do not repair it. Read AGENTS.md, contracts.md, notehub/routing.py, tests/test_public_api.py. Return one JSON object with requested fields and refs=[{\"path\":\"source module\",\"line\":1}], replacing line with a relevant real one-based function-body line. Optional explanation text is allowed. No files may change; do not install dependencies or start services."
+  },
+  {
+    "id": "inspect-creation-boundaries",
+    "category": "inspection",
+    "read_only": true,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "notehub/service.py",
+      "notehub/parsing.py",
+      "notehub/counters.py",
+      "tests/test_public_api.py"
+    ],
+    "oracle": "typed_current_source_facts_with_reference_and_read_checks",
+    "fact_modules": [
+      "notehub/service.py",
+      "notehub/parsing.py",
+      "notehub/counters.py"
+    ],
+    "prompt": "Trace current create_note and inspect called parsing/counters modules. Keys: calls_in_order (helper names), performs_file_or_network_io (boolean), mutates_input_note_list (boolean), returned_container_types (type-name list), refs. Do not assume persistence. Read AGENTS.md, contracts.md, notehub/service.py, notehub/parsing.py, notehub/counters.py, tests/test_public_api.py. Return one JSON object with requested fields and refs=[{\"path\":\"source module\",\"line\":1}], replacing line with a relevant real one-based function-body line. Optional explanation text is allowed. No files may change; do not install dependencies or start services."
+  }
+]

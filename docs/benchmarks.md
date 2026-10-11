@@ -1,6 +1,6 @@
 # Workflow benchmarks
 
-The comparative harness runs the same synthetic tasks twice: one agent loop and the planner → coder → reviewer workflow. All roles use the **same model and server**. This isolates the effect of the workflow; it does not measure a fleet of separately trained specialists or establish parity with commercial agents.
+The comparative harness supports a single agent loop, planner → coder → reviewer, and the bounded controlled workflow. All arms use the **same model and server**. A comparison of two arms alternates AB/BA order; reversal of three arms is not a fully balanced three-arm design. This measures workflow behavior, not a fleet of separately trained specialists or parity with commercial agents.
 
 The public [synthetic_v1 suite](../benchmarks/synthetic_v1/) contains 12 code changes and 8 read-only inspections of a small inventory package. Each run starts from a fresh copy. The agent can see the repository, its contracts and its style instructions. Case definitions, reference mutations, reference answers and grading code remain outside its workspace until generation finishes. Training and retrieval memory are disabled.
 
@@ -74,6 +74,28 @@ Choose a new state directory for each experiment. `--limit N` selects the first 
 Choose `--protocol json` (the default) for JSON actions or `--protocol native` for native tool calls. The selected protocol is explicit, applies to both workflows and has no automatic fallback. The initial full and partial trials used JSON actions; later development pilots select native or JSON explicitly as recorded below. Temperature is 0.15, with no history/retrieval and one stochastic trial per mode. By default, per-case call/time limits are defined in the suite and capped by CLI budgets. Optional `--case-call-override` (default **None**, integer 1–100) replaces each suite case's call cap, still bounded by `--max-calls`. It applies the same total task cap to both workflows, not a separate allowance per specialist. `--case-timeout-override` likewise replaces suite time caps while `--timeout` remains an upper bound. Both overrides are explicit and recorded in report settings; declaring them changes the experiment rather than editing the frozen suite. Cache contents are not reset; AB/BA order alternates by case. A sixteen-token warm-up, if performed, must be disclosed and excluded from scored tasks. A short health warm-up does not verify that a model can follow the longer tool protocol.
 
 ## Recorded experiments
+
+### Fresh v3 admission and controlled workflow
+
+The independently authored [v3 suite](../benchmarks/synthetic_v3/README.md) contains six edits and six typed source inspections. Its public copy preserves the complete pre-inference draft byte for byte, including the historical draft wording. The frozen fingerprint is `735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e`. CPU admission using the strengthened read-only external grader passed all 12 intended solutions and rejected 44 negative fixtures. Its 84 unittest executions include repeated compatibility methods; they are not 84 unique tests or a model score.
+
+The controlled runtime was frozen at public commit `f98903b` before any v3 model response. Its complete CPU suite passed 802 tests; the subsequent native-training integration passed 826 tests with one optional tokenizer compatibility check skipped. Scripted API coverage includes actual isolated edits, generated regression tests, a sandboxed unittest command and completion after review. These tests establish controller behavior, not local-model task quality.
+
+To declare a small comparison, select case IDs and arm order before inference, use a fresh state directory, and provide the repository's visible operator-owned check command:
+
+```sh
+python scripts/run_benchmark.py \
+  --suite benchmarks/synthetic_v3 --state "$TMPDIR/corepilot-v3-fresh" \
+  --output "$TMPDIR/corepilot-v3-report.json" \
+  --url http://127.0.0.1:8108/v1 --model default_model --protocol native \
+  --mode controlled --mode single \
+  --case-id edit-tag-normalization --case-id inspect-tag-current \
+  --check-json '["python","-m","unittest","discover","-s","tests","-v"]' \
+  --server-pid YOUR_SERVER_PID --max-calls 8 --max-tokens 2048 \
+  --context-chars 22000 --timeout 180 --rest-seconds 60
+```
+
+The source suite remains unchanged when selecting a subset. The report records selected IDs, modes and the full suite fingerprint. Both modes grade partial work after a deadline but never count it as usable; a deadline stops further attempts. Resource-aborted work is ungraded. Generation resource sampling ends and its watcher drains before CPU grading, preventing a late stop from being recorded as a successful task.
 
 ### Complete trial ledger
 

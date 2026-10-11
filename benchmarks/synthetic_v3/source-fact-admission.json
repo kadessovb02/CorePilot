@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "passed": true,
+  "cases": 6,
+  "typed_fact_fields": 21,
+  "derivation": "Actual baseline helper execution and function AST/signature; no desired-fix answers used.",
+  "model_calls": 0,
+  "source_sha256": {
+    "AGENTS.md": "028e819fe401853970249efe63ee95c6fb374b05efbfca3505eb597fe10138e0",
+    "contracts.md": "2983bb022d3229919eae6449e6d7582f2f33c024434ac85fabe3a33d47014a7e",
+    "notehub/__init__.py": "bc1b5c8b6f06b3b556d2dd735b6408ff74a009ebb3b6e6065e6c22fc66a45fb1",
+    "notehub/counters.py": "a84e046738adf760ee32ad5c29eb38cea1690a47a5aad9684bcb3eb686807874",
+    "notehub/export.py": "8d01c5f88e9c2e8306fe2a34d8d9ebf71949fb869c4eaf3c09858e0abc8dd9ac",
+    "notehub/paging.py": "d7cc73603aa58b7747df4ddd948024674c209726e2abd6b30b3bfa20ec635d22",
+    "notehub/parsing.py": "c70e2d2e0860830f386a22694b7dc3eb5542573048d591e66862f06eb243fe4b",
+    "notehub/revision.py": "36f64f8fe0e0d8d6178de71163b0970f2ba0210fe93c520e24798191ebcca6dc",
+    "notehub/routing.py": "39160b152ecf6fd186a8e7a901035dde95d1ef23ef13f7efc0d2966904075452",
+    "notehub/service.py": "54267cd1a86f95a0c19d707182ba42ce9f732927bb12310f28fd7f591c6d8c5c",
+    "tests/test_public_api.py": "05e94e650d74221b2b80768462f390eb9a54f56e8319745618b894d19bae6df0"
+  }
+}

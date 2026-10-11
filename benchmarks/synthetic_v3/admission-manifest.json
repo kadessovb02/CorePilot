@@ -1,0 +1,83 @@
+{
+  "schema": 1,
+  "status": "frozen_before_any_model_request",
+  "suite_id": "synthetic_v3",
+  "authorship": "Independently authored generic offline note package; no private code, histories or benchmark reference reuse.",
+  "cases": 12,
+  "edits": 6,
+  "inspections": 6,
+  "model_calls": 0,
+  "source_file_count": 11,
+  "source_sha256": {
+    "AGENTS.md": "028e819fe401853970249efe63ee95c6fb374b05efbfca3505eb597fe10138e0",
+    "contracts.md": "2983bb022d3229919eae6449e6d7582f2f33c024434ac85fabe3a33d47014a7e",
+    "notehub/__init__.py": "bc1b5c8b6f06b3b556d2dd735b6408ff74a009ebb3b6e6065e6c22fc66a45fb1",
+    "notehub/counters.py": "a84e046738adf760ee32ad5c29eb38cea1690a47a5aad9684bcb3eb686807874",
+    "notehub/export.py": "8d01c5f88e9c2e8306fe2a34d8d9ebf71949fb869c4eaf3c09858e0abc8dd9ac",
+    "notehub/paging.py": "d7cc73603aa58b7747df4ddd948024674c209726e2abd6b30b3bfa20ec635d22",
+    "notehub/parsing.py": "c70e2d2e0860830f386a22694b7dc3eb5542573048d591e66862f06eb243fe4b",
+    "notehub/revision.py": "36f64f8fe0e0d8d6178de71163b0970f2ba0210fe93c520e24798191ebcca6dc",
+    "notehub/routing.py": "39160b152ecf6fd186a8e7a901035dde95d1ef23ef13f7efc0d2966904075452",
+    "notehub/service.py": "54267cd1a86f95a0c19d707182ba42ce9f732927bb12310f28fd7f591c6d8c5c",
+    "tests/test_public_api.py": "05e94e650d74221b2b80768462f390eb9a54f56e8319745618b894d19bae6df0"
+  },
+  "repository_fingerprint": "12b1f7e529c16b3dd24902029c1d8b4c0baedaa1578c550d1529d5558a37120e",
+  "files_sha256": {
+    "README.md": "15e77f5de56e5cb693d715351ffb8dde519863ae5e1d4424f0d307a8f1f8c3e9",
+    "cases.json": "acc3f023925c4019be685960bb68a9305c84200946839b49874d78e9f6fe6f49",
+    "inspection-rubric.json": "dcc21e463b27a40c570ba93c08e791021e2b03e51d46d86f1a9d8930320610e3",
+    "oracle.py": "47b2d2bfede0dc97b6d2844f060ea6019f38678aab6e33c8cd4cc0f93cd3aac0",
+    "reference_facts.json": "93ccb339a1a5c2d53b1b129ac5deb536bfaa350c2539f77544ac7be590f6b604",
+    "reference_mutations.py": "231816c6d68274adc2965dadcab87dad600426e132217f0e5d7e02418c83a507",
+    "repository/AGENTS.md": "028e819fe401853970249efe63ee95c6fb374b05efbfca3505eb597fe10138e0",
+    "repository/contracts.md": "2983bb022d3229919eae6449e6d7582f2f33c024434ac85fabe3a33d47014a7e",
+    "repository/notehub/__init__.py": "bc1b5c8b6f06b3b556d2dd735b6408ff74a009ebb3b6e6065e6c22fc66a45fb1",
+    "repository/notehub/counters.py": "a84e046738adf760ee32ad5c29eb38cea1690a47a5aad9684bcb3eb686807874",
+    "repository/notehub/export.py": "8d01c5f88e9c2e8306fe2a34d8d9ebf71949fb869c4eaf3c09858e0abc8dd9ac",
+    "repository/notehub/paging.py": "d7cc73603aa58b7747df4ddd948024674c209726e2abd6b30b3bfa20ec635d22",
+    "repository/notehub/parsing.py": "c70e2d2e0860830f386a22694b7dc3eb5542573048d591e66862f06eb243fe4b",
+    "repository/notehub/revision.py": "36f64f8fe0e0d8d6178de71163b0970f2ba0210fe93c520e24798191ebcca6dc",
+    "repository/notehub/routing.py": "39160b152ecf6fd186a8e7a901035dde95d1ef23ef13f7efc0d2966904075452",
+    "repository/notehub/service.py": "54267cd1a86f95a0c19d707182ba42ce9f732927bb12310f28fd7f591c6d8c5c",
+    "repository/tests/test_public_api.py": "05e94e650d74221b2b80768462f390eb9a54f56e8319745618b894d19bae6df0",
+    "selfcheck-report.json": "19bf6d71a6f234910174698f1cb9ce4561920125c69096ef8044b1745a78b844",
+    "selfcheck.py": "af304d4af1067f4ee76fba87c7271776b75457c0938ebb1196a76c324f36cc64",
+    "source-fact-admission.json": "8cc7381d7712c1c9e67bcfd39a704d85ec3ac04244ef86045f16d63b403e1a27",
+    "suite.json": "fe126a01aa241c4c28b514d0c354b6afc40915f817278761b535a54b557eacbb",
+    "verify_source_facts.py": "9e4c8d2395c084185e461aa13f9824dbf84181242296183932c9144694733e34"
+  },
+  "oracle_admission": {
+    "baseline_edits_rejected": 6,
+    "intended_edits_passed": 6,
+    "intended_unittest_executions": 84,
+    "external_behavior_executions": 36,
+    "repeated_existing_api_executions": 36,
+    "authored_reference_test_executions": 12,
+    "bad_fixes_rejected": 6,
+    "correct_inspection_fact_answers": 6,
+    "inspection_negative_checks": 24,
+    "extra_negatives": 8,
+    "typed_source_fields": 21,
+    "actual_public_loader_and_grade": true,
+    "os_sandbox_commands": true,
+    "source_fact_derivation": true
+  },
+  "admission_runtime_sha256": {
+    "benchmark.py": "4c5fbc678af32d61f529deed712f2c033a263dbc8971d12fb5d52f021a9cfb98",
+    "tools.py": "b1c234394897d2a9d3cc59dafe7dba3329b599d1a906d55e9230a628b5fe9f8e",
+    "workspace.py": "b2feb8751f24e481c27c206819510a77b8388210a40b1e7ceb9af6dec98ab38f"
+  },
+  "privacy_check": {
+    "public_tree_passed": true,
+    "private_identifiers": 0,
+    "credentials": 0,
+    "symlinks": 0
+  },
+  "limits": [
+    "No model score exists.",
+    "Finite typed fact inspections and read paths do not prove full explanatory semantics or line coverage.",
+    "Authored assertion-node counting does not prove mutation coverage or actual executed assertion count.",
+    "84 counts unittest executions, including six existing API methods repeated for each edit.",
+    "The sandboxed in-process oracle is not a hostile-code proof system."
+  ]
+}

@@ -54,6 +54,6 @@ Soup's existing masked batching/loss/callbacks are reused with the preflighted t
 
 ## Attention-only hybrid LoRA
 
-`--layers` counts matching q/v attention blocks from the end. Standard Qwen architectures retain their usual tail-block selection. For a hybrid 32-block architecture with eight full-attention blocks, `--layers 8` spans all32 blocks but adapts only16 `self_attn.q_proj`/`self_attn.v_proj` projections; the24 linear-attention blocks remain frozen. The receipt lists the actual matched indices and depth span. Saved adapter `num_layers` uses that depth span so MLX-LM can reconstruct the same targets when loading.
+`--layers` counts matching q/v attention blocks from the end. Standard Qwen architectures retain their usual tail-block selection. For a hybrid 32-block architecture with eight full-attention blocks, `--layers 8` spans all 32 blocks but adapts only 16 `self_attn.q_proj`/`self_attn.v_proj` projections; the 24 linear-attention blocks remain frozen. The receipt lists the actual matched indices and depth span. Saved adapter `num_layers` uses that depth span so MLX-LM can reconstruct the same targets when loading.
 
 After preflight and resource admission, a separate small optimizer smoke, saved-tensor inspection and adapter reload remain necessary. Only then run a fresh held-out task evaluation against the unchanged base model. Current CPU tests demonstrate serializer, dataset and selection contracts; they are not a claim that any new adapter was trained or improved.

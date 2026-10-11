@@ -968,3 +968,33 @@ def test_case_selection_keeps_full_frozen_suite_and_session_baseline(tmp_path, s
                      ("edit_alpha", "specialists", 1.8), ("edit_alpha", "single", 1.8)]
     assert report["suite_sha256"] == frozen == benchmark.fingerprint(suite)
     assert report["settings"]["selected_case_ids"] == ["inspect_beta", "edit_alpha"]
+
+
+def test_cli_forwards_declared_controlled_arms_cases_and_checks(tmp_path, monkeypatch):
+    main, calls = benchmark_cli(monkeypatch, ["--state", tmp_path / "state", "--output", tmp_path / "report.json",
+        "--mode", "controlled", "--mode", "single", "--case-id", "edit_alpha", "--case-id", "inspect_beta",
+        "--check-json", '["python","-m","unittest","discover","-s","tests"]'])
+    assert main() == 0
+    options = calls[0][3]
+    assert options["modes"] == ["controlled", "single"]
+    assert options["case_ids"] == ["edit_alpha", "inspect_beta"]
+    assert options["controlled_checks"] == [["python", "-m", "unittest", "discover", "-s", "tests"]]
+
+
+@pytest.mark.parametrize("extra", [
+    ["--mode", "controlled"],
+    ["--mode", "single", "--mode", "single"],
+    ["--mode", "controlled", "--check-json", "not-json"],
+    ["--mode", "controlled", "--check-json", "[]"],
+    ["--mode", "controlled", "--check-json", '["python",4]'],
+    ["--mode", "single", "--check-json", '["python"]'],
+])
+def test_cli_invalid_controlled_contract_never_constructs_models_or_resources(tmp_path, monkeypatch, extra):
+    main, calls = benchmark_cli(monkeypatch, ["--state", tmp_path / "state", "--output", tmp_path / "report.json", *extra])
+    def forbidden(*args, **kwargs):
+        pytest.fail("Invalid controlled contract reached runtime construction")
+    monkeypatch.setitem(main.__globals__, "Settings", forbidden)
+    monkeypatch.setitem(main.__globals__, "ResourceMonitor", forbidden)
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2 and not calls

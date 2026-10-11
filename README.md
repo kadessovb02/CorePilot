@@ -81,6 +81,8 @@ corepilot train --model /path/to/mlx-model --max-length 2048 --rank 8 --layers 8
 
 A dry run validates the split files and writes a plan without loading a model or importing the trainer. The built-in recipe targets models with `self_attn.q_proj` and `self_attn.v_proj`. It skips examples that exceed the token limit rather than silently truncating the supervised response. Other architectures or hardware can consume the exported dataset through a separate trainer.
 
+For independently verified tool trajectories, use [native tool training](docs/native-training.md): split related sessions before extracting assistant targets, preserve tool-call/reply pairs, and run tokenizer/mask preflight before loading weights. Historical answers alone are unverified inputs; no adapter improvement is claimed by a successful preflight.
+
 Serve the resulting adapter with your model server, then point CorePilot at that server. CorePilot configures inference; it does not automatically launch or download a model. Model and dataset licenses apply separately from this project's Apache-2.0 license. [Soup](https://github.com/MakazhanAlpamys/Soup) is an optional dependency, not vendored source.
 
 ## Configuration

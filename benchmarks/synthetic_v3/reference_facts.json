@@ -1,0 +1,8 @@
+{
+  "inspect-tag-current": {"result": ["sun", "sun", "moon"], "non_text_error": "TypeError"},
+  "inspect-page-validation": {"default_limit": 20, "negative_offset_error": "ValueError", "bool_offset_error": "TypeError", "string_limit_error": "TypeError"},
+  "inspect-label-aliasing": {"mutates_input_labels": true, "copies_outer_mapping": true, "shares_label_list": true, "duplicate_appends": false},
+  "inspect-escape-order": {"replacement_order": ["pipe", "backslash", "newline"], "backslashes_before_escaped_pipe": 2, "non_text_error": "TypeError", "record_delimiter": "|"},
+  "inspect-handler-current": {"selected": "default", "unknown_action_uses_default": true, "missing_default_error": "KeyError"},
+  "inspect-creation-boundaries": {"calls_in_order": ["parse_tags", "next_identifier"], "performs_file_or_network_io": false, "mutates_input_note_list": false, "returned_container_types": ["dict", "list"]}
+}
