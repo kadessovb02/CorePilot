@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Iterable
 
 from .history import PROVIDERS, digest, input_files, load_sessions, sanitize_messages
+from .native_sft import content_hash, validate_verified_native
 
 
 class Families:
@@ -38,7 +39,10 @@ def _content_key(messages: list[dict]) -> str:
 def _examples(sessions: list[dict]) -> tuple[list[dict], int]:
     rows, discarded = [], 0
     for session in sessions:
-        messages = session["messages"]
+        # Archives remain knowledge examples unless explicitly admitted through
+        # native_verified mode. External tool dialects are not executable SFT.
+        messages = [{"role": message["role"], "content": message["content"]}
+                    for message in session["messages"] if message["role"] in {"user", "assistant"} and message["content"].strip()]
         # Keep complete visible assistant responses and associated tools. A
         # newly interrupted user request cannot become a supervised answer.
         endings = [index for index, message in enumerate(messages) if message["role"] == "assistant" and message["content"].strip()]
@@ -62,6 +66,7 @@ def group_sessions(sessions: list[dict]) -> tuple[list[dict], int]:
         families.find(identity)
         for relative in row.get("family_ids", []):
             families.union(identity, row["provider"] + ":" + relative)
+            families.union(identity, "family:" + relative)
         content_key = _content_key(row["messages"])
         if content_key in complete:
             families.union(identity, complete[content_key])
@@ -120,9 +125,14 @@ def _sha256(path: Path) -> str:
 
 
 def prepare(input_paths: Iterable[str | Path], provider: str, project: str, output: str | Path, repo: str | Path | None = None,
-            *, seed: int = 42, valid_fraction: float = .1, test_fraction: float = .1, overwrite: bool = False) -> dict:
+            *, seed: int = 42, valid_fraction: float = .1, test_fraction: float = .1, overwrite: bool = False,
+            mode: str = "knowledge") -> dict:
     """Prepare local JSONL artifacts; no model, uploads or implicit sources."""
     paths = list(input_paths)
+    if mode not in {"knowledge", "native_verified"}:
+        raise ValueError("Training mode must be knowledge or native_verified")
+    if mode == "native_verified" and provider != "canonical":
+        raise ValueError("Native verification requires canonical trajectories; provider archives remain knowledge-only")
     if not paths:
         raise ValueError("At least one explicit input path is required")
     files = input_files(paths)
@@ -141,7 +151,11 @@ def prepare(input_paths: Iterable[str | Path], provider: str, project: str, outp
     if not overwrite and any((target / name).exists() for name in names):
         raise ValueError("Dataset output already exists; choose a new directory or explicitly allow overwrite")
     sessions = load_sessions(files, provider, project, repo)
-    examples, incomplete = _examples(sessions)
+    if mode == "native_verified":
+        for session in sessions: validate_verified_native(session)
+        examples, incomplete = sessions, 0
+    else:
+        examples, incomplete = _examples(sessions)
     rows, duplicates = group_sessions(examples)
     assignments = _split(rows, seed, valid_fraction, test_fraction)
     target.mkdir(parents=True, exist_ok=True)
@@ -150,9 +164,12 @@ def prepare(input_paths: Iterable[str | Path], provider: str, project: str, outp
     split_manifest, memory = [], []
     for row in rows:
         split = assignments[row["family_id"]]
-        partitions[split].append({"messages": row["messages"]})
+        example = {"messages": row["messages"]}
+        if mode == "native_verified": example.update(tools=row["tools"], training=row["training"])
+        partitions[split].append(example)
         split_manifest.append({"example_id": row["example_id"], "session_id": row["session_id"], "provider": row["provider"],
-                               "project": project, "family_id": row["family_id"], "split": split, "provenance": row["provenance"]})
+                               "project": project, "family_id": row["family_id"], "split": split, "provenance": row["provenance"],
+                               "data_sha256": content_hash(example)})
         if split == "train":
             text = "\n\n".join(message["role"] + ": " + message["content"] for message in row["messages"] if message["content"])
             for chunk, start in enumerate(range(0, len(text), 6000)):
@@ -168,7 +185,7 @@ def prepare(input_paths: Iterable[str | Path], provider: str, project: str, outp
         warnings.append("Too few independent task families for all requested holdout partitions; no examples were copied across splits.")
     if not partitions["train"]:
         warnings.append("No complete user/assistant training examples were found.")
-    manifest = {"version": 1, "provider": provider, "project": project, "seed": seed,
+    manifest = {"version": 1, "provider": provider, "project": project, "seed": seed, "training_mode": mode,
                 "input_files": len(files), "normalized_sessions": len(sessions), "training_examples": len(rows),
                 "redacted_messages": sum("[REDACTED" in json.dumps(message, ensure_ascii=False) for session in sessions for message in session["messages"]),
                 "paired_tool_results": sum(message["role"] == "tool" for session in sessions for message in session["messages"]),
@@ -177,6 +194,7 @@ def prepare(input_paths: Iterable[str | Path], provider: str, project: str, outp
                 "split_families": dict(Counter(assignments.values())), "memory_records": len(memory),
                 "artifact_sha256": {name: _sha256(target / name) for name in names if name != "manifest.json"},
                 "memory_scope": "train families only; validation and test are excluded", "valid_fraction": valid_fraction, "test_fraction": test_fraction,
+                "verification_note": "Receipt integrity is validated; the explicit data supplier must independently establish observer trust.",
                 "warnings": warnings, "limitations": ["Redaction cannot guarantee that every secret or personal name is detected.",
                 "Historical assistant statements and tool results are unverified evidence, not proof of task success.",
                 "Training adapters and running heldout evaluations require separate explicit commands."]}
@@ -195,10 +213,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--valid-fraction", type=float, default=.1)
     parser.add_argument("--test-fraction", type=float, default=.1)
     parser.add_argument("--overwrite", action="store_true")
+    parser.add_argument("--mode", choices=["knowledge", "native_verified"], default="knowledge")
     args = parser.parse_args(argv)
     try:
         manifest = prepare(args.input, args.provider, args.project, args.output, args.repo, seed=args.seed,
-                           valid_fraction=args.valid_fraction, test_fraction=args.test_fraction, overwrite=args.overwrite)
+                           valid_fraction=args.valid_fraction, test_fraction=args.test_fraction, overwrite=args.overwrite, mode=args.mode)
     except (OSError, ValueError) as error:
         parser.exit(2, str(error) + "\n")
     print(json.dumps(manifest, ensure_ascii=False, indent=2))

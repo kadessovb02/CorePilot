@@ -34,9 +34,13 @@ The adapter reads selected Claude Code JSONL with visible `user`/`assistant` mes
 ## Dataset outputs
 
 - `normalized.jsonl`: redacted v1 sessions with provenance.
-- `train.jsonl`, `valid.jsonl`, `test.jsonl`: portable `messages` examples.
+- `train.jsonl`, `valid.jsonl`, `test.jsonl`: portable `messages` examples; verified native mode also preserves `tools` and `training` receipts.
 - `split_manifest.jsonl`: example/family identities and split assignment.
 - `memory.jsonl`: conversation retrieval records from training sessions only.
 - `manifest.json`: counts, fingerprints and processing metadata.
 
 Existing outputs are refused unless `--overwrite` is explicitly supplied. Input files are never overwritten. The raw selected paths and resulting corpus remain local; inspect them before sharing. Related-task grouping is heuristic unless you supply explicit family identifiers.
+
+The default `--mode knowledge` exports visible user/assistant text. Imported tool operations remain in `normalized.jsonl` but are excluded from knowledge SFT: external provider tools are not automatically mapped to executable CorePilot tools. This mode does not establish that historical answers are correct.
+
+For independently verified native actions, use canonical inputs and explicit `--mode native_verified`. See [native training](native-training.md) for receipt/schema admission, CPU preflight and the remaining optimizer/quality verification requirements.

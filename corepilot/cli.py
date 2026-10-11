@@ -96,15 +96,17 @@ def parser():
     prepare.add_argument("--output", type=Path); prepare.add_argument("--seed", type=int, default=42)
     prepare.add_argument("--valid-fraction", type=float, default=.1); prepare.add_argument("--test-fraction", type=float, default=.1)
     prepare.add_argument("--overwrite", action="store_true", help="Explicitly replace an existing prepared corpus")
+    prepare.add_argument("--mode", choices=["knowledge", "native_verified"], default="knowledge", help="Archives are knowledge-only; native actions need explicit verified canonical receipts")
     index = sub.add_parser("index", help="Index the current source of a configured project")
     index.add_argument("--project", required=True)
     index.add_argument("--output", type=Path)
     train = sub.add_parser("train", help="Plan or run an optional MLX LoRA training job")
     train.add_argument("--data", type=Path); train.add_argument("--model", required=True)
     train.add_argument("--output", type=Path); train.add_argument("--max-length", type=int, default=2048)
-    train.add_argument("--rank", type=int, default=8); train.add_argument("--layers", type=int, default=8)
+    train.add_argument("--rank", type=int, default=8); train.add_argument("--layers", type=int, default=8, help="Number of matching q/v attention blocks, counted from the end; hybrid linear-attention blocks stay frozen")
     train.add_argument("--epochs", type=int, default=1); train.add_argument("--samples", type=int, default=0)
     train.add_argument("--dry-run", action="store_true")
+    train.add_argument("--preflight-only", action="store_true", help="Validate local tokenizer and target masks on CPU; do not load model weights")
     evaluation = sub.add_parser("evaluate", help="Run explicit held-out agent cases without applying changes")
     evaluation.add_argument("--cases", type=Path, required=True); evaluation.add_argument("--output", type=Path)
     evaluation.add_argument("--limit", type=int, default=0); evaluation.add_argument("--timeout", type=int, default=600)
@@ -213,7 +215,7 @@ def main(argv=None):
         elif args.command == "prepare":
             from .dataset import prepare
             output = args.output or home / "data"
-            result = prepare(args.input, args.provider, args.project, output, repo=args.repo, seed=args.seed, valid_fraction=args.valid_fraction, test_fraction=args.test_fraction, overwrite=args.overwrite)
+            result = prepare(args.input, args.provider, args.project, output, repo=args.repo, seed=args.seed, valid_fraction=args.valid_fraction, test_fraction=args.test_fraction, overwrite=args.overwrite, mode=args.mode)
             print(json.dumps(result, indent=2, ensure_ascii=False))
         elif args.command == "index":
             from .indexing import index_project
@@ -223,7 +225,7 @@ def main(argv=None):
             print(json.dumps(index_project(settings.projects[args.project], args.project, args.output or home / "data" / "memory.jsonl"), indent=2))
         elif args.command == "train":
             from .training import train
-            result = train(data=args.data or home / "data", model=args.model, output=args.output or home / "adapters" / "default", max_length=args.max_length, rank=args.rank, layers=args.layers, epochs=args.epochs, samples=args.samples, dry_run=args.dry_run)
+            result = train(data=args.data or home / "data", model=args.model, output=args.output or home / "adapters" / "default", max_length=args.max_length, rank=args.rank, layers=args.layers, epochs=args.epochs, samples=args.samples, dry_run=args.dry_run, preflight_only=args.preflight_only)
             print(json.dumps(result, indent=2))
         elif args.command == "evaluate":
             import asyncio

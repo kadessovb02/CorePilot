@@ -6,8 +6,11 @@ import os
 import platform
 import random
 import time
+from collections import Counter
 from importlib.metadata import version
 from pathlib import Path
+
+from .native_sft import content_hash, lora_plan, soup_target_windows, target_windows, validate_verified_native
 
 
 def rows(path: Path) -> list[dict]:
@@ -15,13 +18,70 @@ def rows(path: Path) -> list[dict]:
     for line in path.read_text().splitlines():
         if not line.strip(): continue
         row = json.loads(line)
+        if not isinstance(row, dict): raise ValueError("Training examples must be objects")
         messages = row.get("messages")
-        if not isinstance(messages, list) or not any(m.get("role") == "assistant" and m.get("content") for m in messages):
-            raise ValueError(f"Each row needs messages and a visible assistant response: {path.name}")
+        if not isinstance(messages, list) or any(not isinstance(m, dict) for m in messages):
+            raise ValueError(f"Each row needs visible messages: {path.name}")
         if any(not isinstance(m, dict) or m.get("role") not in {"user", "assistant", "tool"} or not isinstance(m.get("content", ""), str) for m in messages):
             raise ValueError("Training accepts only visible normalized user/assistant/tool messages")
-        result.append({"messages": messages})
+        native = isinstance(row.get("training"), dict) and row["training"].get("kind") == "verified_native"
+        if native:
+            validate_verified_native(row)
+            result.append({"messages": messages, "tools": row["tools"], "training": row["training"]})
+        else:
+            if any(m.get("tool_calls") or m["role"] == "tool" for m in messages):
+                raise ValueError("Unverified/native external tool trajectories cannot be trained; use verified canonical data or knowledge-only preparation")
+            if not any(m["role"] == "assistant" and m.get("content", "").strip() for m in messages):
+                raise ValueError(f"Each knowledge row needs a visible assistant response: {path.name}")
+            result.append({"messages": messages})
     return result
+
+
+def validate_split_manifest(data: Path, partitions: dict[str, list[dict]]) -> None:
+    """Native training cannot bypass the prepared artifact/family holdout boundary."""
+    native = any(row.get("training", {}).get("kind") == "verified_native" for records in partitions.values() for row in records)
+    path = data / "manifest.json"
+    if not path.exists():
+        if native: raise ValueError("Native training requires a prepared split manifest")
+        return
+    manifest = json.loads(path.read_text())
+    if native and manifest.get("training_mode") != "native_verified":
+        raise ValueError("Native dataset must be explicitly prepared in native_verified mode")
+    hashes = manifest.get("artifact_sha256", {})
+    for name in ("train.jsonl", "valid.jsonl", "test.jsonl", "split_manifest.jsonl"):
+        if native and name not in hashes: raise ValueError("Native dataset artifact hashes are missing")
+        if name in hashes and hashlib.sha256((data/name).read_bytes()).hexdigest() != hashes[name]:
+            raise ValueError("Prepared dataset artifact hash differs from its manifest")
+    split_path = data / "split_manifest.jsonl"
+    if not split_path.exists():
+        if native: raise ValueError("Native training requires family assignments")
+        return
+    assigned, families = {split: Counter() for split in partitions}, {}
+    for line in split_path.read_text().splitlines():
+        if not line.strip(): continue
+        record = json.loads(line); split = record.get("split"); family = record.get("family_id")
+        if split not in assigned or not isinstance(family, str) or not family:
+            raise ValueError("Invalid family split assignment")
+        if family in families and families[family] != split:
+            raise ValueError("Related task families cross training/holdout boundaries")
+        families[family] = split
+        if "data_sha256" in record: assigned[split][record["data_sha256"]] += 1
+        elif native: raise ValueError("Native split assignments must bind exact examples")
+    for split, records in partitions.items():
+        if (native or assigned[split]) and Counter(content_hash(row) for row in records) != assigned[split]:
+            raise ValueError("Examples differ from their family split assignments")
+
+
+def preflight_windows(partitions, tokenizer, max_length):
+    windows, excluded = {}, {}
+    for split, records in partitions.items():
+        windows[split], excluded[split] = [], 0
+        for row in records:
+            selected, skipped = target_windows(row, tokenizer, max_length)
+            windows[split].extend(selected); excluded[split] += skipped
+    if not windows["train"] or not windows["valid"]:
+        raise ValueError("No complete assistant targets fit max_length in train/validation; increase it instead of truncating")
+    return windows, excluded
 
 
 def write_receipt(output: Path, receipt: dict):
@@ -32,49 +92,60 @@ def write_receipt(output: Path, receipt: dict):
     os.replace(temporary, path)
 
 
-def train(*, data: Path, model: str, output: Path, max_length=2048, rank=8, layers=8, epochs=1, samples=0, dry_run=False) -> dict:
+def train(*, data: Path, model: str, output: Path, max_length=2048, rank=8, layers=8, epochs=1, samples=0, dry_run=False, preflight_only=False) -> dict:
     data = Path(data).expanduser().resolve(); output = Path(output).expanduser().resolve()
-    if min(max_length, rank, layers, epochs) < 1 or samples < 0:
+    if any(type(value) is not int for value in (max_length, rank, layers, epochs, samples)) or min(max_length, rank, layers, epochs) < 1 or samples < 0:
         raise ValueError("Training limits must be positive; samples=0 means all rows")
+    if dry_run and preflight_only: raise ValueError("Choose dry-run or CPU preflight-only")
     train_rows = rows(data / "train.jsonl"); valid_rows = rows(data / "valid.jsonl")
     if not train_rows or not valid_rows: raise ValueError("Nonempty train.jsonl and valid.jsonl are required; add independent sessions before training")
     fingerprint = lambda r: hashlib.sha256(json.dumps(r, sort_keys=True, ensure_ascii=False).encode()).hexdigest()
     train_ids = {fingerprint(r) for r in train_rows}; valid_ids = {fingerprint(r) for r in valid_rows}
     if train_ids & valid_ids: raise ValueError("Duplicate examples cross the train/validation boundary")
-    if (data / "test.jsonl").exists():
-        test_ids = {fingerprint(r) for r in rows(data / "test.jsonl")}
+    test_rows = rows(data / "test.jsonl") if (data / "test.jsonl").exists() else []
+    if test_rows:
+        test_ids = {fingerprint(r) for r in test_rows}
         if test_ids & (train_ids | valid_ids): raise ValueError("Held-out examples overlap training or validation")
+    validate_split_manifest(data, {"train": train_rows, "valid": valid_rows, "test": test_rows})
     receipt = {"status": "planned", "trainer": "soup-cli MLX SFT", "model": model,
                "training_rows": min(samples, len(train_rows)) if samples else len(train_rows), "validation_rows": len(valid_rows),
                "rank": rank, "layers": layers, "epochs": epochs, "max_length": max_length, "seed": 42,
                "train_sha256": hashlib.sha256((data / "train.jsonl").read_bytes()).hexdigest(),
                "valid_sha256": hashlib.sha256((data / "valid.jsonl").read_bytes()).hexdigest(),
-               "training_on": "visible assistant responses only", "evaluation_note": "Loss is not autonomous task success. Evaluate held-out tasks separately."}
+               "training_on": "one causal visible assistant target per window; preceding context is masked",
+               "native_trajectories": sum(row.get("training", {}).get("kind") == "verified_native" for row in train_rows),
+               "evaluation_note": "Receipt integrity is not observer trust; loss is not autonomous task success. Evaluate fresh held-out tasks separately."}
     if dry_run:
         write_receipt(output, receipt)
         return receipt
-    if platform.system() != "Darwin" or platform.machine() != "arm64":
+    if not preflight_only and (platform.system() != "Darwin" or platform.machine() != "arm64"):
         raise ValueError("Built-in training requires Apple Silicon. Exported messages JSONL can be used by another SFT trainer.")
     try:
-        import mlx.core as mx
-        import numpy as np
         from transformers import AutoTokenizer
-        from soup_cli.config.schema import SoupConfig
-        from soup_cli.trainer.mlx_sft import MLXSFTTrainerWrapper, build_mlx_adapter_config
     except ImportError as exc:
         raise ValueError("Install the optional trainer from the CorePilot checkout: python -m pip install -e '.[mlx]'") from exc
     model_path = str(Path(model).expanduser().resolve()) if Path(model).expanduser().exists() else model
-    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=False)
-    def token_length(row):
-        encoded = tokenizer.apply_chat_template(row["messages"], tokenize=True, add_generation_prompt=False)
-        if isinstance(encoded, dict): encoded = encoded["input_ids"]
-        if encoded and isinstance(encoded[0], list): encoded = encoded[0]
-        return len(encoded)
+    tokenizer = AutoTokenizer.from_pretrained(model_path, trust_remote_code=False, local_files_only=preflight_only)
     random.Random(42).shuffle(train_rows)
-    selected = [row for row in train_rows if token_length(row) <= max_length]
-    validation = [row for row in valid_rows if token_length(row) <= max_length]
-    if samples: selected = selected[:samples]
-    if not selected or not validation: raise ValueError("No complete examples fit max_length; increase it instead of truncating answers")
+    if samples: train_rows = train_rows[:samples]
+    windows, excluded = preflight_windows({"train": train_rows, "valid": valid_rows}, tokenizer, max_length)
+    selected, validation = windows["train"], windows["valid"]
+    receipt.update(training_rows=len(train_rows), validation_rows=len(valid_rows), training_windows=len(selected),
+                   validation_windows=len(validation), too_long_targets_excluded=excluded,
+                   native_trajectories=sum(row.get("training", {}).get("kind") == "verified_native" for row in train_rows),
+                   chat_template_sha256=content_hash(tokenizer.chat_template), enable_thinking=False,
+                   cpu_preflight_passed=True)
+    if preflight_only:
+        receipt.update(status="preflight_passed", model_weights_loaded=False, optimizer_steps=0)
+        write_receipt(output, receipt); return receipt
+    try:
+        import mlx.core as mx
+        import numpy as np
+        from soup_cli.config.schema import SoupConfig
+        from soup_cli.trainer import mlx_masking
+        from soup_cli.trainer.mlx_sft import MLXSFTTrainerWrapper, build_mlx_adapter_config
+    except ImportError as exc:
+        raise ValueError("Install the optional pinned MLX training environment") from exc
     mx.random.seed(42); np.random.seed(42)
     output.mkdir(parents=True, exist_ok=True)
     config = SoupConfig.model_validate({
@@ -85,29 +156,29 @@ def train(*, data: Path, model: str, output: Path, max_length=2048, rank=8, laye
                      "optimizer": "adamw_torch", "scheduler": "cosine", "warmup_ratio": .05, "weight_decay": .01,
                      "lora": {"r": rank, "alpha": rank*2, "dropout": 0, "target_modules": ["self_attn.q_proj", "self_attn.v_proj"]}},
         "output": str(output)})
-    receipt.update(training_rows=len(selected), validation_rows=len(validation), too_long_excluded=len(train_rows)-len(selected),
-                   versions={name: version(name) for name in ["soup-cli", "mlx", "mlx-lm", "transformers"]})
+    receipt.update(versions={name: version(name) for name in ["soup-cli", "mlx", "mlx-lm", "transformers"]})
     class ProjectTrainer(MLXSFTTrainerWrapper):
         def _apply_lora(self, network):
             from mlx_lm.tuner.utils import linear_to_lora_layers
             from mlx.utils import tree_flatten
-            if not 1 <= layers <= len(network.layers): raise ValueError("layers exceeds this model's transformer layer count")
+            plan = lora_plan(network, layers)
             network.freeze()
             parameters = build_mlx_adapter_config(self.config.training.lora, adapter_path=str(output))["lora_parameters"]
-            linear_to_lora_layers(network, layers, parameters)
+            linear_to_lora_layers(network, plan["depth_span"], parameters)
             count = sum(value.size for _,value in tree_flatten(network.trainable_parameters()))
             if count == 0: raise ValueError("LoRA targets did not match this model")
             receipt["trainable_parameters"] = count
+            receipt["lora_matching_blocks"] = plan["matching_blocks"]
+            receipt["lora_depth_span"] = plan["depth_span"]
     trainer = ProjectTrainer(config)
     started = time.monotonic(); receipt.update(status="running", pid=os.getpid(), started_at=time.time()); write_receipt(output, receipt)
     try:
         trainer.setup({"train": selected, "val": validation})
-        targets = {name for name,_ in trainer.model.layers[0].named_modules()}
-        if not set(config.training.lora.target_modules) <= targets:
-            raise ValueError("Built-in recipe needs self_attn.q_proj/v_proj; use another trainer for a different architecture")
-        result = trainer.train()
+        # Soup's existing per-token batching/loss/callbacks accept this dataset
+        # protocol. Scope the adapter to this single CLI run and always restore.
+        with soup_target_windows(mlx_masking): result = trainer.train()
         adapter_file = output / "adapter_config.json"
-        adapter_config = json.loads(adapter_file.read_text()); adapter_config["num_layers"] = layers
+        adapter_config = json.loads(adapter_file.read_text()); adapter_config["num_layers"] = receipt["lora_depth_span"]
         adapter_file.write_text(json.dumps(adapter_config, indent=2)+"\n")
         receipt.update(status="complete", result=result, peak_memory_gb=mx.get_peak_memory()/1e9)
     except BaseException as exc:

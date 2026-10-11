@@ -6,6 +6,7 @@ private reasoning, and they never discover a home-directory data source.
 from __future__ import annotations
 
 import hashlib
+import copy
 import json
 from functools import lru_cache
 from datetime import datetime, timezone
@@ -129,6 +130,29 @@ def sanitize_messages(messages: Iterable[dict]) -> list[dict]:
     return complete
 
 
+def _native_visible_messages(messages: list[dict]) -> list[dict]:
+    """Keep exact safe canonical strings; JSON pretty-printing is not redaction."""
+    clean = sanitize_messages(messages)
+    def equivalent(original, sanitized):
+        if not isinstance(original, str): return False
+        if original.strip() == sanitized: return True
+        try: return json.loads(original) == json.loads(sanitized)
+        except (ValueError, TypeError): return False
+    if len(clean) == len(messages):
+        for original, sanitized in zip(messages, clean):
+            if not isinstance(original, dict) or original.get("role") != sanitized["role"]: continue
+            if equivalent(original.get("content"), sanitized["content"]):
+                sanitized["content"] = original["content"]
+            originals = original.get("tool_calls", [])
+            if isinstance(originals, list) and len(originals) == len(sanitized.get("tool_calls", [])):
+                for before, after in zip(originals, sanitized.get("tool_calls", [])):
+                    if isinstance(before, dict) and before.get("id") == after["id"]:
+                        arguments = (before.get("function") or {}).get("arguments")
+                        if equivalent(arguments, after["function"]["arguments"]):
+                            after["function"]["arguments"] = arguments
+    return clean
+
+
 def _new_session(identifier: str, provider: str, project: str, path: Path) -> dict:
     return {"version": 1, "session_id": identifier or digest(provider + str(path)), "provider": provider, "project": project,
             "messages": [], "provenance": {"source_id": digest(str(path)), "source_file": redact(path.name)[0], "source_cwd": ""},
@@ -222,6 +246,13 @@ def _canonical(records: list[dict], project: str, path: Path) -> list[dict]:
             raise ValueError("Unsupported canonical history version")
         identifier = str(record.get("session_id") or record.get("id") or digest(str(path) if record.get("role") else str(path) + str(index)))
         row = grouped.setdefault(identifier, _new_session(identifier, "canonical", project, path))
+        # Native training metadata is explicit canonical input, never inferred
+        # from an assistant's success claim. Admission validates it later.
+        for key in ("tools", "training"):
+            if key in record:
+                if key in row and row[key] != record[key]:
+                    raise ValueError("Conflicting canonical native training metadata")
+                row[key] = copy.deepcopy(record[key])
         provenance = record.get("provenance") or {}
         if isinstance(provenance, dict):
             row["provenance"]["source_cwd"] = str(provenance.get("source_cwd") or record.get("cwd") or "")
@@ -235,7 +266,8 @@ def _canonical(records: list[dict], project: str, path: Path) -> list[dict]:
         elif record.get("role"):
             row["messages"].append(record)
     for row in grouped.values():
-        row["messages"] = sanitize_messages(row["messages"])
+        native = isinstance(row.get("training"), dict) and row["training"].get("kind") == "verified_native"
+        row["messages"] = _native_visible_messages(row["messages"]) if native else sanitize_messages(row["messages"])
     return list(grouped.values())
 
 
