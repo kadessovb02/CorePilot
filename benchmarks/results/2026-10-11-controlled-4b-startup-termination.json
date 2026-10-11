@@ -1,0 +1,63 @@
+{
+  "schema": 1,
+  "kind": "poststartup_resource_admission_stop",
+  "preregistration": "synthetic-v3-controlled-4b-development-plan.json",
+  "preregistration_sha256": "0ecb5ca7a696ce28b09f8d33a2fa2b0fcc6720bc355c76c365290bfeebc31a66",
+  "manager_sha256": "d5f0636856fc75ba527c3ef8dd2fc9cf05c262e746eac944327ce8e062551302",
+  "model": {
+    "repository": "mlx-community/Qwen3.5-4B-4bit",
+    "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+    "adapter": null,
+    "weights": "4-bit",
+    "same_weights_all_modes": true
+  },
+  "stop_origin": "owned_manager_poststartup_admission",
+  "reason_codes": [
+    "swap_growth_limit"
+  ],
+  "planned_runs": 2,
+  "finalized_graded_records": 0,
+  "started_ungraded_runs": 0,
+  "truly_never_started_runs": 2,
+  "inference_requests": 0,
+  "warmup_requests": 0,
+  "persisted_completed_model_responses": 0,
+  "checkpoint_count": 0,
+  "comparison_report_created": false,
+  "runtime_state_created": false,
+  "source_changes": {
+    "modified": 0,
+    "added": 0,
+    "deleted": 0
+  },
+  "baseline_resources": {
+    "available_estimate_gib": 3.7855377197265625,
+    "used_swap_gib": 10.05322265625,
+    "pressure_level": 1
+  },
+  "resource_observations": {
+    "samples": 4,
+    "peak_swap_growth_mib": 759.6900000000005,
+    "min_available_estimate_gib": 2.35015869140625,
+    "pressure_levels": [
+      1,
+      2
+    ],
+    "min_speed_limit": null,
+    "min_scheduler_limit": null
+  },
+  "thermal_warning_level": null,
+  "configured_min_available_gib": 1.5,
+  "configured_max_swap_growth_mib": 512.0,
+  "allow_memory_warning": true,
+  "owned_server_unloaded": true,
+  "prior_server_restoration_attempted": false,
+  "frozen_runtime_files_verified": 37,
+  "source_git_commit": "979c1c8f133bdfd64605c2f32a134745cf82b5af",
+  "public_runtime_commit": "979c1c8f133bdfd64605c2f32a134745cf82b5af",
+  "full_suite_sha256": "735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e",
+  "source_and_suite_verified": true,
+  "quality_score_available": false,
+  "automatic_retry": false,
+  "note": "No task or chat-completion request started. Health checks of the model-list endpoint are readiness traffic, not inference. The system-wide swap limit was exceeded at poststartup admission from the fixed prestartup baseline. No comparison report was created; all planned tasks remain unattempted, not graded failures. Temperature was not measured. This is resource admission evidence, not a model score or an estimate of causal model memory use."
+}

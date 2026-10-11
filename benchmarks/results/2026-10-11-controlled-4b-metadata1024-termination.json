@@ -1,0 +1,57 @@
+{
+  "schema": 1,
+  "kind": "ungraded_started_attempt_termination",
+  "report": "2026-10-11-controlled-4b-metadata1024-partial.json",
+  "report_sha256": "c8bbe9641883917370eda7c48ebe1c352f1fff6384ddc775885bd92cb01fdadf",
+  "preregistration": "synthetic-v3-controlled-4b-metadata1024-plan.json",
+  "preregistration_sha256": "4b4a10aa388b9c0f3aef6a09e1ccde097e510b14a9a9367acfdd8458c2e65287",
+  "stop_origin": "per_case_resource_watcher_cancellation",
+  "trigger_reason_known": false,
+  "trigger_reason_codes": null,
+  "checkpoint_hold_codes": [
+    "resource_task_cancelled"
+  ],
+  "checkpoint_backend_completion_unconfirmed": true,
+  "planned_runs": 2,
+  "finalized_graded_records": 0,
+  "started_ungraded_runs": 1,
+  "truly_never_started_runs": 1,
+  "started_mode": "controlled",
+  "started_phase": "select",
+  "logical_model_attempts": 1,
+  "observed_chat_completion_posts": 1,
+  "observed_http_200_headers": 1,
+  "persisted_completed_model_responses": 0,
+  "successful_paired_host_tool_operations": 2,
+  "checks": 0,
+  "source_changes": {
+    "modified": 0,
+    "added": 0,
+    "deleted": 0
+  },
+  "raw_report_records": 0,
+  "raw_report_unattempted_runs": 2,
+  "raw_report_stop_reasons": [],
+  "session_observations": {
+    "samples": 5,
+    "peak_swap_growth_mib": 741.8199999999997,
+    "min_available_estimate_gib": 2.197296142578125,
+    "pressure_levels": [
+      1,
+      2
+    ],
+    "min_speed_limit": null,
+    "min_scheduler_limit": null
+  },
+  "configured_session_max_swap_growth_mib": 1024,
+  "configured_min_available_gib": 1.5,
+  "owned_server_unloaded": true,
+  "prior_server_restoration_attempted": false,
+  "frozen_runtime_files_verified": 37,
+  "source_git_commit": "ed17d08517f27de557438d83970eb51b84239205",
+  "full_suite_sha256": "735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e",
+  "source_and_suite_verified": true,
+  "quality_score_available": false,
+  "automatic_retry": false,
+  "note": "Cancellation propagated out of run_case before a finalized record or grade was saved. The per-case watcher trigger codes were not persisted; the generic task-cancelled hold is a cancellation effect, not an identified cause. The separately sampled whole-session swap maximum is below its 1024 MiB cap and does not establish the triggering reason. HTTP 200 headers do not establish a completed model response. The raw report counts two missing finalized records; only one task was truly never started. Preserve this sidecar with the exact partial report; no model-quality score exists."
+}

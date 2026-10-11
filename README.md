@@ -140,6 +140,8 @@ See the [complete trial ledger, failed records, resource observations and method
 
 Initial v3 development pilots with a stock 1.5B model scored **0/2 usable and oracle passes per arm** for both single and controlled workflows. Host fixes allowed selection to proceed, but subsequent tiny-model patch/answer failures still prevented usable completion. These diagnostic runs are retained separately in the ledger; they do not demonstrate a navigator benefit, training gain or workflow superiority.
 
+The later [4B controlled development task](benchmarks/results/2026-10-11-controlled-4b-scoped2048-pilot.json) also scored **0/1 usable**. Its implementation passed 12 external behavioral checks, but the required new test was never accepted, so the full task failed. Startup stops, interrupted attempts and changed resource limits are retained separately. This is partial implementation evidence, not a completed-task or training improvement.
+
 ## Development
 
 ```sh

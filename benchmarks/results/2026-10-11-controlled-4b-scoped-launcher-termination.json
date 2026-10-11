@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "kind": "operator_launcher_termination",
+  "preregistration": "synthetic-v3-controlled-4b-scoped-plan.json",
+  "preregistration_sha256": "9ce916636b817a7596009e64a07086ff2dac8cd8adb0d4f05d2994d1be9f0837",
+  "stop_origin": "operator_launcher",
+  "trigger_reason_codes": [
+    "operatorlauncher_invalid_rest"
+  ],
+  "exception_type": "ValueError",
+  "declared_between_cases_seconds": 0,
+  "minimum_between_cases_seconds": 10,
+  "planned_runs": 1,
+  "started_runs": 0,
+  "finalized_records": 0,
+  "finalized_graded_records": 0,
+  "truly_never_started_runs": 1,
+  "logical_model_attempts": 0,
+  "observed_chat_completion_posts": 0,
+  "persisted_completed_model_responses": 0,
+  "warmup_requests": 0,
+  "checkpoints": 0,
+  "comparison_created": false,
+  "model_failure": false,
+  "safety_abort": false,
+  "owned_server_unloaded": true,
+  "prior_server_restoration_attempted": false,
+  "frozen_runtime_files_verified": 37,
+  "source_git_commit": "ae6ca446823845634a96b95423f7df09c40b1f59",
+  "public_runtime_commit": "3e14e2e26230d53a5918277f783957485d4c4c61",
+  "full_suite_sha256": "735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e",
+  "source_and_suite_verified": true,
+  "quality_score_available": false,
+  "automatic_retry": false,
+  "session_observations": {
+    "samples": 4,
+    "peak_swap_growth_mib": 28.86999999999898,
+    "min_available_estimate_gib": 2.25140380859375,
+    "pressure_levels": [
+      1,
+      2
+    ],
+    "min_speed_limit": null,
+    "min_scheduler_limit": null
+  },
+  "note": "The launcher rejected a zero-second between-case rest before creating any benchmark task. The pilot_starting lifecycle marker does not establish a started task. This is an operator configuration error, not a model failure or resource abort; no model-quality score exists. A separately declared corrected launch is retained independently."
+}

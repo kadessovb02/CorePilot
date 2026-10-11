@@ -1,0 +1,70 @@
+{
+  "schema": 1,
+  "kind": "ungraded_resource_abort_termination",
+  "report": "2026-10-11-controlled-4b-scoped-rest10-partial.json",
+  "report_sha256": "7490d6f7306b3dd61511e992acdc4c9d28dc3fee512c2632e2984674231b9a26",
+  "preregistration": "synthetic-v3-controlled-4b-scoped-rest10-plan.json",
+  "preregistration_sha256": "9c2b8f14e9aa723fbb3057a4b8d1e92d633889a0bcc01cd74b997f9d3e6e501a",
+  "stop_origin": "per_case_resource_watcher",
+  "trigger_reason_known": true,
+  "trigger_reason_codes": [
+    "swap_growth_limit"
+  ],
+  "planned_runs": 1,
+  "started_runs": 1,
+  "finalized_records": 1,
+  "finalized_graded_records": 0,
+  "finalized_ungraded_records": 1,
+  "started_ungraded_runs": 1,
+  "truly_never_started_runs": 0,
+  "started_mode": "controlled",
+  "started_phase": "select",
+  "logical_model_attempts": 1,
+  "http_attempts": 1,
+  "responses_with_usage": 0,
+  "persisted_completed_model_responses": 0,
+  "successful_paired_host_tool_operations": 2,
+  "checks": 0,
+  "source_changes": {
+    "modified": 0,
+    "added": 0,
+    "deleted": 0
+  },
+  "case_seconds": 3.089,
+  "timeout": false,
+  "safety_abort": true,
+  "external_oracle_executed": false,
+  "case_watcher_observations": {
+    "samples": 2,
+    "peak_swap_growth_mib": 1079.3100000000013,
+    "min_available_estimate_gib": 2.19866943359375,
+    "pressure_levels": [
+      2
+    ],
+    "min_speed_limit": null,
+    "min_scheduler_limit": null
+  },
+  "session_sampler_observations": {
+    "samples": 5,
+    "peak_swap_growth_mib": 411.5,
+    "min_available_estimate_gib": 2.033782958984375,
+    "pressure_levels": [
+      1,
+      2
+    ],
+    "min_speed_limit": null,
+    "min_scheduler_limit": null
+  },
+  "configured_session_max_swap_growth_mib": 1024,
+  "configured_min_available_gib": 1.5,
+  "owned_server_unloaded": true,
+  "prior_server_restoration_attempted": false,
+  "frozen_runtime_files_verified": 37,
+  "source_git_commit": "ae6ca446823845634a96b95423f7df09c40b1f59",
+  "public_runtime_commit": "3e14e2e26230d53a5918277f783957485d4c4c61",
+  "full_suite_sha256": "735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e",
+  "source_and_suite_verified": true,
+  "quality_score_available": false,
+  "automatic_retry": false,
+  "note": "The corrected ten-second rest launch preserved one resource-aborted record. Its false oracle field is a resource_abort placeholder, not an executed external grade. The per-case watcher observed a swap-growth peak above the 1024 MiB end-to-end limit; the independently sampled session summary missed that short peak and has a different maximum. One selection request began, but no completed model response, check or source change was persisted. This is resource admission/cancellation evidence, not a graded model-quality failure or a timeout. The owned server was unloaded and all frozen source and suite hashes were verified."
+}

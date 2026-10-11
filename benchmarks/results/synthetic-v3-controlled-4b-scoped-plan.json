@@ -1,0 +1,156 @@
+{
+  "schema": 1,
+  "prepared_offline": true,
+  "model_started": false,
+  "purpose": "Adaptive single-task full-cycle development check with no-tools stage instructions and explicit observed host receipts; reused edit task, no fresh or comparative quality estimate.",
+  "suite": {
+    "name": "synthetic_v3",
+    "full_suite_cases": 12,
+    "full_suite_sha256": "735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e",
+    "selected_case_ids": [
+      "edit-tag-normalization"
+    ],
+    "selection": "Load the unchanged full suite and filter preregistered IDs in memory. No fixture, prompt, oracle or reference mutations."
+  },
+  "order": [
+    {
+      "id": "edit-tag-normalization",
+      "mode": "controlled"
+    }
+  ],
+  "budgets": {
+    "max_calls": 8,
+    "max_tokens": 2048,
+    "context_chars": 22000,
+    "case_timeout_seconds": 180,
+    "request_pause_seconds": 3,
+    "between_cases_seconds": 0,
+    "startup_timeout_seconds": 120,
+    "session_timeout_seconds": 420,
+    "warmup_requests": 0,
+    "repeats": 1,
+    "protocol": "native",
+    "memory": false,
+    "router": false
+  },
+  "model": {
+    "repository": "mlx-community/Qwen3.5-4B-4bit",
+    "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+    "adapter": null,
+    "weights": "4-bit",
+    "same_weights_all_modes": true
+  },
+  "server": {
+    "owned_port": 8108,
+    "loopback_only": true,
+    "prefill_step_size": 256,
+    "prompt_concurrency": 1,
+    "prompt_cache_size": 0,
+    "prompt_cache_bytes": 67108864,
+    "allocator_cache_limit_bytes": 134217728,
+    "kv_bits": 8,
+    "quantized_kv_start": 256,
+    "enable_thinking": false,
+    "top_p": 0.8,
+    "top_k": 20
+  },
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_swap_growth_mib": 1024,
+    "max_own_rss_gib": 3.8,
+    "max_physical_footprint_gib": 3.8,
+    "allow_memory_warning": true,
+    "required_metrics_unknown": "block",
+    "sample_interval_seconds": 3,
+    "physical_footprint_interval_seconds": 15,
+    "baseline": "Captured before starting the model server; fixed for the entire session.",
+    "thermal_unknown": "Record null without claiming a measured temperature; observed throttling or warnings block."
+  },
+  "controlled_profile": {
+    "checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ]
+    ],
+    "test_roots": [
+      "tests"
+    ],
+    "check_owner": "Operator configured visible project command; hidden oracle is used only after generation."
+  },
+  "freeze": {
+    "state": "frozen",
+    "source_git_commit": "ae6ca446823845634a96b95423f7df09c40b1f59",
+    "public_runtime_commit": "3e14e2e26230d53a5918277f783957485d4c4c61",
+    "runtime_code_sha256": {
+      "corepilot/__init__.py": "0f9bccde2c828bd2cfeeb2f98017cb02846424b9cfd0a9b858f24fac11af8992",
+      "corepilot/__main__.py": "79ee6f134c5c5193377cf9b189cbdcc3e2095e49ba9cec310114441c15a917c4",
+      "corepilot/app.py": "ab77ad8afe1c07d98035c585472d4d7f6819cdae20591d69728565e926a64b56",
+      "corepilot/benchmark.py": "51fa27f88b7ea53706c2568021c43b97e3945cfaf2a9de98eeb6e717e320e456",
+      "corepilot/benchmark_resources.py": "937810e7ee935cb6f13ed3c9d7332620b093f9897ba4dc6220dc60d1ab977803",
+      "corepilot/cli.py": "50c593425f043d1826a4408cebcdf8f267428417665e4e42f990b14bf3317d79",
+      "corepilot/codex_history.py": "44930f17ce40de612f69d562a8e9d167380563e2a4141cea1601e260f7941a9a",
+      "corepilot/config.py": "bd77a61feb2629c073a6a7e7557f3ba092d686160ce891d163c7cd032a1723e5",
+      "corepilot/controlled.py": "616567dd09c44e0d9f932c3120b5ed511953c75c116ab7c073fbe8ea6e75bfd6",
+      "corepilot/controlled_contract.py": "d79ac3c683c3d75b49a7626ee61012f339ab8a759c894bdcafdf2a7c5e643557",
+      "corepilot/dataset.py": "56b084e95a1535278dd6d3cc913b640813874a05f7ff26e5727d73bac47c2200",
+      "corepilot/decision.py": "aa6839ff66a40c75a566e5508d590704b8db7962cf562a785640600c04b286dc",
+      "corepilot/engine.py": "ec723cfa1a1f1e6e14fdc06bf681f06a0f2c67c5c64e50f9abbbf389f0a7b482",
+      "corepilot/evaluation.py": "3c6f37a6a0d858a03986b6e2d1adaefdef89c5c84f87fb280405870124eda1ff",
+      "corepilot/examples/demo/README.md": "15c9b669555a00ca03a519b1a7d31c47fa5df329f302ea207e8d3761143f893b",
+      "corepilot/examples/demo/calculator.py": "91c445e0416d2366aa1e45bcd16a9920d9f161d4c9cd58e4505a82be580c8492",
+      "corepilot/examples/demo/tests/test_calculator.py": "e08112defca8dd4a32d2b26c49e103d3e0ab9c2a686e6c3d4acd443a304bd3ba",
+      "corepilot/history.py": "235b362db30abd4a8d03dd705d7a9b4860e280b2fda7ee2bd9f736bcbfdadca9",
+      "corepilot/indexing.py": "64fdc40e6ee3100832271debf290d53641bc24ff40b17533d946f4073f31a6a3",
+      "corepilot/memory.py": "9ea59293a7894cba9c7e5aa3ec58e6bdfe3dfb0ae8a364fe4e772bc7e1e22d59",
+      "corepilot/model.py": "b67035dd695977ca882f6d865a0534eb7a2457650e1b31a06fb7287547a8a15f",
+      "corepilot/model_pool.py": "f0f62d7809bd17b98b3e639a3e6978805773bec986bd7be090f9c59c41c7a8a9",
+      "corepilot/native_sft.py": "a21ee7c064f6d857af1a67d27bd1a9fae37bf9ceb2dfda0b56e285816d0cb045",
+      "corepilot/navigator.py": "ff3566e0e81043cf64e3cb82222cc56ed002deeb176c8480642a9384fc6cb4ed",
+      "corepilot/orchestration.py": "63eeda946080cea694dd77338ccf7de3a07b64b8b0973d9b53942d5e78027906",
+      "corepilot/redaction.py": "8b50c3e41bdbd72ff2209a56fbff8265445c80b351ca756ae357f400c156028d",
+      "corepilot/reports.py": "c4a32a5b1e12469bb6775ce5acc9100e6266f73a1913a3ea1c0dbccfe34e75e3",
+      "corepilot/runtime_resources.py": "76ce78e44e04f030aaedad15633ac7492396d1edd80a1fd70f8f007c4136bb13",
+      "corepilot/setup.py": "a962e7f37aa3a7a62511733c4bb322ae854e99dbde95064d47fd4b09e5953d2d",
+      "corepilot/store.py": "a4b1e3c890d2f8e0fbc32b3d99ab84aeb098a5d7282557ac2b57fd6991086823",
+      "corepilot/tools.py": "a228caa811834c6907a6e3ea8766dcbc4d1b93387c68e03736d77fe2062aca00",
+      "corepilot/training.py": "c80323480969d06919d882dcc8def9edc893d7095d298f168adc01f5bb28c863",
+      "corepilot/web/app.js": "8f0a3db23ac98970191a79479a697f9506aed2a3f985fcec7819cdbcfcaee17e",
+      "corepilot/web/index.html": "1800b4efec4f4d8e6a4f10751c1c37575b31a93ac23e7f42a2343149efb8993f",
+      "corepilot/web/style.css": "d88edc8e7938f6659f76a0f4d57cb57cfd896e16b7296f6e49c48f2f3948dada",
+      "corepilot/workspace.py": "b2feb8751f24e481c27c206819510a77b8388210a40b1e7ceb9af6dec98ab38f",
+      "scripts/run_benchmark.py": "ac52df55ef09e0b32b0bd1949b6630326f0c16a63bdc0e8071b60984f75c0971"
+    },
+    "runtime_manifest_files": 37,
+    "runtime_manifest_sha256": "461f02f01817ddf01d9de13c159e9aba4b2f9f820841646de1ff2bde36156675",
+    "no_outcome_based_mutation": true
+  },
+  "lifecycle": {
+    "execution_requires": "--execute",
+    "occupied_port_policy": "block; never stop unrelated listeners",
+    "owned_process_group_cleanup": "SIGTERM grace 12 seconds, then bounded SIGKILL only on the owned unchanged group",
+    "restore_8081": false,
+    "start_or_stop_old_server": false,
+    "fresh_output_required": true,
+    "source_pin_required": true
+  },
+  "limits": [
+    "One reused development task only; no fresh holdout, quality, speed or parity claim.",
+    "Reports remain separate and are not pooled with previous attempts.",
+    "Behavioral oracle/reference contents are never included in the model prompt.",
+    "Client cancellation does not prove inference stopped; finally unloads only the owned server group.",
+    "No model/tokenizer startup, inference or training occurred while preparing these files."
+  ],
+  "development_only": true,
+  "fresh_evaluation": false,
+  "resource_policy_rationale": "The earlier 512 MiB startup stopped before inference after 595.43 MiB growth despite 2.26 GiB available; an earlier scored session observed 382.69 MiB generation growth. Declare one 1024 MiB whole-session cap before any response, retain all earlier stops separately, no reset between startup and tasks. No public default changed; known critical/unknown pressure, 1.5 GiB reserve, 3.8 GiB footprint/RSS, observed thermal warnings and 180-second task caps remain.",
+  "adaptive_change": "Keep real paired host operations in checkpoint; present them as observed untrusted data to the no-tools stage, and remove conflicting tool/prose instructions. No patch/test/path/scope/check/review acceptance gate changed.",
+  "time_utc": "2026-10-11T19:08:14.021237+00:00",
+  "model_manager_sha256": "c04d16ac6312999d3c65879a3226741a27ca4dd2fc14a1ae6e33c3ffb2f281b0",
+  "previous_evidence_preserved": true
+}
