@@ -122,33 +122,17 @@ The planner also sees which root instruction files still require successful read
 
 Commands fail closed when the supported sandbox is missing. There is no unsandboxed fallback. See [security and data handling](SECURITY.md).
 
-## Comparative benchmarks
+## Benchmark evidence
 
-The harness supports single-agent, **planner → coder → reviewer**, and controlled workflows using the same stock weights per comparison, fresh workspaces, equal per-case budgets and no training or retrieval memory. The v1 suite contains 12 edits and 8 inspections; the focused v3 suite contains six edits and six inspections. A **usable pass** requires both completed status and an external oracle pass; resource-cancelled attempts count as failures, while unstarted runs remain separate.
+Latest recorded development result on **Apple M2 Pro, 16 GiB**. A **usable pass** requires both a completed task and a passing independent external oracle.
 
-Selected evidence from **2026-10-11, Apple M2 Pro, 16 GiB**:
-
-| Configuration / report | Single usable | Specialists usable | Coverage | Main limitation |
+| Workflow / model / report | Usable | Oracle | Time / model calls | Verified result |
 |---|---:|---:|---|---|
-| [Fresh v2, 4B native — partial](benchmarks/results/2026-10-11-qwen35-fresh-v2-partial.json) | 0/1 | 0/1 | **2/40 graded; 38 never started** | Oracle 0/1 single, 1/1 specialists; operator stopped after first pair |
-| [1.5B, JSON with tool descriptions](benchmarks/results/2026-10-11-qwen15b-tool-descriptions.json) | **0/20** | **0/20** | 40/40 graded | No completed tasks; all specialist calls stayed in planning |
-| [Qwen3.5 4B, native with role cues / 2048 tokens](benchmarks/results/2026-10-11-qwen35-rolecue-pilot.json) | 1/2 | 0/2 | 4/4 graded | Oracle 1/2 per mode; unfinished review and a compatibility regression |
-| [Qwen2.5-Coder 7B, native](benchmarks/results/2026-10-11-coder7b-native-plan-pilot.json) | 0/2 | 0/2 | 4/4 graded | Format failures; zero executed tools |
-| [Qwen2.5-Coder 7B, JSON with console resolution](benchmarks/results/2026-10-11-coder7b-console-json-pilot.json) | 0/2 | 0/2 | 4/4 graded | Oracle 1/2 per mode; no completed tasks; one timeout |
+| [Controlled · native documents · stock Qwen3.5-4B 4-bit](benchmarks/results/2026-10-11-controlled-4b-native-documents-development.json) | **1/1** | **1/1** | **71.642 s / 4 calls** | Source edit, new test file, passing host check, approved review; 28 external unittest executions, zero failures or errors |
 
-The complete 1.5B trial scored **0/12 edits and 0/8 inspections per mode**. Later pilots are small, adaptive development trials: v1 was initially held out, but its failures have since informed fixes. Their scores are not pooled or a reliable model ranking. No trial had a both-usable pair for a speed comparison. The fresh v2 run stopped after its first graded pair at a changed user work priority; the stopping decision followed the first single-agent outcome. Both tasks exhausted their 24-call budgets without completion. The [termination notice](benchmarks/results/2026-10-11-fresh-v2-partial-termination.json) records the external stop absent from the raw report. This is **not a completed 20-case comparison** or an unbiased full-suite quality estimate.
+This is **one repeatedly used development task**, started from its clean original baseline with no adapter or retrieval memory. The run used eight-call / 2048-token / 180-second limits. The 28 test executions are checks within that task, not 28 independent tasks. This result does not establish a general success rate, a fresh held-out score, training or navigator gain, model ranking, or comparative speed improvement.
 
-The latest v1 4B development pilot scored **1/2 oracle passes per mode**, with **1/2 usable for single and 0/2 for specialists**. The completed task passed three external behavior tests; its own check asserted positive cases but only printed negative cases. Specialists did not finish review, and the other single-agent edit removed existing functions and broke package imports. All four attempts were graded, with no timeout or resource abort. This small development pilot does not establish dependable coding or Codex parity. Protocols are selected explicitly, with no automatic fallback.
-
-See the [complete trial ledger, failed records, resource observations and methodology](docs/benchmarks.md), the [synthetic suite](benchmarks/synthetic_v1/README.md), and the candidate [4B](docs/local-model.md) / [7B](docs/local-coder-model.md) setup guides. Ordinary free-form serving uses a resource guard when explicitly enabled. The new controlled workflow always applies its runtime guard; this has not retroactively changed recorded benchmark settings.
-
-Initial v3 development pilots with a stock 1.5B model scored **0/2 usable and oracle passes per arm** for both single and controlled workflows. Host fixes allowed selection to proceed, but subsequent tiny-model patch/answer failures still prevented usable completion. These diagnostic runs are retained separately in the ledger; they do not demonstrate a navigator benefit, training gain or workflow superiority.
-
-The later [4B controlled development task](benchmarks/results/2026-10-11-controlled-4b-scoped2048-pilot.json) also scored **0/1 usable**. Its implementation passed 12 external behavioral checks, but the required new test was never accepted, so the full task failed. Startup stops, interrupted attempts and changed resource limits are retained separately. This is partial implementation evidence, not a completed-task or training improvement.
-
-A separately steered [native saved-checkpoint continuation](benchmarks/results/2026-10-11-controlled-4b-native-checkpoint-continuation.json) also failed to finish. The [clean-start native run](benchmarks/results/2026-10-11-controlled-4b-native-initial-development.json) and [feedback follow-up](benchmarks/results/2026-10-11-controlled-4b-native-feedback-development.json) produced partial implementations but failed test creation or execution and did not complete review. These exposed development cases are **not fresh held-out evidence or a quality gain**; separate failures and diagnostics remain in the controlled-workflow guide.
-
-The later [pinned stock 4B native documents-mode run](benchmarks/results/2026-10-11-controlled-4b-native-documents-development.json) completed **one known development task**: implementation, a new test file, an actual passing host check and approved review, plus 28 external unittest executions with zero failures or errors. It used a clean baseline, no adapter or memory, and eight-call / 2048-token / 180-second limits. This first observed full cycle on a repeatedly used case is **not a fresh general-quality score or evidence of training, navigator, ranking or speed improvement**. Earlier failures remain published.
+The [full benchmark journal and methodology](docs/benchmarks.md) contains earlier failed, partial and resource-stopped experiments, with their exact reports kept separately. The harness supports single-agent, **planner → coder → reviewer**, and controlled workflows; this latest controlled-only run is not a paired comparison. See the [controlled-workflow guide](docs/controlled-workflow.md) for the file-response protocol and completion gates.
 
 ## Development
 
