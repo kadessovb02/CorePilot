@@ -108,6 +108,25 @@ See [example configuration](examples/config.example.json), [architecture](docs/a
 
 Commands fail closed when the supported sandbox is missing. There is no unsandboxed fallback. See [security and data handling](SECURITY.md).
 
+## Comparative benchmarks
+
+The public harness compares a single agent with **planner → coder → reviewer** on the same 20 held-out synthetic tasks: 12 independently checked code changes and 8 read-only inspections with bounded answer criteria. Both modes use the same weights, identical per-case call/time caps, fresh workspaces and no retrieval or training data. Order alternates AB/BA; model requests run sequentially with cooling pauses.
+
+Measured on **2026-10-11, Apple M2 Pro, 16 GiB**, using public stock 4-bit weights without adapters:
+
+| Configuration / report | Single usable passes | Specialists usable passes | Attempts / planned | Stop |
+|---|---:|---:|---:|---|
+| [Qwen2.5-Coder 1.5B, KV4 diagnostic](benchmarks/results/2026-10-11-qwen15b-kv4-pilot.json) | 0/4 | 0/4 | 8/40 | Adaptively stopped after repetitive generation |
+| [1.5B, unquantized KV, before tool-description fix](benchmarks/results/2026-10-11-qwen15b-full-kv.json) | 0/8 | 0/8 | 16/40 | 150-second timeout |
+| [Qwen3 4B, before fix](benchmarks/results/2026-10-11-qwen4b-full-kv.json) | 0/2 | 0/2 | 4/40 | Memory pressure warning / low headroom |
+| [1.5B, tool descriptions preserved](benchmarks/results/2026-10-11-qwen15b-tool-descriptions.json) | **0/20** | **0/20** | **40/40** | Complete experiment; no timeout or resource abort |
+
+The complete experiment scored **0/12 edits and 0/8 inspections per mode**. Specialists spent all 294 model calls in the planner; coder and reviewer were never reached. These tested JSON-action configurations did not demonstrate reliable task completion or a specialist advantage. There were no both-successful pairs for a meaningful speed comparison. Fast failures and both-failed ties are not evidence of speed or quality parity.
+
+Trials were exploratory: failures informed later configuration changes, and the final trial also reduced request pauses to zero and task rests to ten seconds. Scores from different configurations are not pooled. The 4B resource cancellation counts as a failed attempt but its patch was not graded; unattempted runs remain explicit. Software tests and the suite's reference-fix audit remain separate from model quality.
+
+In the complete trial, sampled combined runner/server physical footprint reached **1.69 GiB**, estimated available memory stayed at least **3.75 GiB**, pressure remained normal and measured swap growth was **0**. Temperature was unavailable. The runner retains resource admission and stops on pressure, low headroom, swap growth or observed throttling. The earlier [admission probe](benchmarks/results/2026-10-11-admission.json) made zero inference requests; all failed and partial trials are preserved. See [methodology, pinned configurations and reproduction](docs/benchmarks.md) and the [synthetic suite](benchmarks/synthetic_v1/README.md).
+
 ## Development
 
 ```sh

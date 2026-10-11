@@ -13,7 +13,7 @@ from corepilot.engine import AgentEngine, editing_intent, explicit_check_intent
 from corepilot.memory import retrieve
 from corepilot.model import ModelClient, cap_messages, extract_action
 from corepilot.store import TaskStore
-from corepilot.tools import WorkspaceTools
+from corepilot.tools import TOOL_SPECS, WorkspaceTools
 from corepilot.workspace import BoundaryError, apply_changes, prepare, safe_path
 
 
@@ -230,6 +230,47 @@ def test_model_http_native_to_json_fallback(tmp_path):
         assert result["tool_calls"][0]["function"]["name"] == "read_file"
         assert "exactly one JSON object" in observed[-1]["messages"][0]["content"]
         await model.close()
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("protocol", ["json", "auto"])
+def test_json_tools_preserve_path_guidance_and_native_descriptions_after_fallback(tmp_path, protocol):
+    async def run():
+        observed = []
+        def response(request):
+            payload = json.loads(request.content)
+            observed.append(payload)
+            if "tools" in payload:
+                return httpx.Response(400, json={"error": "Synthetic native tools unsupported"})
+            return httpx.Response(200, json={"choices": [{"message": {"content":
+                '{"tool":"read_file","arguments":{"path":"module.py"}}'}}]})
+        model = ModelClient(Settings(root=tmp_path, protocol=protocol))
+        await model.http.aclose()
+        model.http = httpx.AsyncClient(transport=httpx.MockTransport(response))
+        messages = [{"role": "system", "content": "Synthetic rules"},
+                    {"role": "user", "content": "Inspect module.py"}]
+        try:
+            result = await model.complete(messages, tool_names=["list_files", "read_file"])
+            assert len(observed) == (2 if protocol == "auto" else 1)
+            final_request = observed[-1]
+            assert "tools" not in final_request
+            contract = final_request["messages"][0]["content"].split("Available tools: ", 1)[1]
+            advertised = {row["name"]: row for row in json.loads(contract)}
+            assert set(advertised) == {"list_files", "read_file"}
+            assert "relative to the checkout root" in advertised["read_file"]["description"]
+            assert "recover after a nonexistent path" in advertised["list_files"]["description"]
+            expected = {row["function"]["name"]: row["function"] for row in TOOL_SPECS}
+            for name, spec in advertised.items():
+                assert spec["description"] == expected[name]["description"]
+                assert spec["parameters"] == expected[name]["parameters"]
+            if protocol == "auto":
+                native = {row["function"]["name"]: row["function"] for row in observed[0]["tools"]}
+                assert advertised == native
+            assert result["tool_calls"][0]["function"]["name"] == "read_file"
+            assert json.loads(result["tool_calls"][0]["function"]["arguments"]) == {"path": "module.py"}
+            assert messages[0]["content"] == "Synthetic rules"
+        finally:
+            await model.close()
     asyncio.run(run())
 
 

@@ -14,6 +14,8 @@ Report model/server/trainer versions, source revision, split fingerprints, error
 
 CorePilot's unit suite validates software behavior; it is not a benchmark claiming parity with any commercial coding agent.
 
+For a reproducible single-agent versus specialist comparison with external behavioral oracles and a resource admission gate, use the [comparative benchmark harness](benchmarks.md). It separates edit outcomes from inspection proxies and compares speed only on pairs both modes pass.
+
 Run the synthetic observable cases against your configured local model:
 
 ```sh

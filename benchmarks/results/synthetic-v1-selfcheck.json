@@ -1,0 +1,284 @@
+{
+  "schema_version": 1,
+  "suite_id": "synthetic_v1",
+  "case_count": 20,
+  "fixture_file_count": 8,
+  "fixture_unchanged": true,
+  "passed": true,
+  "cases": [
+    {
+      "id": "edit_sku_normalization",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_sku_normalization"
+      ],
+      "baseline_failure_count": 3,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_exact_price",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_exact_price"
+      ],
+      "baseline_failure_count": 5,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_reservation_count",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_reservation_count"
+      ],
+      "baseline_failure_count": 4,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_tag_normalization",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_tag_normalization"
+      ],
+      "baseline_failure_count": 1,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_search_tokens",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_search_tokens"
+      ],
+      "baseline_failure_count": 5,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_pagination_offset",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_pagination_offset"
+      ],
+      "baseline_failure_count": 1,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_optional_token",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_optional_token"
+      ],
+      "baseline_failure_count": 3,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_exponential_backoff",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_exponential_backoff"
+      ],
+      "baseline_failure_count": 1,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_success_status_range",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_success_status_range"
+      ],
+      "baseline_failure_count": 100,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_event_identifier",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_event_identifier"
+      ],
+      "baseline_failure_count": 1,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_canonical_event_json",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_canonical_event_json"
+      ],
+      "baseline_failure_count": 1,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "edit_inventory_value",
+      "baseline_failed": true,
+      "baseline_failure_names": [
+        "edit_inventory_value"
+      ],
+      "baseline_failure_count": 1,
+      "reference_mutation_passed": true,
+      "failures": [],
+      "errors": [],
+      "passed": true
+    },
+    {
+      "id": "inspect_loader_flow",
+      "baseline_reference_answer_passed": true,
+      "failures": [],
+      "errors": [],
+      "semantic": {
+        "passed": true,
+        "missing_criteria": [],
+        "contradictions": [],
+        "limitation": "Bounded lexical/semantic proxy; inspect the answer and successful read trace manually."
+      },
+      "passed": true
+    },
+    {
+      "id": "inspect_record_immutability",
+      "baseline_reference_answer_passed": true,
+      "failures": [],
+      "errors": [],
+      "semantic": {
+        "passed": true,
+        "missing_criteria": [],
+        "contradictions": [],
+        "limitation": "Bounded lexical/semantic proxy; inspect the answer and successful read trace manually."
+      },
+      "passed": true
+    },
+    {
+      "id": "inspect_search_pagination",
+      "baseline_reference_answer_passed": true,
+      "failures": [],
+      "errors": [],
+      "semantic": {
+        "passed": true,
+        "missing_criteria": [],
+        "contradictions": [],
+        "limitation": "Bounded lexical/semantic proxy; inspect the answer and successful read trace manually."
+      },
+      "passed": true
+    },
+    {
+      "id": "inspect_transport_boundary",
+      "baseline_reference_answer_passed": true,
+      "failures": [],
+      "errors": [],
+      "semantic": {
+        "passed": true,
+        "missing_criteria": [],
+        "contradictions": [],
+        "limitation": "Bounded lexical/semantic proxy; inspect the answer and successful read trace manually."
+      },
+      "passed": true
+    },
+    {
+      "id": "inspect_event_flow",
+      "baseline_reference_answer_passed": true,
+      "failures": [],
+      "errors": [],
+      "semantic": {
+        "passed": true,
+        "missing_criteria": [],
+        "contradictions": [],
+        "limitation": "Bounded lexical/semantic proxy; inspect the answer and successful read trace manually."
+      },
+      "passed": true
+    },
+    {
+      "id": "inspect_persistence_claim",
+      "baseline_reference_answer_passed": true,
+      "failures": [],
+      "errors": [],
+      "semantic": {
+        "passed": true,
+        "missing_criteria": [],
+        "contradictions": [],
+        "limitation": "Bounded lexical/semantic proxy; inspect the answer and successful read trace manually."
+      },
+      "passed": true
+    },
+    {
+      "id": "inspect_token_edge_cases",
+      "baseline_reference_answer_passed": true,
+      "failures": [],
+      "errors": [],
+      "semantic": {
+        "passed": true,
+        "missing_criteria": [],
+        "contradictions": [],
+        "limitation": "Bounded lexical/semantic proxy; inspect the answer and successful read trace manually."
+      },
+      "passed": true
+    },
+    {
+      "id": "inspect_public_facade",
+      "baseline_reference_answer_passed": true,
+      "failures": [],
+      "errors": [],
+      "semantic": {
+        "passed": true,
+        "missing_criteria": [],
+        "contradictions": [],
+        "limitation": "Bounded lexical/semantic proxy; inspect the answer and successful read trace manually."
+      },
+      "passed": true
+    }
+  ],
+  "adversarial": [
+    {
+      "id": "edit_event_identifier_incomplete_fix",
+      "rejected": true
+    },
+    {
+      "id": "edit_exponential_backoff_incomplete_fix",
+      "rejected": true
+    },
+    {
+      "id": "edit_success_status_range_incomplete_fix",
+      "rejected": true
+    },
+    {
+      "id": "edit_tag_normalization_incomplete_fix",
+      "rejected": true
+    },
+    {
+      "id": "inspect_persistence_claim_contradiction",
+      "rejected": true
+    },
+    {
+      "id": "inspect_persistence_claim_double_negative",
+      "rejected": true
+    }
+  ]
+}

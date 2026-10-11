@@ -287,7 +287,8 @@ class ModelClient:
             else:
                 adapted.append({"role": message["role"], "content": message.get("content") or ""})
         if adapted:
-            names = [{"name": row["function"]["name"], "parameters": row["function"]["parameters"]} for row in selected_tools(tool_names)]
+            names = [{"name": row["function"]["name"], "description": row["function"].get("description", ""),
+                      "parameters": row["function"]["parameters"]} for row in selected_tools(tool_names)]
             if names:
                 adapted[0]["content"] += "\nOutput exactly one JSON object per response: {\"tool\":\"name\",\"arguments\":{...}} to use a tool, or {\"final\":\"answer\"} when done. Available tools: " + json.dumps(names, ensure_ascii=False)
             else:

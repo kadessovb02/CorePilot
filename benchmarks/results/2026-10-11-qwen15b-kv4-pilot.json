@@ -1,0 +1,767 @@
+{
+  "schema": 1,
+  "date_utc": "2026-10-11T11:23:28.255140+00:00",
+  "suite": "synthetic_v1",
+  "suite_sha256": "b5401b866e89bac019358ecd940f503f6841daf5221ac0546fd049358aa225af",
+  "source_sha256": "093e99d499012acbff2e5ba7b9fbe5e1832c4843dcac235201432e6009020b37",
+  "platform": {
+    "system": "Darwin",
+    "release": "25.2.0",
+    "python": "3.14.0"
+  },
+  "metadata": {
+    "hardware": {
+      "chip": "Apple M2 Pro",
+      "logical_cpus": 10,
+      "memory_gib": 16
+    },
+    "model": {
+      "repository": "mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit",
+      "revision": "b3252a2f97102b1fb1571fec2c9b27219a8536be",
+      "weights": "4-bit",
+      "adapter": null,
+      "download_bytes": 880172100
+    },
+    "server_packages": {
+      "mlx": "0.32.3",
+      "mlx-lm": "0.32.0",
+      "transformers": "5.19.0",
+      "huggingface-hub": "1.33.0"
+    },
+    "server_settings": {
+      "prefill_step_size": 128,
+      "prompt_concurrency": 1,
+      "prompt_cache_size": 1,
+      "prompt_cache_bytes": 67108864,
+      "kv_bits": 4,
+      "quantized_kv_start": 0,
+      "max_tokens": 768,
+      "cpu_thread_environment": 2
+    },
+    "corepilot_base_commit": "234f54dc262efac0cb0ca3ecb70dfbae8d39a8b4",
+    "code_sha256": {
+      "corepilot/__init__.py": "0f9bccde2c828bd2cfeeb2f98017cb02846424b9cfd0a9b858f24fac11af8992",
+      "corepilot/__main__.py": "79ee6f134c5c5193377cf9b189cbdcc3e2095e49ba9cec310114441c15a917c4",
+      "corepilot/app.py": "9166318174bee507e07073d7715c985f8aac57938dc8791878e3f997c7c09be4",
+      "corepilot/benchmark.py": "a2e6bd9d11c7cfe478db460b6e2212c8d1d52585d6cb2a909e988a10004a9237",
+      "corepilot/benchmark_resources.py": "0b6f2582717027fa232ba734f770447463f368a63480f7002ec5919b828d62ac",
+      "corepilot/cli.py": "2a812f1f9fc43bd00c9610c25b7dbc96369676aa8d3e3b7d4ffc133eae1cfea6",
+      "corepilot/codex_history.py": "44930f17ce40de612f69d562a8e9d167380563e2a4141cea1601e260f7941a9a",
+      "corepilot/config.py": "293a7b35a575e7b921dfb1ffaa97e04c7251a781c3ffb7bd88be409797a8dbf6",
+      "corepilot/dataset.py": "35344501847cc141cc22f65cb35c555d938a6b0befa786ca91923d8b7987e11a",
+      "corepilot/decision.py": "aa6839ff66a40c75a566e5508d590704b8db7962cf562a785640600c04b286dc",
+      "corepilot/engine.py": "6bf01dfe5744506c82a884a8390c3f3f78f8ccbe0e000e338edea980c97478ba",
+      "corepilot/evaluation.py": "3c6f37a6a0d858a03986b6e2d1adaefdef89c5c84f87fb280405870124eda1ff",
+      "corepilot/history.py": "51fec5e64283db1e4be4ed338f596a6694c11d36dcf14897c8c3677b3277f4c1",
+      "corepilot/indexing.py": "64fdc40e6ee3100832271debf290d53641bc24ff40b17533d946f4073f31a6a3",
+      "corepilot/memory.py": "9ea59293a7894cba9c7e5aa3ec58e6bdfe3dfb0ae8a364fe4e772bc7e1e22d59",
+      "corepilot/model.py": "b811be5c23464b21c6d67cfe4d505eb5de218ea7e35f052dc4fdee7e89ad2f65",
+      "corepilot/model_pool.py": "f0f62d7809bd17b98b3e639a3e6978805773bec986bd7be090f9c59c41c7a8a9",
+      "corepilot/orchestration.py": "5a5e0ec5903f46c9f5a5c72c4a03f32cbb6bf3c0c1f58dfa4f1b588ff7c7665b",
+      "corepilot/redaction.py": "8b50c3e41bdbd72ff2209a56fbff8265445c80b351ca756ae357f400c156028d",
+      "corepilot/reports.py": "c4a32a5b1e12469bb6775ce5acc9100e6266f73a1913a3ea1c0dbccfe34e75e3",
+      "corepilot/setup.py": "a962e7f37aa3a7a62511733c4bb322ae854e99dbde95064d47fd4b09e5953d2d",
+      "corepilot/store.py": "744a5861562a84e1b93ffca0ad51b11337a021633fbeeb1b0bdc81eeabd58321",
+      "corepilot/tools.py": "0fea7849913280ca4628a41029b6ad25918705d1360a20e37ff6fc5ad2d19852",
+      "corepilot/training.py": "2ca947757ec21f380ed75978baf5977ec782bafb2ed48fbf406608e655cbb5bb",
+      "corepilot/workspace.py": "b2feb8751f24e481c27c206819510a77b8388210a40b1e7ceb9af6dec98ab38f",
+      "scripts/run_benchmark.py": "fc007b7fd7d9048cae6d5d974af703632ed1b77b84950a3396f7ab1d8aae71b4"
+    },
+    "warmup": {
+      "scored": false,
+      "max_tokens": 16,
+      "seconds": 0.186,
+      "usage": {
+        "prompt_tokens": 23,
+        "completion_tokens": 4,
+        "total_tokens": 27,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "resources": {
+        "samples": 1,
+        "max_rss_gib": 1.1152496337890625,
+        "max_physical_footprint_gib": 0.9947265625,
+        "max_reported_peak_footprint_gib": 1.02841796875,
+        "physical_footprint_samples": 1,
+        "max_compressor_gib": 2.442901611328125,
+        "max_used_swap_gib": 12.102783203125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 5.1567840576171875,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "postflight": {
+        "timestamp": 1791717786.9767199,
+        "available_estimate_gib": 4.8262939453125,
+        "compressor_gib": 2.4422454833984375,
+        "purgeable_gib": 0.0168914794921875,
+        "used_swap_gib": 12.102783203125,
+        "own_rss_gib": 1.121337890625,
+        "process_count": 2,
+        "physical_footprint_gib": 0.9947265625,
+        "peak_physical_footprint_gib": 1.02841796875,
+        "footprint_age_seconds": 0.21263225001166575,
+        "pressure_level": 1,
+        "pressure_some_avg10": null,
+        "pressure_full_avg10": null,
+        "speed_limit": null,
+        "scheduler_limit": null,
+        "thermal_warning_level": null,
+        "load_1m": null,
+        "supported": true,
+        "platform": "darwin",
+        "rss_complete": true,
+        "footprint_available": true
+      }
+    },
+    "setup": "Existing idle model server temporarily stopped; only one model server loaded."
+  },
+  "settings": {
+    "protocol": "json",
+    "memory": false,
+    "router": false,
+    "same_weights_all_roles": true,
+    "max_calls": 24,
+    "role_max_steps": 24,
+    "max_tokens": 768,
+    "context_chars": 14000,
+    "timeout_seconds": 150.0,
+    "rest_seconds": 20.0,
+    "temperature": 0.15,
+    "prompt_suffix": "/no_think",
+    "repeats": 1,
+    "cache_policy": "Existing server caches are not reset; AB/BA order alternates.",
+    "between_requests_seconds": 3
+  },
+  "planned_cases": 20,
+  "baseline_resources": {
+    "timestamp": 1791717808.254835,
+    "available_estimate_gib": 5.217864990234375,
+    "compressor_gib": 2.33880615234375,
+    "purgeable_gib": 0.028106689453125,
+    "used_swap_gib": 12.102783203125,
+    "own_rss_gib": 1.1119232177734375,
+    "process_count": 2,
+    "physical_footprint_gib": 0.9990234375,
+    "peak_physical_footprint_gib": 1.1255859375000001,
+    "footprint_age_seconds": 2.9170187190175056e-06,
+    "pressure_level": 1,
+    "pressure_some_avg10": null,
+    "pressure_full_avg10": null,
+    "speed_limit": null,
+    "scheduler_limit": null,
+    "thermal_warning_level": null,
+    "load_1m": null,
+    "supported": true,
+    "platform": "darwin",
+    "rss_complete": true,
+    "footprint_available": true
+  },
+  "records": [
+    {
+      "id": "edit_sku_normalization",
+      "category": "normalization",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 9.628,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_sku_normalization",
+          "edit_sku_normalization",
+          "edit_sku_normalization"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 3,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 3,
+      "calls_by_role": {
+        "single": 3
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 3,
+      "http_errors": 0,
+      "usage_responses": 3,
+      "prompt_tokens": 3527,
+      "completion_tokens": 169,
+      "cached_prompt_tokens": 2271,
+      "length_limited_responses": 0,
+      "inference_seconds": 3.469045500009088,
+      "resources": {
+        "samples": 4,
+        "max_rss_gib": 1.127105712890625,
+        "max_physical_footprint_gib": 0.9990234375,
+        "max_reported_peak_footprint_gib": 1.1255859375000001,
+        "physical_footprint_samples": 4,
+        "max_compressor_gib": 2.3182220458984375,
+        "max_used_swap_gib": 12.102783203125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.63348388671875,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_sku_normalization",
+      "category": "normalization",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 29.692,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_sku_normalization",
+          "edit_sku_normalization",
+          "edit_sku_normalization"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 3,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 3,
+      "calls_by_role": {
+        "planner": 3
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 3,
+      "http_errors": 0,
+      "usage_responses": 3,
+      "prompt_tokens": 4712,
+      "completion_tokens": 1881,
+      "cached_prompt_tokens": 1687,
+      "length_limited_responses": 2,
+      "inference_seconds": 23.527513459004695,
+      "resources": {
+        "samples": 10,
+        "max_rss_gib": 1.131988525390625,
+        "max_physical_footprint_gib": 1.03564453125,
+        "max_reported_peak_footprint_gib": 1.33623046875,
+        "physical_footprint_samples": 10,
+        "max_compressor_gib": 2.2212371826171875,
+        "max_used_swap_gib": 12.094970703125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.70550537109375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_exact_price",
+      "category": "numeric_precision",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 33.372,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_exact_price",
+          "edit_exact_price",
+          "edit_exact_price"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 5,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 3,
+      "calls_by_role": {
+        "planner": 3
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 3,
+      "http_errors": 0,
+      "usage_responses": 3,
+      "prompt_tokens": 5120,
+      "completion_tokens": 2304,
+      "cached_prompt_tokens": 3156,
+      "length_limited_responses": 3,
+      "inference_seconds": 27.195626250002533,
+      "resources": {
+        "samples": 12,
+        "max_rss_gib": 1.13543701171875,
+        "max_physical_footprint_gib": 1.1384765625000002,
+        "max_reported_peak_footprint_gib": 1.33876953125,
+        "physical_footprint_samples": 12,
+        "max_compressor_gib": 1.7541656494140625,
+        "max_used_swap_gib": 12.079345703125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.8409271240234375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_exact_price",
+      "category": "numeric_precision",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 35.83,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_exact_price",
+          "edit_exact_price",
+          "edit_exact_price"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 5,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 3,
+      "calls_by_role": {
+        "single": 3
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 3,
+      "http_errors": 0,
+      "usage_responses": 3,
+      "prompt_tokens": 4754,
+      "completion_tokens": 2304,
+      "cached_prompt_tokens": 2893,
+      "length_limited_responses": 3,
+      "inference_seconds": 29.65218754101079,
+      "resources": {
+        "samples": 12,
+        "max_rss_gib": 1.082672119140625,
+        "max_physical_footprint_gib": 1.141796875,
+        "max_reported_peak_footprint_gib": 1.3419921875,
+        "physical_footprint_samples": 12,
+        "max_compressor_gib": 1.9374542236328125,
+        "max_used_swap_gib": 12.048095703125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.7965087890625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_reservation_count",
+      "category": "validation",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 8.911,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_reservation_count",
+          "edit_reservation_count",
+          "edit_reservation_count"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 4,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 2,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 3,
+      "calls_by_role": {
+        "single": 3
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 3,
+      "http_errors": 0,
+      "usage_responses": 3,
+      "prompt_tokens": 3541,
+      "completion_tokens": 189,
+      "cached_prompt_tokens": 3029,
+      "length_limited_responses": 0,
+      "inference_seconds": 2.7388079589873087,
+      "resources": {
+        "samples": 4,
+        "max_rss_gib": 0.9770660400390625,
+        "max_physical_footprint_gib": 1.1399414062500002,
+        "max_reported_peak_footprint_gib": 1.3419921875,
+        "physical_footprint_samples": 4,
+        "max_compressor_gib": 1.840362548828125,
+        "max_used_swap_gib": 12.016845703125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.97247314453125,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_reservation_count",
+      "category": "validation",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 34.489,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_reservation_count",
+          "edit_reservation_count",
+          "edit_reservation_count"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 4,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 2,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 3,
+      "calls_by_role": {
+        "planner": 3
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 3,
+      "http_errors": 0,
+      "usage_responses": 3,
+      "prompt_tokens": 4386,
+      "completion_tokens": 2304,
+      "cached_prompt_tokens": 2652,
+      "length_limited_responses": 3,
+      "inference_seconds": 28.31781999897794,
+      "resources": {
+        "samples": 12,
+        "max_rss_gib": 0.9806976318359375,
+        "max_physical_footprint_gib": 1.144921875,
+        "max_reported_peak_footprint_gib": 1.34501953125,
+        "physical_footprint_samples": 12,
+        "max_compressor_gib": 1.799560546875,
+        "max_used_swap_gib": 12.001220703125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.8359375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_tag_normalization",
+      "category": "collection_normalization",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 30.147,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_tag_normalization"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 1,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 3,
+      "calls_by_role": {
+        "planner": 3
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 3,
+      "http_errors": 0,
+      "usage_responses": 3,
+      "prompt_tokens": 4712,
+      "completion_tokens": 1881,
+      "cached_prompt_tokens": 2028,
+      "length_limited_responses": 2,
+      "inference_seconds": 23.958181375986896,
+      "resources": {
+        "samples": 11,
+        "max_rss_gib": 0.1295013427734375,
+        "max_physical_footprint_gib": 1.14453125,
+        "max_reported_peak_footprint_gib": 1.34501953125,
+        "physical_footprint_samples": 11,
+        "max_compressor_gib": 3.3935394287109375,
+        "max_used_swap_gib": 11.735537109375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.3661651611328125,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_tag_normalization",
+      "category": "collection_normalization",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 8.995,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_tag_normalization"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 1,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 3,
+      "calls_by_role": {
+        "single": 3
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 3,
+      "http_errors": 0,
+      "usage_responses": 3,
+      "prompt_tokens": 3617,
+      "completion_tokens": 178,
+      "cached_prompt_tokens": 2640,
+      "length_limited_responses": 0,
+      "inference_seconds": 2.8291693339997437,
+      "resources": {
+        "samples": 4,
+        "max_rss_gib": 0.130859375,
+        "max_physical_footprint_gib": 1.14453125,
+        "max_reported_peak_footprint_gib": 1.34501953125,
+        "physical_footprint_samples": 4,
+        "max_compressor_gib": 2.2155914306640625,
+        "max_used_swap_gib": 11.657412109375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.814697265625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    }
+  ],
+  "stop_reasons": [
+    "diagnostic_pilot_stopped_repetitive_generation"
+  ],
+  "resource_thresholds": {
+    "min_available_gib": 2.0,
+    "max_own_rss_gib": 6.0,
+    "max_physical_footprint_gib": 6.0,
+    "max_swap_growth_mib": 512.0,
+    "min_performance_limit": 100.0
+  },
+  "limits": [
+    "Small synthetic sample; one stochastic trial per case/mode; not a commercial-agent comparison.",
+    "Read-only semantic proxies are constrained checks, not a comprehensive language judge.",
+    "The reviewer uses the same weights; external oracles provide behavioral checks.",
+    "Temperature and RAM temperature are not measured; OS thermal limits may be unavailable.",
+    "Client cancellation cannot guarantee cancellation of an existing external server request."
+  ],
+  "summary": {
+    "single": {
+      "attempted": 4,
+      "completed": 0,
+      "oracle_passed": 0,
+      "usable_passed": 0,
+      "median_seconds_all": 9.311,
+      "http_attempts": 12,
+      "timeouts": 0,
+      "safety_aborts": 0,
+      "by_kind": {
+        "edits": {
+          "attempted": 4,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        },
+        "inspections": {
+          "attempted": 0,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        }
+      }
+    },
+    "specialists": {
+      "attempted": 4,
+      "completed": 0,
+      "oracle_passed": 0,
+      "usable_passed": 0,
+      "median_seconds_all": 31.759,
+      "http_attempts": 12,
+      "timeouts": 0,
+      "safety_aborts": 0,
+      "by_kind": {
+        "edits": {
+          "attempted": 4,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        },
+        "inspections": {
+          "attempted": 0,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        }
+      }
+    },
+    "paired": {
+      "count": 4,
+      "specialist_wins": 0,
+      "single_wins": 0,
+      "ties": 4,
+      "both_usable": 0,
+      "median_seconds_both_usable": {
+        "single": null,
+        "specialists": null
+      }
+    }
+  },
+  "unattempted_runs": 32,
+  "experiment_note": "Diagnostic pilot stopped during the between-task rest after repeated unusable text; no in-flight task discarded. A separate configuration test follows. This is not a completed 20-case comparison."
+}

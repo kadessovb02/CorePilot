@@ -1,0 +1,1302 @@
+{
+  "schema": 1,
+  "date_utc": "2026-10-11T11:30:45.831518+00:00",
+  "suite": "synthetic_v1",
+  "suite_sha256": "b5401b866e89bac019358ecd940f503f6841daf5221ac0546fd049358aa225af",
+  "source_sha256": "093e99d499012acbff2e5ba7b9fbe5e1832c4843dcac235201432e6009020b37",
+  "platform": {
+    "system": "Darwin",
+    "release": "25.2.0",
+    "python": "3.14.0"
+  },
+  "metadata": {
+    "hardware": {
+      "chip": "Apple M2 Pro",
+      "logical_cpus": 10,
+      "memory_gib": 16
+    },
+    "model": {
+      "repository": "mlx-community/Qwen2.5-Coder-1.5B-Instruct-4bit",
+      "revision": "b3252a2f97102b1fb1571fec2c9b27219a8536be",
+      "weights": "4-bit",
+      "adapter": null,
+      "download_bytes": 880172100
+    },
+    "server_packages": {
+      "mlx": "0.32.3",
+      "mlx-lm": "0.32.0",
+      "transformers": "5.19.0",
+      "huggingface-hub": "1.33.0"
+    },
+    "server_settings": {
+      "prefill_step_size": 128,
+      "prompt_concurrency": 1,
+      "prompt_cache_size": 1,
+      "prompt_cache_bytes": 67108864,
+      "kv_bits": null,
+      "quantized_kv_start": null,
+      "max_tokens": 768,
+      "cpu_thread_environment": 2
+    },
+    "corepilot_base_commit": "234f54dc262efac0cb0ca3ecb70dfbae8d39a8b4",
+    "code_sha256": {
+      "corepilot/__init__.py": "0f9bccde2c828bd2cfeeb2f98017cb02846424b9cfd0a9b858f24fac11af8992",
+      "corepilot/__main__.py": "79ee6f134c5c5193377cf9b189cbdcc3e2095e49ba9cec310114441c15a917c4",
+      "corepilot/app.py": "9166318174bee507e07073d7715c985f8aac57938dc8791878e3f997c7c09be4",
+      "corepilot/benchmark.py": "a2e6bd9d11c7cfe478db460b6e2212c8d1d52585d6cb2a909e988a10004a9237",
+      "corepilot/benchmark_resources.py": "0b6f2582717027fa232ba734f770447463f368a63480f7002ec5919b828d62ac",
+      "corepilot/cli.py": "2a812f1f9fc43bd00c9610c25b7dbc96369676aa8d3e3b7d4ffc133eae1cfea6",
+      "corepilot/codex_history.py": "44930f17ce40de612f69d562a8e9d167380563e2a4141cea1601e260f7941a9a",
+      "corepilot/config.py": "293a7b35a575e7b921dfb1ffaa97e04c7251a781c3ffb7bd88be409797a8dbf6",
+      "corepilot/dataset.py": "35344501847cc141cc22f65cb35c555d938a6b0befa786ca91923d8b7987e11a",
+      "corepilot/decision.py": "aa6839ff66a40c75a566e5508d590704b8db7962cf562a785640600c04b286dc",
+      "corepilot/engine.py": "6bf01dfe5744506c82a884a8390c3f3f78f8ccbe0e000e338edea980c97478ba",
+      "corepilot/evaluation.py": "3c6f37a6a0d858a03986b6e2d1adaefdef89c5c84f87fb280405870124eda1ff",
+      "corepilot/history.py": "51fec5e64283db1e4be4ed338f596a6694c11d36dcf14897c8c3677b3277f4c1",
+      "corepilot/indexing.py": "64fdc40e6ee3100832271debf290d53641bc24ff40b17533d946f4073f31a6a3",
+      "corepilot/memory.py": "9ea59293a7894cba9c7e5aa3ec58e6bdfe3dfb0ae8a364fe4e772bc7e1e22d59",
+      "corepilot/model.py": "b811be5c23464b21c6d67cfe4d505eb5de218ea7e35f052dc4fdee7e89ad2f65",
+      "corepilot/model_pool.py": "f0f62d7809bd17b98b3e639a3e6978805773bec986bd7be090f9c59c41c7a8a9",
+      "corepilot/orchestration.py": "5a5e0ec5903f46c9f5a5c72c4a03f32cbb6bf3c0c1f58dfa4f1b588ff7c7665b",
+      "corepilot/redaction.py": "8b50c3e41bdbd72ff2209a56fbff8265445c80b351ca756ae357f400c156028d",
+      "corepilot/reports.py": "c4a32a5b1e12469bb6775ce5acc9100e6266f73a1913a3ea1c0dbccfe34e75e3",
+      "corepilot/setup.py": "a962e7f37aa3a7a62511733c4bb322ae854e99dbde95064d47fd4b09e5953d2d",
+      "corepilot/store.py": "744a5861562a84e1b93ffca0ad51b11337a021633fbeeb1b0bdc81eeabd58321",
+      "corepilot/tools.py": "0fea7849913280ca4628a41029b6ad25918705d1360a20e37ff6fc5ad2d19852",
+      "corepilot/training.py": "2ca947757ec21f380ed75978baf5977ec782bafb2ed48fbf406608e655cbb5bb",
+      "corepilot/workspace.py": "b2feb8751f24e481c27c206819510a77b8388210a40b1e7ceb9af6dec98ab38f",
+      "scripts/run_benchmark.py": "fc007b7fd7d9048cae6d5d974af703632ed1b77b84950a3396f7ab1d8aae71b4"
+    },
+    "warmup": {
+      "scored": false,
+      "max_tokens": 16,
+      "seconds": 0.669,
+      "usage": {
+        "prompt_tokens": 23,
+        "completion_tokens": 3,
+        "total_tokens": 26,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "resources": {
+        "samples": 1,
+        "max_rss_gib": 1.1031951904296875,
+        "max_physical_footprint_gib": 0.99560546875,
+        "max_reported_peak_footprint_gib": 0.995703125,
+        "physical_footprint_samples": 1,
+        "max_compressor_gib": 3.0518798828125,
+        "max_used_swap_gib": 11.649599609375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.8467864990234375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "postflight": {
+        "timestamp": 1791718224.514413,
+        "available_estimate_gib": 4.47119140625,
+        "compressor_gib": 3.0348968505859375,
+        "purgeable_gib": 0.052337646484375,
+        "used_swap_gib": 11.610537109375,
+        "own_rss_gib": 1.122589111328125,
+        "process_count": 2,
+        "physical_footprint_gib": 0.99560546875,
+        "peak_physical_footprint_gib": 0.995703125,
+        "footprint_age_seconds": 0.7121460420021322,
+        "pressure_level": 1,
+        "pressure_some_avg10": null,
+        "pressure_full_avg10": null,
+        "speed_limit": null,
+        "scheduler_limit": null,
+        "thermal_warning_level": null,
+        "load_1m": null,
+        "supported": true,
+        "platform": "darwin",
+        "rss_complete": true,
+        "footprint_available": true
+      }
+    },
+    "experiment_design": {
+      "adapted_after_prior_pilot": true,
+      "prior_pilot": "KV4 from token zero; 8 completed runs produced unusable repetitive text.",
+      "change": "Disable KV cache quantization only; all suite, model and harness budgets unchanged.",
+      "full_suite_planned": true
+    },
+    "setup": "Existing idle model server temporarily stopped; only one model server loaded."
+  },
+  "settings": {
+    "protocol": "json",
+    "memory": false,
+    "router": false,
+    "same_weights_all_roles": true,
+    "max_calls": 24,
+    "role_max_steps": 24,
+    "max_tokens": 768,
+    "context_chars": 14000,
+    "timeout_seconds": 150.0,
+    "rest_seconds": 20.0,
+    "temperature": 0.15,
+    "prompt_suffix": "/no_think",
+    "repeats": 1,
+    "cache_policy": "Existing server caches are not reset; AB/BA order alternates.",
+    "between_requests_seconds": 3
+  },
+  "planned_cases": 20,
+  "baseline_resources": {
+    "timestamp": 1791718245.8312829,
+    "available_estimate_gib": 4.97900390625,
+    "compressor_gib": 2.89837646484375,
+    "purgeable_gib": 0.0343170166015625,
+    "used_swap_gib": 11.610537109375,
+    "own_rss_gib": 1.11328125,
+    "process_count": 2,
+    "physical_footprint_gib": 1.02529296875,
+    "peak_physical_footprint_gib": 1.125390625,
+    "footprint_age_seconds": 1.9170111045241356e-06,
+    "pressure_level": 1,
+    "pressure_some_avg10": null,
+    "pressure_full_avg10": null,
+    "speed_limit": null,
+    "scheduler_limit": null,
+    "thermal_warning_level": null,
+    "load_1m": null,
+    "supported": true,
+    "platform": "darwin",
+    "rss_complete": true,
+    "footprint_available": true
+  },
+  "records": [
+    {
+      "id": "edit_sku_normalization",
+      "category": "normalization",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 38.928,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_sku_normalization",
+          "edit_sku_normalization",
+          "edit_sku_normalization"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 3,
+        "error_count": 0,
+        "integrity_error_count": 2,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 12,
+      "calls_by_role": {
+        "single": 12
+      },
+      "tool_failures": 2,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [
+        "AGENTS.md",
+        "contracts.md"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 12,
+      "http_errors": 0,
+      "usage_responses": 12,
+      "prompt_tokens": 17380,
+      "completion_tokens": 359,
+      "cached_prompt_tokens": 15826,
+      "length_limited_responses": 0,
+      "inference_seconds": 5.759171498997603,
+      "resources": {
+        "samples": 14,
+        "max_rss_gib": 1.128936767578125,
+        "max_physical_footprint_gib": 1.1337890625,
+        "max_reported_peak_footprint_gib": 1.333984375,
+        "physical_footprint_samples": 14,
+        "max_compressor_gib": 2.8977203369140625,
+        "max_used_swap_gib": 11.610537109375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.4845428466796875,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_sku_normalization",
+      "category": "normalization",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 39.023,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_sku_normalization",
+          "edit_sku_normalization",
+          "edit_sku_normalization"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 3,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 12,
+      "calls_by_role": {
+        "planner": 12
+      },
+      "tool_failures": 1,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 12,
+      "http_errors": 0,
+      "usage_responses": 12,
+      "prompt_tokens": 28099,
+      "completion_tokens": 259,
+      "cached_prompt_tokens": 25395,
+      "length_limited_responses": 0,
+      "inference_seconds": 5.849233417044161,
+      "resources": {
+        "samples": 14,
+        "max_rss_gib": 1.13427734375,
+        "max_physical_footprint_gib": 1.3357421875,
+        "max_reported_peak_footprint_gib": 1.63671875,
+        "physical_footprint_samples": 14,
+        "max_compressor_gib": 2.5072784423828125,
+        "max_used_swap_gib": 11.587099609375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.5664215087890625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_exact_price",
+      "category": "numeric_precision",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 86.069,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_exact_price",
+          "edit_exact_price",
+          "edit_exact_price"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 5,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 24,
+      "calls_by_role": {
+        "planner": 24
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 24,
+      "http_errors": 0,
+      "usage_responses": 24,
+      "prompt_tokens": 48287,
+      "completion_tokens": 739,
+      "cached_prompt_tokens": 40023,
+      "length_limited_responses": 0,
+      "inference_seconds": 16.869127334008226,
+      "resources": {
+        "samples": 29,
+        "max_rss_gib": 1.1378326416015625,
+        "max_physical_footprint_gib": 1.33564453125,
+        "max_reported_peak_footprint_gib": 1.63935546875,
+        "physical_footprint_samples": 29,
+        "max_compressor_gib": 2.827728271484375,
+        "max_used_swap_gib": 11.587099609375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.1717071533203125,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_exact_price",
+      "category": "numeric_precision",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 120.149,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "import_workspace"
+        ],
+        "exit_code": 1,
+        "tests_run": 0,
+        "failure_count": 0,
+        "error_count": 1,
+        "integrity_error_count": 0,
+        "style_error_count": 1,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 24,
+      "calls_by_role": {
+        "single": 24
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [
+        "inventory/catalog.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 24,
+      "http_errors": 0,
+      "usage_responses": 24,
+      "prompt_tokens": 68949,
+      "completion_tokens": 4056,
+      "cached_prompt_tokens": 61415,
+      "length_limited_responses": 0,
+      "inference_seconds": 50.95401045703329,
+      "resources": {
+        "samples": 41,
+        "max_rss_gib": 1.0481109619140625,
+        "max_physical_footprint_gib": 1.4421875,
+        "max_reported_peak_footprint_gib": 1.74228515625,
+        "physical_footprint_samples": 41,
+        "max_compressor_gib": 2.858367919921875,
+        "max_used_swap_gib": 11.555849609375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.3230133056640625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_reservation_count",
+      "category": "validation",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 75.159,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "import_workspace"
+        ],
+        "exit_code": 1,
+        "tests_run": 0,
+        "failure_count": 0,
+        "error_count": 1,
+        "integrity_error_count": 0,
+        "style_error_count": 1,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 16,
+      "calls_by_role": {
+        "single": 16
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [
+        "inventory/catalog.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 16,
+      "http_errors": 0,
+      "usage_responses": 16,
+      "prompt_tokens": 35894,
+      "completion_tokens": 2116,
+      "cached_prompt_tokens": 31151,
+      "length_limited_responses": 0,
+      "inference_seconds": 29.963583333941642,
+      "resources": {
+        "samples": 26,
+        "max_rss_gib": 0.18115234375,
+        "max_physical_footprint_gib": 1.34521484375,
+        "max_reported_peak_footprint_gib": 1.7453125,
+        "physical_footprint_samples": 26,
+        "max_compressor_gib": 4.018768310546875,
+        "max_used_swap_gib": 9.41314453125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.2757720947265625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_reservation_count",
+      "category": "validation",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 53.173,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_reservation_count",
+          "edit_reservation_count",
+          "edit_reservation_count"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 4,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 16,
+      "calls_by_role": {
+        "planner": 16
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 16,
+      "http_errors": 0,
+      "usage_responses": 16,
+      "prompt_tokens": 24331,
+      "completion_tokens": 519,
+      "cached_prompt_tokens": 23032,
+      "length_limited_responses": 0,
+      "inference_seconds": 7.966223248979077,
+      "resources": {
+        "samples": 18,
+        "max_rss_gib": 0.1801300048828125,
+        "max_physical_footprint_gib": 1.34462890625,
+        "max_reported_peak_footprint_gib": 1.7478515625,
+        "physical_footprint_samples": 18,
+        "max_compressor_gib": 2.9761962890625,
+        "max_used_swap_gib": 9.40533203125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.215728759765625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_tag_normalization",
+      "category": "collection_normalization",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 69.125,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_tag_normalization"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 1,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 18,
+      "calls_by_role": {
+        "planner": 18
+      },
+      "tool_failures": 3,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 18,
+      "http_errors": 0,
+      "usage_responses": 18,
+      "prompt_tokens": 47853,
+      "completion_tokens": 378,
+      "cached_prompt_tokens": 32422,
+      "length_limited_responses": 0,
+      "inference_seconds": 17.913372290000552,
+      "resources": {
+        "samples": 24,
+        "max_rss_gib": 0.1265869140625,
+        "max_physical_footprint_gib": 1.3509765625,
+        "max_reported_peak_footprint_gib": 1.751171875,
+        "physical_footprint_samples": 24,
+        "max_compressor_gib": 3.2306365966796875,
+        "max_used_swap_gib": 9.39751953125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.0832672119140625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_tag_normalization",
+      "category": "collection_normalization",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 64.288,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_tag_normalization"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 1,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 20,
+      "calls_by_role": {
+        "single": 20
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 20,
+      "http_errors": 0,
+      "usage_responses": 20,
+      "prompt_tokens": 32070,
+      "completion_tokens": 434,
+      "cached_prompt_tokens": 30621,
+      "length_limited_responses": 0,
+      "inference_seconds": 7.107173708936898,
+      "resources": {
+        "samples": 22,
+        "max_rss_gib": 0.1900177001953125,
+        "max_physical_footprint_gib": 1.25390625,
+        "max_reported_peak_footprint_gib": 1.75400390625,
+        "physical_footprint_samples": 22,
+        "max_compressor_gib": 2.9766693115234375,
+        "max_used_swap_gib": 9.37408203125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.525665283203125,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_search_tokens",
+      "category": "search",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 80.586,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "import_workspace"
+        ],
+        "exit_code": 1,
+        "tests_run": 0,
+        "failure_count": 0,
+        "error_count": 1,
+        "integrity_error_count": 3,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 24,
+      "calls_by_role": {
+        "single": 24
+      },
+      "tool_failures": 3,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [
+        "AGENTS.md",
+        "contracts.md",
+        "inventory/__init__.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 24,
+      "http_errors": 0,
+      "usage_responses": 24,
+      "prompt_tokens": 46920,
+      "completion_tokens": 752,
+      "cached_prompt_tokens": 45540,
+      "length_limited_responses": 0,
+      "inference_seconds": 11.406459209014429,
+      "resources": {
+        "samples": 27,
+        "max_rss_gib": 0.1956329345703125,
+        "max_physical_footprint_gib": 1.2567382812499999,
+        "max_reported_peak_footprint_gib": 1.7567382812499999,
+        "physical_footprint_samples": 27,
+        "max_compressor_gib": 2.992828369140625,
+        "max_used_swap_gib": 9.35845703125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.5109405517578125,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_search_tokens",
+      "category": "search",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 77.743,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_search_tokens",
+          "edit_search_tokens",
+          "edit_search_tokens",
+          "edit_search_tokens"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 4,
+        "error_count": 1,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 2,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 24,
+      "calls_by_role": {
+        "planner": 24
+      },
+      "tool_failures": 1,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 24,
+      "http_errors": 0,
+      "usage_responses": 24,
+      "prompt_tokens": 39411,
+      "completion_tokens": 521,
+      "cached_prompt_tokens": 37892,
+      "length_limited_responses": 0,
+      "inference_seconds": 8.536265126080252,
+      "resources": {
+        "samples": 26,
+        "max_rss_gib": 0.189117431640625,
+        "max_physical_footprint_gib": 1.3552734375,
+        "max_reported_peak_footprint_gib": 1.7587890625,
+        "physical_footprint_samples": 26,
+        "max_compressor_gib": 3.2546844482421875,
+        "max_used_swap_gib": 9.30376953125,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.2333984375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_pagination_offset",
+      "category": "pagination",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 11.391,
+      "completed": false,
+      "task_status": "failed",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_pagination_offset"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 1,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 4,
+      "calls_by_role": {
+        "planner": 4
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 4,
+      "http_errors": 0,
+      "usage_responses": 4,
+      "prompt_tokens": 4313,
+      "completion_tokens": 169,
+      "cached_prompt_tokens": 3830,
+      "length_limited_responses": 0,
+      "inference_seconds": 2.2221442900190596,
+      "resources": {
+        "samples": 4,
+        "max_rss_gib": 0.133087158203125,
+        "max_physical_footprint_gib": 1.2587890625,
+        "max_reported_peak_footprint_gib": 1.75888671875,
+        "physical_footprint_samples": 4,
+        "max_compressor_gib": 3.2020416259765625,
+        "max_used_swap_gib": 9.292109375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.4185638427734375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_pagination_offset",
+      "category": "pagination",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 57.262,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "import_workspace"
+        ],
+        "exit_code": 1,
+        "tests_run": 0,
+        "failure_count": 0,
+        "error_count": 1,
+        "integrity_error_count": 0,
+        "style_error_count": 1,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 16,
+      "calls_by_role": {
+        "single": 16
+      },
+      "tool_failures": 6,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [
+        "inventory/search.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 16,
+      "http_errors": 0,
+      "usage_responses": 16,
+      "prompt_tokens": 31026,
+      "completion_tokens": 906,
+      "cached_prompt_tokens": 29325,
+      "length_limited_responses": 0,
+      "inference_seconds": 12.077420960937161,
+      "resources": {
+        "samples": 20,
+        "max_rss_gib": 0.19378662109375,
+        "max_physical_footprint_gib": 1.264453125,
+        "max_reported_peak_footprint_gib": 1.764453125,
+        "physical_footprint_samples": 20,
+        "max_compressor_gib": 3.3382720947265625,
+        "max_used_swap_gib": 9.276484375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.3483734130859375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_optional_token",
+      "category": "request_headers",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 39.198,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_optional_token",
+          "edit_optional_token",
+          "edit_optional_token"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 3,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 12,
+      "calls_by_role": {
+        "single": 12
+      },
+      "tool_failures": 3,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 12,
+      "http_errors": 0,
+      "usage_responses": 12,
+      "prompt_tokens": 19086,
+      "completion_tokens": 461,
+      "cached_prompt_tokens": 18082,
+      "length_limited_responses": 0,
+      "inference_seconds": 6.021895914978813,
+      "resources": {
+        "samples": 14,
+        "max_rss_gib": 0.1944427490234375,
+        "max_physical_footprint_gib": 1.364453125,
+        "max_reported_peak_footprint_gib": 1.7646484375,
+        "physical_footprint_samples": 14,
+        "max_compressor_gib": 3.3309478759765625,
+        "max_used_swap_gib": 9.260859375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.362762451171875,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_optional_token",
+      "category": "request_headers",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 37.677,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_optional_token",
+          "edit_optional_token",
+          "edit_optional_token"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 3,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 1,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 12,
+      "calls_by_role": {
+        "planner": 12
+      },
+      "tool_failures": 1,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 12,
+      "http_errors": 0,
+      "usage_responses": 12,
+      "prompt_tokens": 15357,
+      "completion_tokens": 269,
+      "cached_prompt_tokens": 14289,
+      "length_limited_responses": 0,
+      "inference_seconds": 4.49572895898018,
+      "resources": {
+        "samples": 13,
+        "max_rss_gib": 0.196929931640625,
+        "max_physical_footprint_gib": 1.2673828125,
+        "max_reported_peak_footprint_gib": 1.7674804687499999,
+        "physical_footprint_samples": 13,
+        "max_compressor_gib": 3.166595458984375,
+        "max_used_swap_gib": 9.253046875,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.4313201904296875,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_exponential_backoff",
+      "category": "retry_policy",
+      "read_only": false,
+      "mode": "specialists",
+      "seconds": 91.266,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_exponential_backoff"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 1,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 24,
+      "calls_by_role": {
+        "planner": 24
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 24,
+      "http_errors": 0,
+      "usage_responses": 24,
+      "prompt_tokens": 58941,
+      "completion_tokens": 806,
+      "cached_prompt_tokens": 44630,
+      "length_limited_responses": 0,
+      "inference_seconds": 22.04700262696133,
+      "resources": {
+        "samples": 31,
+        "max_rss_gib": 0.2006988525390625,
+        "max_physical_footprint_gib": 1.3702148437500001,
+        "max_reported_peak_footprint_gib": 1.7703125,
+        "physical_footprint_samples": 31,
+        "max_compressor_gib": 3.432708740234375,
+        "max_used_swap_gib": 9.245234375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 4.2198333740234375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_exponential_backoff",
+      "category": "retry_policy",
+      "read_only": false,
+      "mode": "single",
+      "seconds": 150.064,
+      "completed": false,
+      "task_status": "cancelled",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "import_workspace"
+        ],
+        "exit_code": 1,
+        "tests_run": 0,
+        "failure_count": 0,
+        "error_count": 1,
+        "integrity_error_count": 0,
+        "style_error_count": 1,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": true,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 22,
+      "calls_by_role": {
+        "single": 22
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [
+        "inventory/client.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 22,
+      "http_errors": 0,
+      "usage_responses": 21,
+      "prompt_tokens": 67058,
+      "completion_tokens": 7469,
+      "cached_prompt_tokens": 59077,
+      "length_limited_responses": 0,
+      "inference_seconds": 86.87628378986847,
+      "resources": {
+        "samples": 51,
+        "max_rss_gib": 0.193817138671875,
+        "max_physical_footprint_gib": 1.5732421875,
+        "max_reported_peak_footprint_gib": 1.7733398437499999,
+        "physical_footprint_samples": 51,
+        "max_compressor_gib": 3.447845458984375,
+        "max_used_swap_gib": 9.237421875,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 3.999359130859375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    }
+  ],
+  "stop_reasons": [
+    "case_timeout_backend_idle_unconfirmed"
+  ],
+  "resource_thresholds": {
+    "min_available_gib": 2.0,
+    "max_own_rss_gib": 6.0,
+    "max_physical_footprint_gib": 6.0,
+    "max_swap_growth_mib": 512.0,
+    "min_performance_limit": 100.0
+  },
+  "limits": [
+    "Small synthetic sample; one stochastic trial per case/mode; not a commercial-agent comparison.",
+    "Read-only semantic proxies are constrained checks, not a comprehensive language judge.",
+    "The reviewer uses the same weights; external oracles provide behavioral checks.",
+    "Temperature and RAM temperature are not measured; OS thermal limits may be unavailable.",
+    "Client cancellation cannot guarantee cancellation of an existing external server request."
+  ],
+  "summary": {
+    "single": {
+      "attempted": 8,
+      "completed": 0,
+      "oracle_passed": 0,
+      "usable_passed": 0,
+      "median_seconds_all": 69.724,
+      "http_attempts": 146,
+      "timeouts": 1,
+      "safety_aborts": 0,
+      "by_kind": {
+        "edits": {
+          "attempted": 8,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        },
+        "inspections": {
+          "attempted": 0,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        }
+      }
+    },
+    "specialists": {
+      "attempted": 8,
+      "completed": 0,
+      "oracle_passed": 0,
+      "usable_passed": 0,
+      "median_seconds_all": 61.149,
+      "http_attempts": 134,
+      "timeouts": 0,
+      "safety_aborts": 0,
+      "by_kind": {
+        "edits": {
+          "attempted": 8,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        },
+        "inspections": {
+          "attempted": 0,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        }
+      }
+    },
+    "paired": {
+      "count": 8,
+      "specialist_wins": 0,
+      "single_wins": 0,
+      "ties": 8,
+      "both_usable": 0,
+      "median_seconds_both_usable": {
+        "single": null,
+        "specialists": null
+      }
+    }
+  },
+  "unattempted_runs": 24
+}

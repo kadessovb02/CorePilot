@@ -1,0 +1,113 @@
+{
+  "schema": 1,
+  "kind": "local_trace_diagnostic",
+  "experiment": "2026-10-11-qwen15b-kv4-pilot",
+  "cause": "Not isolated. Repetitive text in this model/server/protocol configuration; compare a separate serving configuration.",
+  "model_requests_added_for_diagnosis": 0,
+  "rows": [
+    {
+      "run": "edit_exact_price-single",
+      "status": "interrupted",
+      "assistant_responses": 3,
+      "tool_calls": 0,
+      "successful_reads": 0,
+      "checks": 0,
+      "command_word_repetitions": [
+        6,
+        0,
+        0
+      ]
+    },
+    {
+      "run": "edit_exact_price-specialists",
+      "status": "interrupted",
+      "assistant_responses": 3,
+      "tool_calls": 0,
+      "successful_reads": 0,
+      "checks": 0,
+      "command_word_repetitions": [
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "run": "edit_reservation_count-single",
+      "status": "interrupted",
+      "assistant_responses": 3,
+      "tool_calls": 0,
+      "successful_reads": 0,
+      "checks": 0,
+      "command_word_repetitions": [
+        55,
+        16,
+        11
+      ]
+    },
+    {
+      "run": "edit_reservation_count-specialists",
+      "status": "interrupted",
+      "assistant_responses": 3,
+      "tool_calls": 0,
+      "successful_reads": 0,
+      "checks": 0,
+      "command_word_repetitions": [
+        379,
+        233,
+        23
+      ]
+    },
+    {
+      "run": "edit_sku_normalization-single",
+      "status": "interrupted",
+      "assistant_responses": 3,
+      "tool_calls": 0,
+      "successful_reads": 0,
+      "checks": 0,
+      "command_word_repetitions": [
+        56,
+        6,
+        3
+      ]
+    },
+    {
+      "run": "edit_sku_normalization-specialists",
+      "status": "interrupted",
+      "assistant_responses": 3,
+      "tool_calls": 0,
+      "successful_reads": 0,
+      "checks": 0,
+      "command_word_repetitions": [
+        719,
+        768,
+        344
+      ]
+    },
+    {
+      "run": "edit_tag_normalization-single",
+      "status": "interrupted",
+      "assistant_responses": 3,
+      "tool_calls": 0,
+      "successful_reads": 0,
+      "checks": 0,
+      "command_word_repetitions": [
+        66,
+        5,
+        8
+      ]
+    },
+    {
+      "run": "edit_tag_normalization-specialists",
+      "status": "interrupted",
+      "assistant_responses": 3,
+      "tool_calls": 0,
+      "successful_reads": 0,
+      "checks": 0,
+      "command_word_repetitions": [
+        588,
+        768,
+        344
+      ]
+    }
+  ]
+}
