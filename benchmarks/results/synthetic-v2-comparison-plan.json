@@ -1,21 +1,20 @@
 {
   "schema": 1,
-  "kind": "preregistered_synthetic_v2_comparison_plan",
+  "kind": "preregistered_amended_synthetic_v2_comparison_plan",
+  "status": "preregistered_amended_before_first_v2_inference",
   "is_model_score": false,
   "model_inference": false,
+  "created_at_utc": "2026-10-11T15:27:51Z",
+  "updated_at_utc": "2026-10-11T16:16:52Z",
   "suite": "synthetic_v2",
   "suite_sha256": "8bf8752d9b1e63acaeb5c6937f3fe78e4564fac540346e6471052480c36f6b62",
+  "suite_fingerprint_provenance": "Previously frozen canonical fingerprint; no suite content read for this draft",
   "cases": 20,
   "edit_cases": 12,
   "inspection_cases": 8,
-  "planned_attempts": 80,
+  "planned_attempts": 40,
   "repeats": 1,
   "models": [
-    {
-      "repository": "mlx-community/Qwen2.5-Coder-7B-Instruct-4bit",
-      "revision": "019cc73c45c770444708a6dd8690c66243cc5c80",
-      "adapter": null
-    },
     {
       "repository": "mlx-community/Qwen3.5-4B-4bit",
       "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
@@ -34,24 +33,84 @@
     "total_model_calls": 24,
     "role_max_steps": 24,
     "timeout_seconds": 600,
-    "max_tokens": 768,
+    "case_call_override": 24,
+    "case_timeout_override": 600,
+    "max_tokens": 2048,
     "context_chars": 14000,
     "temperature": 0.15,
     "request_pause_seconds": 0,
     "rest_seconds": 10,
     "kv_bits": 8,
     "quantized_kv_start": 256,
-    "prefill_step_size": 512,
-    "prompt_cache_size": 1,
+    "prefill_step_size": 256,
+    "prompt_cache_size": 0,
     "prompt_cache_bytes_configured": 67108864,
-    "allocator_cache_limit_bytes": 134217728
+    "allocator_cache_limit_bytes": 134217728,
+    "prompt_concurrency": 1,
+    "cpu_thread_environment": {
+      "OMP_NUM_THREADS": 2,
+      "VECLIB_MAXIMUM_THREADS": 2
+    },
+    "chat_template_args": {
+      "enable_thinking": false
+    }
   },
+  "model_profiles": [
+    {
+      "repository": "mlx-community/Qwen3.5-4B-4bit",
+      "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+      "adapter": null,
+      "protocol": "native",
+      "same_profile_all_modes_and_roles": true,
+      "server_settings": {
+        "prefill_step_size": 256,
+        "prompt_concurrency": 1,
+        "prompt_cache_size": 0,
+        "prompt_cache_bytes_configured": 67108864,
+        "kv_bits": 8,
+        "quantized_kv_start": 256,
+        "max_tokens": 2048,
+        "cpu_thread_environment": {
+          "OMP_NUM_THREADS": 2,
+          "VECLIB_MAXIMUM_THREADS": 2
+        },
+        "allocator_cache_limit_bytes": 134217728,
+        "chat_template_args": {
+          "enable_thinking": false
+        },
+        "top_p": 0.8,
+        "top_k": 20
+      },
+      "resource_thresholds": {
+        "min_available_gib": 1.0,
+        "max_physical_footprint_gib": 6,
+        "max_own_rss_gib": 6,
+        "max_swap_growth_mib": 2048,
+        "allow_memory_warning": true
+      },
+      "server_settings_provenance": "top_p=0.8 and top_k=20 were already applied in the fixed native 4B development profile; recorded before fresh v2 inference without changing server settings."
+    }
+  ],
   "resource_thresholds": {
-    "min_available_gib": 1.5,
+    "min_available_gib": 1.0,
     "max_physical_footprint_gib": 6,
     "max_own_rss_gib": 6,
     "max_swap_growth_mib": 2048,
     "allow_memory_warning": true
+  },
+  "resource_policy": {
+    "one_loaded_model_server": true,
+    "critical_and_unknown_memory_pressure_stop": true,
+    "unknown_available_memory_or_swap_stop": true,
+    "unknown_selected_process_rss_stop": true,
+    "observed_speed_or_scheduler_throttling_stop": true,
+    "observed_thermal_warning_stop": true,
+    "min_performance_limit": 100,
+    "thermal_observations_unavailable": "Retain null; only available thermal observations can trigger thermal stops; no measured thermal guarantee",
+    "physical_footprint_unavailable": "Record availability and retain selected-process RSS guard",
+    "startup_monitoring": true,
+    "swap_baseline_scope": "Startup and warmup share a baseline after stopping the original server. Scoring records its own baseline after warmup. The 2048 MiB limit applies independently to each stage, not one end-to-end swap cap.",
+    "original_server_restoration": "Protected finally cleanup; confirm candidate server exit before loading restoration; preserve an unchanged healthy original if it was not stopped."
   },
   "code_sha256": {
     "corepilot/__init__.py": "0f9bccde2c828bd2cfeeb2f98017cb02846424b9cfd0a9b858f24fac11af8992",
@@ -64,30 +123,171 @@
     "corepilot/config.py": "293a7b35a575e7b921dfb1ffaa97e04c7251a781c3ffb7bd88be409797a8dbf6",
     "corepilot/dataset.py": "35344501847cc141cc22f65cb35c555d938a6b0befa786ca91923d8b7987e11a",
     "corepilot/decision.py": "aa6839ff66a40c75a566e5508d590704b8db7962cf562a785640600c04b286dc",
-    "corepilot/engine.py": "c910252e2a479f8cbbea3df05c6fb2df4dd25535824657b525014809cc65d991",
+    "corepilot/engine.py": "b6b4aa95a1491bbbb82e98f4a8eac0d4798473171848516cbaca0441996668cf",
     "corepilot/evaluation.py": "3c6f37a6a0d858a03986b6e2d1adaefdef89c5c84f87fb280405870124eda1ff",
     "corepilot/history.py": "51fec5e64283db1e4be4ed338f596a6694c11d36dcf14897c8c3677b3277f4c1",
     "corepilot/indexing.py": "64fdc40e6ee3100832271debf290d53641bc24ff40b17533d946f4073f31a6a3",
     "corepilot/memory.py": "9ea59293a7894cba9c7e5aa3ec58e6bdfe3dfb0ae8a364fe4e772bc7e1e22d59",
-    "corepilot/model.py": "3e6b7db4d664a65b76aff74cab5b7b5edbf997ddc589639a0907f3b57f39eaf6",
+    "corepilot/model.py": "b67035dd695977ca882f6d865a0534eb7a2457650e1b31a06fb7287547a8a15f",
     "corepilot/model_pool.py": "f0f62d7809bd17b98b3e639a3e6978805773bec986bd7be090f9c59c41c7a8a9",
-    "corepilot/orchestration.py": "ceada4f5d2f4d665e9e31792b5d2b06b0fb42651732f8a47a885f0aa3756e07e",
+    "corepilot/orchestration.py": "63eeda946080cea694dd77338ccf7de3a07b64b8b0973d9b53942d5e78027906",
     "corepilot/redaction.py": "8b50c3e41bdbd72ff2209a56fbff8265445c80b351ca756ae357f400c156028d",
     "corepilot/reports.py": "c4a32a5b1e12469bb6775ce5acc9100e6266f73a1913a3ea1c0dbccfe34e75e3",
     "corepilot/setup.py": "a962e7f37aa3a7a62511733c4bb322ae854e99dbde95064d47fd4b09e5953d2d",
     "corepilot/store.py": "744a5861562a84e1b93ffca0ad51b11337a021633fbeeb1b0bdc81eeabd58321",
-    "corepilot/tools.py": "69d4db5cde6943cc11b0c10fe16a6dc8233380267134fd791699e735a576cd95",
+    "corepilot/tools.py": "b1c234394897d2a9d3cc59dafe7dba3329b599d1a906d55e9230a628b5fe9f8e",
     "corepilot/training.py": "2ca947757ec21f380ed75978baf5977ec782bafb2ed48fbf406608e655cbb5bb",
     "corepilot/workspace.py": "b2feb8751f24e481c27c206819510a77b8388210a40b1e7ceb9af6dec98ab38f",
     "scripts/run_benchmark.py": "a5ed0c4bd5e9f90ba70e8ad992489cd9bf8092c090d9622ac301f3980334aa61"
   },
+  "code_hash_map_sha256": "5e5fcba85de7635379c8d9c87c6cc48f1274d8e5003ad5282445cadda3600afd",
+  "source_freeze": {
+    "full_cpu_tests_passed": 647,
+    "public_tree_passed": true,
+    "diff_check_passed": true,
+    "source_files": 26,
+    "commit": "f01512595f15b84deeb845a611f377ed2d6fbdfe",
+    "recorded_at_utc": "2026-10-11T15:46:48Z",
+    "confirmed_by": "Backend final shared CPU verification and root public22 source freeze notification",
+    "committed_and_pushed_provenance": "Root confirmation; full commit hash verified from local HEAD"
+  },
+  "amendment": {
+    "original_plan_artifact": "benchmarks/results/synthetic-v2-comparison-plan.json",
+    "original_plan_sha256": "571c3825af7f12fb74600c8ca409566cb99cc574b5dd50858a7640e7d521d64f",
+    "original_planned_attempts": 80,
+    "archive_status": "preserved_exact_bytes_and_sha256_verified_before_amendment",
+    "selection_basis": "Completed synthetic_v1 development screening only; no held-out synthetic_v2 outcome influenced model, protocol, runtime or resource settings.",
+    "decision_status": "Finalized before the first synthetic_v2 request: sole pinned stock native 4B, output 2048, one trial per case and workflow; no further configuration or source tuning is planned.",
+    "changed_model_count": [
+      2,
+      1
+    ],
+    "changed_planned_attempts": [
+      80,
+      40
+    ],
+    "draft_history": [
+      {
+        "draft_sha256": "510e2f868ff8d2f2198469bc88fad633774f474e70def07d9027701bbd1c89b1",
+        "superseded_at_utc": "2026-10-11T15:46:48Z",
+        "reason": "Final generic role cue and behavior assertion guidance; shared CPU 647 source freeze; output allowance increased consistently from 768 to 2048 for all modes/roles after development-only length diagnosis"
+      },
+      {
+        "draft_sha256": "24323c0ed05ad8f59a83d7923f6936cc5a050d25a9778d692a2d6af552c802bc",
+        "superseded_at_utc": "2026-10-11T16:05:29Z",
+        "reason": "Record already-used top_p/top_k and strengthen only private launch integrity against original preregistration hashes; no agent/runtime/suite/profile change."
+      }
+    ],
+    "original_plan_archive_artifact": "benchmarks/results/synthetic-v2-comparison-plan-original-571c3825af7f.json",
+    "amended_at_utc": "2026-10-11T16:16:52Z",
+    "approved_private_draft_sha256": "0e43bfb6d17ba7ab8c439ad56519d9fc4e3ad8443857f4473428e54a94e17585"
+  },
+  "revision_reasons": [
+    "The stock 7B explicit JSON public20 development pilot produced zero usable attempts out of four. Two patches passed finite external oracles, so this is a workflow outcome rather than proof that every patch was behaviorally wrong.",
+    "Earlier stock native 4B development traces include a genuinely usable SKU task with a fresh executed check and three external behavioral test methods. This supports screening the native 4B stack, not general autonomy, overall benchmark success or specialists superiority.",
+    "Generic development-only fixes preserve raw source text and guidance, retain a bounded transient planner cue, resolve trusted installed Python console scripts, distinguish pytest no-tests exit status, and bound repeated/no-op workflow attempts. JSON final instructions now ask for actual phase content instead of a literal example placeholder; the selected 4B protocol remains native.",
+    "Cache zero, prefill 256 and 1.0 GiB minimum headroom are explicit screened resource settings. They do not establish autonomous task quality or a total-memory guarantee.",
+    "Synthetic_v2 prompts, fixtures, reference facts and external oracles remain frozen. No synthetic_v2 model inference has occurred according to root; none was requested by the draft author.",
+    "Public21 synthetic_v1 screening recorded repeated 768-token length-limited responses, print-only check activity and a reviewer loop exhausting the shared call budget; diagnosis is from root development-trace review, not synthetic_v2 outcomes.",
+    "The final generic transient coder/reviewer cues restate role, already-charged shared/role counters, numeric recorded check status and phase completion format. They preserve original objectives, corrections and paired evidence without claiming semantic success or source freshness. Read-only summaries must answer the original question with observed file references.",
+    "The frozen generic assertion guidance requires checks meaningful to requested behavior and distinguishes them from prints/import-only commands. Existing actual-read, validation freshness, permissions and reviewer decision gates remain enforced.",
+    "The final output allowance is 2048 tokens for every mode and role, under the same 24-call/600-second global limits and 14000-character history budget. No further configuration or source tuning is planned after public22; freeze this explicit amendment before any synthetic_v2 request.",
+    "Completed final public22 screening supports choosing the sole native 4B stack after the unreliable 7B development workflows, while retaining explicit limitations: single usable/oracle 1 of 2; specialists usable 0 of 2 and oracle 1 of 2; all four graded, zero timeouts or resource aborts. This is a fixed workflow comparison, not a claim of dependable quality."
+  ],
+  "diagnostic_references": [
+    {
+      "label": "public20",
+      "artifact": "benchmarks/results/2026-10-11-coder7b-console-json-pilot.json",
+      "sha256": "5759795465c1c2ffaa6137d487ca95e38530c1c3642063aec88ee794f643b393",
+      "suite": "synthetic_v1",
+      "development_data": true,
+      "attempted": 4,
+      "usable_passed": 0,
+      "oracle_passed": 2,
+      "single_attempted": 2,
+      "single_usable_passed": 0,
+      "specialists_attempted": 2,
+      "specialists_usable_passed": 0
+    },
+    {
+      "label": "public12_independent_cpu_audit",
+      "artifact": "benchmarks/results/2026-10-11-read-loop-audit.json",
+      "sha256": "6e6db5d25a4cd5927542006262967162574761292c4800febe2fd75fa41aaacf",
+      "suite": "synthetic_v1",
+      "development_data": true,
+      "is_model_score": false,
+      "genuine_single_sku_validation": true,
+      "checked_inputs": 7,
+      "external_test_methods": 3
+    },
+    {
+      "label": "public22",
+      "artifact": "benchmarks/results/2026-10-11-qwen35-rolecue-pilot.json",
+      "sha256": "30f27a3d3de70df78b8122e5ef7ed19d04d3e544e2aae1a3f67bc9bb3cdd6fc6",
+      "suite": "synthetic_v1",
+      "development_data": true,
+      "attempted": 4,
+      "usable_passed": 1,
+      "oracle_passed": 2,
+      "single_attempted": 2,
+      "single_usable_passed": 1,
+      "specialists_attempted": 2,
+      "specialists_usable_passed": 0
+    }
+  ],
   "design": [
-    "Configuration and both model selections fixed before any v2 inference. Harness fixes used v1 development traces only.",
-    "Same frozen cases, runtime source, tool contract and total call/time caps in both workflows and model comparisons. Order alternates AB/BA within each model; models execute sequentially.",
-    "One stochastic trial per case/mode/model. Do not pool scores from earlier adaptive trials.",
-    "External edit oracles and finite inspection answer/read criteria remain frozen after outcomes. Independent CPU audit of actual answers, patches and checks follows inference.",
-    "Any resource guard stops the experiment and preserves attempted/ungraded/unstarted counts. Case timeout stops further calls when external backend idle cannot be confirmed.",
-    "One model server at a time; existing idle user server is restored between experiments and after final evaluation.",
-    "Results measure stock model and workflow quality on small synthetic tasks, not training gains, separately trained experts, distributed routing or commercial-agent parity."
+    "Exactly one stock model and one trial per case/workflow; no adapter, retrieval memory or decision router. All specialists share the identical model weights.",
+    "Same frozen suite/runtime/tool contract, output 2048/context 14000 and explicit global 24-call/600-second caps in both workflows. Each role is capped at 24 calls within the shared global cap; phase limits do not add calls to it.",
+    "Both suite call and timeout defaults are explicitly overridden. Cases run independently from unchanged fixture state; neither task histories nor reference material enter memory or training.",
+    "Paired order alternates AB/BA; one model server and one task/request execute at a time. Prompt caching is disabled; its byte setting is recorded without claiming an enforced aggregate memory cap.",
+    "No adaptive v1 outcomes are pooled with v2. Preserve the exact original 80-attempt plan and its hash before promoting this 40-attempt amendment.",
+    "Oracles and bounded inspection facts remain frozen. Independent CPU review of actual final answers, patches, observed reads, meaningful checks and their freshness follows the full comparison.",
+    "Resource guard stops preserve attempted, graded, ungraded and unstarted counts. Case timeout prevents additional requests until external backend idleness can be confirmed.",
+    "Verify complete source hash map and frozen suite fingerprint before and after inference; raw checkpoints remain outside the repository.",
+    "This measures public stock model/workflow behavior on small synthetic tasks, not training gain, independently trained expert models, commercial-agent parity or broad real-project reliability."
+  ],
+  "preregistered_at_utc": "2026-10-11T16:16:52Z",
+  "selection_finalized_at_utc": "2026-10-11T16:16:52Z",
+  "synthetic_v2_inference_count_at_registration": 0,
+  "synthetic_v2_inference_count_provenance": "Root confirmed zero synthetic_v2 requests when authorizing this amendment after final public22 development screening.",
+  "selection_screening": {
+    "label": "public22",
+    "suite": "synthetic_v1",
+    "status": "completed_all_four_graded",
+    "artifact": "benchmarks/results/2026-10-11-qwen35-rolecue-pilot.json",
+    "sha256": "30f27a3d3de70df78b8122e5ef7ed19d04d3e544e2aae1a3f67bc9bb3cdd6fc6",
+    "development_data": true,
+    "attempted": 4,
+    "single_attempted": 2,
+    "single_usable_passed": 1,
+    "single_oracle_passed": 1,
+    "specialists_attempted": 2,
+    "specialists_usable_passed": 0,
+    "specialists_oracle_passed": 1,
+    "timeouts": 0,
+    "resource_aborts": 0,
+    "stop_reasons_count": 0,
+    "freeze_and_restoration_provenance": "Root verified frozen source/suite and original-server restoration after the completed development pilot.",
+    "interpretation": "Four graded development edit attempts are screening evidence only. These results do not establish dependable autonomous coding or workflow superiority; development scores are not pooled with fresh synthetic_v2 scores."
+  },
+  "launch_integrity": {
+    "supervisor_sha256": "b4571a53b09c963ae4dc48adf2b2894a33542ff1f4a1ba97a7c0a9df18ba2214",
+    "cpu_smoke_script_sha256": "ef27bf53316d0ee81f4ba0d4d5d5c910b7af195b819e69140f106fdc4694f7b7",
+    "smoke_checks_passed": 12,
+    "model_inference": false,
+    "fresh_suite_content_read": false,
+    "prelaunch_original_plan_bytes_hash_guard": true,
+    "prelaunch_runtime_and_suite_against_preregistered_hashes": true,
+    "postflight_against_preregistered_hashes": true,
+    "archive_original_exact_sha256_guard": true,
+    "recorded_at_utc": "2026-10-11T16:05:29Z",
+    "registration_verification_at_utc": "2026-10-11T16:16:52Z"
+  },
+  "post_registration_policy": [
+    "Preserve this registration and original archive by exact content hash before the first fresh case request; record both references in the comparison metadata.",
+    "Do not tune runtime, model, protocol, prompts, fixtures, oracles or scoring after held-out outcomes. Do not replace this fixed-profile comparison with new models or settings.",
+    "Use the same frozen 26-file runtime hash map, pinned weights and explicit budgets in both workflows; execute every task from independent unchanged fixture state.",
+    "If resource guard or unconfirmed backend idleness stops the run, retain honest attempted, graded, ungraded and unstarted counts; do not silently repeat-select successful attempts.",
+    "Audit actual final answers, patches, observed reads and meaningful checks with CPU-only evidence after evaluation, keeping raw checkpoints outside the public tree."
   ]
 }

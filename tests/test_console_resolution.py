@@ -100,15 +100,17 @@ def test_actual_venv_pytest_runs_without_path_activation_and_keeps_sandbox(tmp_p
             pytest.skip("The test interpreter has no neighboring pytest entrypoint")
         workspace = tmp_path / "workspace"
         workspace.mkdir()
-        (workspace / "module.py").write_text("def doubled(value):\n    return value * 2\n")
-        (workspace / "pytest.ini").write_text("[pytest]\n")
+        checks = workspace / "checks"
+        checks.mkdir()
+        (checks / "module.py").write_text("def doubled(value):\n    return value * 2\n")
+        (checks / "pytest.ini").write_text("[pytest]\n")
         (workspace / ".env").write_text("SYNTHETIC_SECRET=fixture-only\n")
-        (workspace / "test_behavior.py").write_text(
+        (checks / "test_behavior.py").write_text(
             "from pathlib import Path\nimport socket\nimport pytest\nfrom module import doubled\n"
             "def test_behavior_and_boundaries():\n"
             "    assert doubled(3) == 6\n"
             "    with pytest.raises(PermissionError):\n"
-            "        Path('.env').read_text()\n"
+            "        Path('../.env').read_text()\n"
             "    with pytest.raises(OSError):\n"
             "        socket.create_connection(('127.0.0.1', 9), timeout=1)\n")
         monkeypatch.setenv("PATH", "/usr/bin:/bin")
@@ -116,7 +118,7 @@ def test_actual_venv_pytest_runs_without_path_activation_and_keeps_sandbox(tmp_p
         original_path = os.environ["PATH"]
         tools = WorkspaceTools(workspace, tmp_path / "home")
         assert tools.validate_command(["pytest", "-q"])[0] == str(entrypoint)
-        result = await tools.run_command(["pytest", "-q", "-p", "no:cacheprovider", "test_behavior.py"], timeout=15)
+        result = await tools.run_command(["pytest", "-q", "-p", "no:cacheprovider", "test_behavior.py"], cwd="checks", timeout=15)
         assert result["exit_code"] == 0, result["output"]
         assert "1 passed" in result["output"]
         assert result["sandbox"] == "macos-seatbelt" and not result["timed_out"]

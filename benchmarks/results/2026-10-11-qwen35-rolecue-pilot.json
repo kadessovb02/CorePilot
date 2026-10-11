@@ -1,0 +1,552 @@
+{
+  "schema": 1,
+  "date_utc": "2026-10-11T15:45:50.764507+00:00",
+  "suite": "synthetic_v1",
+  "suite_sha256": "b5401b866e89bac019358ecd940f503f6841daf5221ac0546fd049358aa225af",
+  "source_sha256": "093e99d499012acbff2e5ba7b9fbe5e1832c4843dcac235201432e6009020b37",
+  "platform": {
+    "system": "Darwin",
+    "release": "25.2.0",
+    "python": "3.14.0"
+  },
+  "metadata": {
+    "hardware": {
+      "chip": "Apple M2 Pro",
+      "logical_cpus": 10,
+      "memory_gib": 16
+    },
+    "model": {
+      "repository": "mlx-community/Qwen3.5-4B-4bit",
+      "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+      "weights": "4-bit",
+      "adapter": null,
+      "download_bytes": 3061129077
+    },
+    "server_packages": {
+      "mlx": "0.32.3",
+      "mlx-lm": "0.32.0",
+      "transformers": "5.19.0",
+      "huggingface-hub": "1.33.0"
+    },
+    "server_settings": {
+      "prefill_step_size": 256,
+      "prompt_concurrency": 1,
+      "prompt_cache_size": 0,
+      "prompt_cache_bytes": 67108864,
+      "kv_bits": 8,
+      "quantized_kv_start": 256,
+      "max_tokens": 2048,
+      "cpu_thread_environment": 2,
+      "allocator_cache_limit_bytes": 134217728,
+      "enable_thinking": false,
+      "top_p": 0.8,
+      "top_k": 20
+    },
+    "corepilot_base_commit": "f01512595f15b84deeb845a611f377ed2d6fbdfe",
+    "code_sha256": {
+      "corepilot/__init__.py": "0f9bccde2c828bd2cfeeb2f98017cb02846424b9cfd0a9b858f24fac11af8992",
+      "corepilot/__main__.py": "79ee6f134c5c5193377cf9b189cbdcc3e2095e49ba9cec310114441c15a917c4",
+      "corepilot/app.py": "9166318174bee507e07073d7715c985f8aac57938dc8791878e3f997c7c09be4",
+      "corepilot/benchmark.py": "4c5fbc678af32d61f529deed712f2c033a263dbc8971d12fb5d52f021a9cfb98",
+      "corepilot/benchmark_resources.py": "937810e7ee935cb6f13ed3c9d7332620b093f9897ba4dc6220dc60d1ab977803",
+      "corepilot/cli.py": "2a812f1f9fc43bd00c9610c25b7dbc96369676aa8d3e3b7d4ffc133eae1cfea6",
+      "corepilot/codex_history.py": "44930f17ce40de612f69d562a8e9d167380563e2a4141cea1601e260f7941a9a",
+      "corepilot/config.py": "293a7b35a575e7b921dfb1ffaa97e04c7251a781c3ffb7bd88be409797a8dbf6",
+      "corepilot/dataset.py": "35344501847cc141cc22f65cb35c555d938a6b0befa786ca91923d8b7987e11a",
+      "corepilot/decision.py": "aa6839ff66a40c75a566e5508d590704b8db7962cf562a785640600c04b286dc",
+      "corepilot/engine.py": "b6b4aa95a1491bbbb82e98f4a8eac0d4798473171848516cbaca0441996668cf",
+      "corepilot/evaluation.py": "3c6f37a6a0d858a03986b6e2d1adaefdef89c5c84f87fb280405870124eda1ff",
+      "corepilot/history.py": "51fec5e64283db1e4be4ed338f596a6694c11d36dcf14897c8c3677b3277f4c1",
+      "corepilot/indexing.py": "64fdc40e6ee3100832271debf290d53641bc24ff40b17533d946f4073f31a6a3",
+      "corepilot/memory.py": "9ea59293a7894cba9c7e5aa3ec58e6bdfe3dfb0ae8a364fe4e772bc7e1e22d59",
+      "corepilot/model.py": "b67035dd695977ca882f6d865a0534eb7a2457650e1b31a06fb7287547a8a15f",
+      "corepilot/model_pool.py": "f0f62d7809bd17b98b3e639a3e6978805773bec986bd7be090f9c59c41c7a8a9",
+      "corepilot/orchestration.py": "63eeda946080cea694dd77338ccf7de3a07b64b8b0973d9b53942d5e78027906",
+      "corepilot/redaction.py": "8b50c3e41bdbd72ff2209a56fbff8265445c80b351ca756ae357f400c156028d",
+      "corepilot/reports.py": "c4a32a5b1e12469bb6775ce5acc9100e6266f73a1913a3ea1c0dbccfe34e75e3",
+      "corepilot/setup.py": "a962e7f37aa3a7a62511733c4bb322ae854e99dbde95064d47fd4b09e5953d2d",
+      "corepilot/store.py": "744a5861562a84e1b93ffca0ad51b11337a021633fbeeb1b0bdc81eeabd58321",
+      "corepilot/tools.py": "b1c234394897d2a9d3cc59dafe7dba3329b599d1a906d55e9230a628b5fe9f8e",
+      "corepilot/training.py": "2ca947757ec21f380ed75978baf5977ec782bafb2ed48fbf406608e655cbb5bb",
+      "corepilot/workspace.py": "b2feb8751f24e481c27c206819510a77b8388210a40b1e7ceb9af6dec98ab38f",
+      "scripts/run_benchmark.py": "a5ed0c4bd5e9f90ba70e8ad992489cd9bf8092c090d9622ac301f3980334aa61"
+    },
+    "startup_resources": {
+      "samples": 2,
+      "max_rss_gib": 0.5466461181640625,
+      "max_physical_footprint_gib": 0.0427734375,
+      "max_reported_peak_footprint_gib": 0.0427734375,
+      "physical_footprint_samples": 2,
+      "max_compressor_gib": 3.493194580078125,
+      "max_used_swap_gib": 10.4634375,
+      "peak_swap_growth_mib": 0,
+      "pressure_levels": [
+        1
+      ],
+      "min_available_estimate_gib": 5.1134796142578125,
+      "min_speed_limit": null,
+      "min_scheduler_limit": null
+    },
+    "warmup": {
+      "scored": false,
+      "max_tokens": 16,
+      "seconds": 3.062,
+      "usage": {
+        "prompt_tokens": 16,
+        "completion_tokens": 3,
+        "total_tokens": 19,
+        "prompt_tokens_details": {
+          "cached_tokens": 0
+        }
+      },
+      "resources": {
+        "samples": 1,
+        "max_rss_gib": 1.421356201171875,
+        "max_physical_footprint_gib": 2.4337890625,
+        "max_reported_peak_footprint_gib": 2.4337890625,
+        "physical_footprint_samples": 1,
+        "max_compressor_gib": 4.9485321044921875,
+        "max_used_swap_gib": 10.4634375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 3.35675048828125,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "postflight": {
+        "timestamp": 1791733529.2678971,
+        "available_estimate_gib": 2.773834228515625,
+        "compressor_gib": 4.78021240234375,
+        "purgeable_gib": 0.0112762451171875,
+        "used_swap_gib": 10.4634375,
+        "own_rss_gib": 2.0223541259765625,
+        "process_count": 2,
+        "physical_footprint_gib": 2.4337890625,
+        "peak_physical_footprint_gib": 2.4337890625,
+        "footprint_age_seconds": 1.2278076249931473,
+        "pressure_level": 1,
+        "pressure_some_avg10": null,
+        "pressure_full_avg10": null,
+        "speed_limit": null,
+        "scheduler_limit": null,
+        "thermal_warning_level": null,
+        "load_1m": null,
+        "supported": true,
+        "platform": "darwin",
+        "rss_complete": true,
+        "footprint_available": true
+      }
+    },
+    "swap_baseline_scope": "Startup and warmup use a common post-original-stop baseline. Scored comparison uses its own baseline after warmup; 2048MiB is a per-stage growth budget, not one end-to-end cap.",
+    "experiment_design": {
+      "adapted_after_prior_pilot": true,
+      "prior_pilot": "All preceding adaptive v1 trials are preserved. Public21 showed native4B substantive planning plus a correct completed single task, but reviewer print-only/uncaught expected-exception checks repeated until the global budget, and price repair responses repeatedly reached the768-token output cap. No v2 inference occurred before this generic guidance experiment.",
+      "change": "Native public stock Qwen3.5-4B same native/cache0/prefill256/KV8/context14000/24calls profile as public21, with output cap2048 instead of768 and case cap600 instead of300 fixed before launch. Public21 coder reached its output cap repeatedly while attempting a diagnosed Decimal repair; truncation remained incomplete, never silently accepted. Generic operating guidance now distinguishes behavioral assertions from printed observations and handles expected exceptions as proper negative tests. Transient bounded coder/reviewer reminders refresh original role, recorded execution metadata and required actual handoff/decision; do not waive evidence or force approval. Planner cue/read gates, tool pairing, sandbox and external oracle unchanged. Source/suite frozen before scored requests. V1 development only; no causal attribution/model ranking/training gain; no v2 inference yet.",
+      "full_suite_planned": false,
+      "purpose": "Development pilot; v1 has been used for harness diagnosis.",
+      "resource_policy_change": "User allowed necessary load; allow warning pressure only. Critical pressure, 1.0GiB headroom, 6GiB own footprint, 2048MiB maximum system-wide swap growth and thermal checks remain active; swap threshold increased from512MiB explicitly before this experiment."
+    },
+    "setup": "Existing idle model server temporarily stopped; only one model server loaded."
+  },
+  "settings": {
+    "protocol": "native",
+    "memory": false,
+    "router": false,
+    "same_weights_all_roles": true,
+    "max_calls": 24,
+    "role_max_steps": 24,
+    "max_tokens": 2048,
+    "context_chars": 14000,
+    "timeout_seconds": 600.0,
+    "case_timeout_override": 600.0,
+    "case_call_override": 24,
+    "rest_seconds": 10.0,
+    "temperature": 0.15,
+    "prompt_suffix": "/no_think",
+    "repeats": 1,
+    "cache_policy": "Existing server caches are not reset; AB/BA order alternates.",
+    "between_requests_seconds": 0.0
+  },
+  "planned_cases": 2,
+  "baseline_resources": {
+    "timestamp": 1791733550.7642748,
+    "available_estimate_gib": 4.446044921875,
+    "compressor_gib": 4.0507354736328125,
+    "purgeable_gib": 0.028045654296875,
+    "used_swap_gib": 10.4634375,
+    "own_rss_gib": 1.955322265625,
+    "process_count": 2,
+    "physical_footprint_gib": 2.6255859375,
+    "peak_physical_footprint_gib": 2.6255859375,
+    "footprint_age_seconds": 1.916982000693679e-06,
+    "pressure_level": 1,
+    "pressure_some_avg10": null,
+    "pressure_full_avg10": null,
+    "speed_limit": null,
+    "scheduler_limit": null,
+    "thermal_warning_level": null,
+    "load_1m": null,
+    "supported": true,
+    "platform": "darwin",
+    "rss_complete": true,
+    "footprint_available": true
+  },
+  "records": [
+    {
+      "id": "edit_sku_normalization",
+      "category": "normalization",
+      "read_only": false,
+      "mode": "single",
+      "protocol": "native",
+      "timeout_seconds": 600.0,
+      "max_calls": 24,
+      "seconds": 59.064,
+      "completed": true,
+      "task_status": "completed",
+      "oracle_passed": true,
+      "usable_passed": true,
+      "oracle": {
+        "passed": true,
+        "metric": "unittest",
+        "failures": [],
+        "exit_code": 0,
+        "tests_run": 3,
+        "failure_count": 0,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 4,
+      "calls_by_role": {
+        "single": 4
+      },
+      "tool_failures": 0,
+      "checks": 1,
+      "review_decisions": 0,
+      "changed_files": [
+        "inventory/catalog.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 4,
+      "http_errors": 0,
+      "usage_responses": 4,
+      "prompt_tokens": 12245,
+      "completion_tokens": 1066,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 58.78563595897867,
+      "resources": {
+        "samples": 20,
+        "max_rss_gib": 1.979461669921875,
+        "max_physical_footprint_gib": 2.93359375,
+        "max_reported_peak_footprint_gib": 3.3341796875,
+        "physical_footprint_samples": 20,
+        "max_compressor_gib": 4.14495849609375,
+        "max_used_swap_gib": 10.4634375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1
+        ],
+        "min_available_estimate_gib": 2.740081787109375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_sku_normalization",
+      "category": "normalization",
+      "read_only": false,
+      "mode": "specialists",
+      "protocol": "native",
+      "timeout_seconds": 600.0,
+      "max_calls": 24,
+      "seconds": 422.567,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": true,
+      "usable_passed": false,
+      "oracle": {
+        "passed": true,
+        "metric": "unittest",
+        "failures": [],
+        "exit_code": 0,
+        "tests_run": 3,
+        "failure_count": 0,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 24,
+      "calls_by_role": {
+        "coder": 8,
+        "planner": 2,
+        "reviewer": 14
+      },
+      "tool_failures": 3,
+      "checks": 10,
+      "review_decisions": 0,
+      "changed_files": [
+        "inventory/catalog.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 24,
+      "http_errors": 0,
+      "usage_responses": 24,
+      "prompt_tokens": 94541,
+      "completion_tokens": 6537,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 421.2305745430349,
+      "resources": {
+        "samples": 141,
+        "max_rss_gib": 1.75390625,
+        "max_physical_footprint_gib": 3.3367187499999997,
+        "max_reported_peak_footprint_gib": 3.43759765625,
+        "physical_footprint_samples": 141,
+        "max_compressor_gib": 5.5975494384765625,
+        "max_used_swap_gib": 10.73626953125,
+        "peak_swap_growth_mib": 279.380000000001,
+        "pressure_levels": [
+          1,
+          2
+        ],
+        "min_available_estimate_gib": 1.909149169921875,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_exact_price",
+      "category": "numeric_precision",
+      "read_only": false,
+      "mode": "specialists",
+      "protocol": "native",
+      "timeout_seconds": 600.0,
+      "max_calls": 24,
+      "seconds": 563.644,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "edit_exact_price",
+          "edit_exact_price"
+        ],
+        "exit_code": 1,
+        "tests_run": 3,
+        "failure_count": 2,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 24,
+      "calls_by_role": {
+        "coder": 19,
+        "planner": 3,
+        "reviewer": 2
+      },
+      "tool_failures": 0,
+      "checks": 6,
+      "review_decisions": 0,
+      "changed_files": [
+        "inventory/catalog.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 24,
+      "http_errors": 0,
+      "usage_responses": 24,
+      "prompt_tokens": 101054,
+      "completion_tokens": 11364,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 1,
+      "inference_seconds": 562.3768412890204,
+      "resources": {
+        "samples": 188,
+        "max_rss_gib": 1.7009429931640625,
+        "max_physical_footprint_gib": 3.3404296875,
+        "max_reported_peak_footprint_gib": 3.44091796875,
+        "physical_footprint_samples": 188,
+        "max_compressor_gib": 5.6370391845703125,
+        "max_used_swap_gib": 10.801025390625,
+        "peak_swap_growth_mib": 345.6900000000005,
+        "pressure_levels": [
+          1,
+          2
+        ],
+        "min_available_estimate_gib": 1.9210052490234375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    },
+    {
+      "id": "edit_exact_price",
+      "category": "numeric_precision",
+      "read_only": false,
+      "mode": "single",
+      "protocol": "native",
+      "timeout_seconds": 600.0,
+      "max_calls": 24,
+      "seconds": 474.203,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "unittest",
+        "failures": [
+          "import_workspace"
+        ],
+        "exit_code": 1,
+        "tests_run": 0,
+        "failure_count": 0,
+        "error_count": 1,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 22,
+      "calls_by_role": {
+        "single": 22
+      },
+      "tool_failures": 1,
+      "checks": 6,
+      "review_decisions": 0,
+      "changed_files": [
+        "inventory/catalog.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 22,
+      "http_errors": 0,
+      "usage_responses": 22,
+      "prompt_tokens": 103743,
+      "completion_tokens": 7895,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 473.19225491501857,
+      "resources": {
+        "samples": 158,
+        "max_rss_gib": 0.4605255126953125,
+        "max_physical_footprint_gib": 3.34345703125,
+        "max_reported_peak_footprint_gib": 3.4436523437499997,
+        "physical_footprint_samples": 158,
+        "max_compressor_gib": 5.35577392578125,
+        "max_used_swap_gib": 10.738525390625,
+        "peak_swap_growth_mib": 281.6900000000005,
+        "pressure_levels": [
+          1,
+          2
+        ],
+        "min_available_estimate_gib": 1.83740234375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      }
+    }
+  ],
+  "stop_reasons": [],
+  "resource_thresholds": {
+    "min_available_gib": 1.0,
+    "max_own_rss_gib": 6.0,
+    "max_physical_footprint_gib": 6.0,
+    "max_swap_growth_mib": 2048.0,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "limits": [
+    "Small synthetic sample; one stochastic trial per case/mode; not a commercial-agent comparison.",
+    "Read-only semantic proxies are constrained checks, not a comprehensive language judge.",
+    "The reviewer uses the same weights; external oracles provide behavioral checks.",
+    "Temperature and RAM temperature are not measured; OS thermal limits may be unavailable.",
+    "Client cancellation cannot guarantee cancellation of an existing external server request."
+  ],
+  "summary": {
+    "single": {
+      "attempted": 2,
+      "completed": 1,
+      "oracle_passed": 1,
+      "usable_passed": 1,
+      "median_seconds_all": 266.633,
+      "http_attempts": 26,
+      "timeouts": 0,
+      "safety_aborts": 0,
+      "by_kind": {
+        "edits": {
+          "attempted": 2,
+          "oracle_passed": 1,
+          "usable_passed": 1
+        },
+        "inspections": {
+          "attempted": 0,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        }
+      }
+    },
+    "specialists": {
+      "attempted": 2,
+      "completed": 0,
+      "oracle_passed": 1,
+      "usable_passed": 0,
+      "median_seconds_all": 493.106,
+      "http_attempts": 48,
+      "timeouts": 0,
+      "safety_aborts": 0,
+      "by_kind": {
+        "edits": {
+          "attempted": 2,
+          "oracle_passed": 1,
+          "usable_passed": 0
+        },
+        "inspections": {
+          "attempted": 0,
+          "oracle_passed": 0,
+          "usable_passed": 0
+        }
+      }
+    },
+    "paired": {
+      "count": 2,
+      "specialist_wins": 0,
+      "single_wins": 1,
+      "ties": 1,
+      "both_usable": 0,
+      "median_seconds_both_usable": {
+        "single": null,
+        "specialists": null
+      }
+    }
+  },
+  "unattempted_runs": 0
+}

@@ -12,7 +12,7 @@ The project is an **alpha research tool**. Inference quality depends on the mode
 - Redacts common secrets, excludes hidden reasoning, deduplicates examples, and separates training, validation and held-out sessions.
 - Builds local retrieval memory from selected conversations and current source files.
 - Runs a tool loop against a **loopback OpenAI-compatible server**: read/search files, edit an isolated workspace, run supported sandboxed commands, inspect a diff, cancel and resume a task.
-- Offers a lightweight **planner → coder → reviewer** workflow with explicit specialist models, bounded repair, independent-task concurrency, and optional local **Laya / Jev-compatible** typed routing. See [specialist orchestration](docs/orchestration.md).
+- Offers an experimental **planner → coder → reviewer** workflow with explicit specialist models, bounded repair, independent-task concurrency, and optional local **Laya / Jev-compatible** typed routing. See [specialist orchestration](docs/orchestration.md).
 - Offers optional **MLX LoRA training through Soup** on Apple Silicon. Standard messages JSONL can also be used with other SFT trainers.
 
 CorePilot imports histories from teacher agents; it does **not** train or redistribute proprietary models. It ships no real chat exports, private datasets, model weights or trained adapters. All examples are synthetic.
@@ -21,11 +21,11 @@ CorePilot imports histories from teacher agents; it does **not** train or redist
 
 Tell Codex, Claude Code, or another terminal-capable agent:
 
-> Set up CorePilot from https://github.com/kadessovb02/CorePilot for my current repository. Follow docs/agent-setup.md, configure a suitable local model and project memory, verify the setup, and launch the interface. Keep all project data local.
+> Set up CorePilot from https://github.com/kadessovb02/CorePilot for my current repository. Follow docs/agent-setup.md, preserve my model preferences, configure a single local model and project memory, verify the setup, and launch the interface. Keep all project data local.
 
 The primary onboarding command is `corepilot setup --repo /path/to/repository --verify`. It probes common local model endpoints, registers the project, indexes memory, and gives the agent a JSON readiness report and concrete next steps. [Agent setup guide](docs/agent-setup.md) · [Codex skill](.agents/skills/corepilot-setup/SKILL.md) · [Claude Code skill](.claude/skills/corepilot-setup/SKILL.md).
 
-For small specialist models, ask the agent: **“Configure CorePilot specialists for my repository following docs/orchestration.md. Choose models that fit my machine, preserve project style and compatibility, verify the workflow, and launch the interface. Keep all data local.”**
+Start with the **single-model** mode. The [stock 4B recipe](docs/local-model.md) supplies a pinned candidate configuration, not a quality guarantee. Specialists are an [experimental option](docs/orchestration.md#configure-specialists); their extra phases have not shown a usable-pass advantage in the recorded pilots.
 
 ## Quick start
 
@@ -123,13 +123,13 @@ Selected evidence from **2026-10-11, Apple M2 Pro, 16 GiB**:
 | Configuration / report | Single usable | Specialists usable | Coverage | Main limitation |
 |---|---:|---:|---|---|
 | [1.5B, JSON with tool descriptions](benchmarks/results/2026-10-11-qwen15b-tool-descriptions.json) | **0/20** | **0/20** | 40/40 graded | No completed tasks; all specialist calls stayed in planning |
-| [Qwen3.5 4B, native recovery pilot](benchmarks/results/2026-10-11-qwen35-recovery-pilot.json) | 1/2 | 0/2 | 4/4 graded | Unfinished review; both other edits hit repeated output limits |
+| [Qwen3.5 4B, native with role cues / 2048 tokens](benchmarks/results/2026-10-11-qwen35-rolecue-pilot.json) | 1/2 | 0/2 | 4/4 graded | Oracle 1/2 per mode; unfinished review and a compatibility regression |
 | [Qwen2.5-Coder 7B, native](benchmarks/results/2026-10-11-coder7b-native-plan-pilot.json) | 0/2 | 0/2 | 4/4 graded | Format failures; zero executed tools |
 | [Qwen2.5-Coder 7B, JSON with console resolution](benchmarks/results/2026-10-11-coder7b-console-json-pilot.json) | 0/2 | 0/2 | 4/4 graded | Oracle 1/2 per mode; no completed tasks; one timeout |
 
 The complete 1.5B trial scored **0/12 edits and 0/8 inspections per mode**. Later pilots are small, adaptive development trials: v1 was initially held out, but its failures have since informed fixes. Their scores are not pooled or a reliable model ranking. No trial had a both-usable pair for a speed comparison. The fresh v2 suite is frozen before inference; its score is still pending.
 
-The latest 4B native pilot scored **1/2 oracle passes per mode**, with **1/2 usable for single and 0/2 for specialists**. The completed task passed three external behavior tests; its own inline check only printed results, with no assertions. Specialists did not finish review, and both other edits hit repeated output limits. No timeout or resource abort occurred. This small development pilot does not establish dependable coding or Codex parity. Protocols are selected explicitly, with no automatic fallback.
+The latest 4B native pilot scored **1/2 oracle passes per mode**, with **1/2 usable for single and 0/2 for specialists**. The completed task passed three external behavior tests; its own check asserted positive cases but only printed negative cases. Specialists did not finish review, and the other single-agent edit removed existing functions and broke package imports. All four attempts were graded, with no timeout or resource abort. This small development pilot does not establish dependable coding or Codex parity. Protocols are selected explicitly, with no automatic fallback.
 
 See the [complete trial ledger, failed records, resource observations and methodology](docs/benchmarks.md), the [synthetic suite](benchmarks/synthetic_v1/README.md), and the candidate [4B](docs/local-model.md) / [7B](docs/local-coder-model.md) setup guides. Ordinary serving does not apply the benchmark's resource guard.
 

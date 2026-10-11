@@ -35,6 +35,10 @@ Each phase receives the original request, corrections, selected project context 
 
 ## Configure specialists
 
+This is an experimental option; start with single-model mode for the stock [4B candidate](local-model.md). The recorded development pilots do not establish a specialist quality advantage. If you want to try the workflow, ask your terminal-capable agent:
+
+> Configure CorePilot specialists for my repository following docs/orchestration.md. Choose models that fit my machine, preserve project style and compatibility, verify the workflow, and launch the interface. Keep all data local.
+
 Start compatible local model servers, or ask a terminal-capable coding agent to choose and start models that fit available RAM/VRAM. CorePilot does not load/download weights or manage server eviction. The same server may expose several model aliases. Register each role explicitly:
 
 ```sh
