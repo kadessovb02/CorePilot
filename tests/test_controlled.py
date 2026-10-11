@@ -363,8 +363,11 @@ def test_test_only_repair_keeps_correct_source_and_host_authority(tmp_path):
     assert len([e for e in task["events"] if e["type"] == "tool_start" and e["data"]["name"] == "apply_patch"]) == 1
 
 
-def test_resume_keeps_selected_authored_tests_and_literal_steering(tmp_path):
+@pytest.mark.parametrize("duplicate_new_test", [False, True])
+def test_resume_keeps_selected_authored_tests_and_literal_steering(tmp_path, duplicate_new_test):
     selection = {**SELECT, "new_test_paths": ["tests/test_regression.py"]}
+    if duplicate_new_test:
+        selection = {**selection, "edit_paths": [*selection["edit_paths"], "tests/test_regression.py"]}
     engine, task, tools = fixture(tmp_path, [selection, EDIT,
         {"tests": [{"path": "tests/test_regression.py", "content": NEW_TEST}], "summary": "Added regression"}])
     tools.outcomes = [1]
@@ -474,8 +477,11 @@ def test_current_stage_context_does_not_silently_compact_complete_source(tmp_pat
     assert "compacted" not in json.dumps(engine.model.requests[1][0])
 
 
-def test_host_authored_test_changed_externally_cannot_be_overwritten_on_resume(tmp_path):
+@pytest.mark.parametrize("duplicate_new_test", [False, True])
+def test_host_authored_test_changed_externally_cannot_be_overwritten_on_resume(tmp_path, duplicate_new_test):
     selection = {**SELECT, "new_test_paths": ["tests/test_regression.py"]}
+    if duplicate_new_test:
+        selection = {**selection, "edit_paths": [*selection["edit_paths"], "tests/test_regression.py"]}
     engine, task, tools = fixture(tmp_path, [selection, EDIT,
         {"tests": [{"path": "tests/test_regression.py", "content": NEW_TEST}], "summary": "Regression"}])
     tools.outcomes = [1]
@@ -656,3 +662,132 @@ def test_fenced_truncated_stage_cannot_be_accepted_or_normalized(tmp_path):
     assert source_manifest(tools.root) == before
     assert "truncated" in task["error"]
     assert not any(event["data"].get("format_normalization") for event in task["events"])
+
+
+def test_duplicate_new_test_selection_preserves_write_set_and_completes_host_workflow(tmp_path):
+    path = "tests/test_regression.py"
+    selection = {**SELECT, "edit_paths": [*SELECT["edit_paths"], path], "new_test_paths": [path]}
+    original_selection = copy.deepcopy(selection)
+    engine, task, tools = fixture(tmp_path, [selection, EDIT,
+        {"tests": [{"path": path, "content": NEW_TEST}], "summary": "Asserts the requested result."}, REVIEW])
+    existing = (tools.root / "tests/test_existing.py").read_bytes()
+    run(engine, task, tools)
+    assert task["status"] == "completed", task["error"]
+    assert task["step"] == 4 and len(engine.model.requests) == 4
+    normalized = task["controlled"]["selection"]
+    assert normalized["edit_paths"] == ["helper.py"] and normalized["new_test_paths"] == [path]
+    assert set(normalized["edit_paths"] + normalized["new_test_paths"]) == set(
+        original_selection["edit_paths"] + original_selection["new_test_paths"])
+    assert selection == original_selection
+    persisted = engine.store.load(task["id"])
+    raw = next(message["content"] for message in persisted["messages"]
+               if message.get("_corepilot_controlled_stage") == "select")
+    assert json.loads(raw) == original_selection
+    event = next(event for event in persisted["events"]
+                 if event["data"].get("selection_normalization") == "new_test_edit_overlap")
+    assert event["type"] == "verification" and event["data"]["paths"] == [path]
+    assert (tools.root / path).read_text() == NEW_TEST
+    assert (tools.root / "tests/test_existing.py").read_bytes() == existing
+    assert task["checks"][0]["exit_code"] == 0 and len(tools.commands) == 1
+    assert task["controlled"]["verified_manifest"] == source_manifest(tools.root)
+    assert_paired(persisted)
+
+
+@pytest.mark.parametrize("boundary", [
+    "existing_test", "existing_source", "traversal", "symlink", "outside_test_root",
+    "missing_source_read", "only_new_test", "explicit_scope", "profile_scope",
+])
+def test_overlap_classification_does_not_bypass_selection_boundaries(tmp_path, boundary):
+    path = "tests/test_regression.py"
+    selection = {**SELECT, "edit_paths": [*SELECT["edit_paths"], path], "new_test_paths": [path]}
+    engine, task, tools = fixture(tmp_path, [])
+    if boundary == "existing_test":
+        path = "tests/test_existing.py"
+    elif boundary == "existing_source":
+        path = "tests/test_source_helper.py"
+        (tools.root / path).write_text("def synthetic_helper():\n    return 1\n")
+    elif boundary == "traversal":
+        path = "../test_outside.py"
+    elif boundary == "symlink":
+        outside = tmp_path / "outside.py"
+        outside.write_text("# Synthetic external source\n")
+        (tools.root / path).symlink_to(outside)
+    elif boundary == "outside_test_root":
+        path = "other/test_regression.py"
+    elif boundary == "missing_source_read":
+        selection["read_paths"] = ["tests/test_existing.py"]
+    elif boundary == "only_new_test":
+        selection["edit_paths"] = []
+    elif boundary == "explicit_scope":
+        task["prompt"] = "Change only helper.py; add two."
+        task["messages"] = [{"role": "user", "content": task["prompt"], "_corepilot_kind": "objective"}]
+    elif boundary == "profile_scope":
+        (tools.root / "other.py").write_text("def another(value):\n    return value\n")
+        selection["read_paths"] = [*selection["read_paths"], "other.py"]
+        selection["edit_paths"] = ["other.py"]
+    selection["edit_paths"] = [p for p in selection["edit_paths"] if p != "tests/test_regression.py"] + [path]
+    selection["new_test_paths"] = [path]
+    engine.model.responses = [selection, selection]
+    before = source_manifest(tools.root)
+    run(engine, task, tools)
+    assert task["status"] == "interrupted" and task["step"] == 2
+    assert len(engine.model.requests) == 2 and not tools.commands
+    assert source_manifest(tools.root) == before
+    assert not any(event["type"] == "tool_start" and event["data"]["name"] in {"write_file", "apply_patch"}
+                   for event in task["events"])
+    assert_paired(task)
+
+
+@pytest.mark.parametrize("proposed", [
+    {"edit_paths": [], "new_test_paths": ["tests/test_regression.py"]},
+    {"edit_paths": ["helper.py", "tests/test_existing.py"], "new_test_paths": ["tests/test_existing.py"]},
+])
+def test_explicit_readonly_policy_ignores_benign_writes_without_changing_source_or_refs(tmp_path, proposed):
+    selection = {**SELECT, **proposed}
+    answer = {"answer": "The helper returns its input plus one.", "references": [{"path": "helper.py", "line": 2}]}
+    engine, task, tools = fixture(tmp_path, [selection, answer], read_only=True)
+    task["wants_check"] = True
+    before = source_manifest(tools.root)
+    run(engine, task, tools)
+    assert task["status"] == "completed", task["error"]
+    assert task["step"] == 2 and source_manifest(tools.root) == before
+    assert task["controlled"]["selection"] == {**SELECT, "edit_paths": [], "new_test_paths": []}
+    assert "helper.py:2" in task["answer"] and task["controlled"]["inspection_references"] == answer["references"]
+    assert len(tools.commands) == 1 and task["checks"][0]["exit_code"] == 0
+    assert not any(event["type"] == "tool_start" and event["data"]["name"] in {"write_file", "apply_patch"}
+                   for event in task["events"])
+    persisted = engine.store.load(task["id"])
+    raw = next(message["content"] for message in persisted["messages"]
+               if message.get("_corepilot_controlled_stage") == "select")
+    assert json.loads(raw) == selection
+    event = next(event for event in persisted["events"]
+                 if event["data"].get("selection_normalization") == "read_only_write_projection")
+    assert event["data"]["ignored_write_paths"] == len(set(proposed["edit_paths"] + proposed["new_test_paths"]))
+    assert_paired(task)
+
+
+@pytest.mark.parametrize("unsafe", ["unsafe_read", "traversal_write", "symlink_write", "credential_write", "metadata_write"])
+def test_readonly_projection_does_not_swallow_unsafe_paths(tmp_path, unsafe):
+    selection = {**SELECT, "edit_paths": ["helper.py"], "new_test_paths": []}
+    engine, task, tools = fixture(tmp_path, [], read_only=True)
+    if unsafe == "unsafe_read":
+        selection["read_paths"] = ["../outside.py"]
+    elif unsafe == "traversal_write":
+        selection["edit_paths"] = ["../outside.py"]
+    elif unsafe == "symlink_write":
+        outside = tmp_path / "outside.py"
+        outside.write_text("# Synthetic external source\n")
+        (tools.root / "linked.py").symlink_to(outside)
+        selection["edit_paths"] = ["linked.py"]
+    elif unsafe == "credential_write":
+        selection["edit_paths"] = ["local.env"]
+    elif unsafe == "metadata_write":
+        selection["edit_paths"] = [".git/config"]
+    engine.model.responses = [selection, selection]
+    before = source_manifest(tools.root)
+    run(engine, task, tools)
+    assert task["status"] == "interrupted" and task["step"] == 2
+    assert source_manifest(tools.root) == before and not tools.commands
+    assert not any(event["data"].get("selection_normalization") == "read_only_write_projection"
+                   for event in task["events"])
+    assert_paired(task)

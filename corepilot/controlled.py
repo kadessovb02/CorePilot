@@ -14,7 +14,7 @@ from pathlib import Path
 
 from .controlled_contract import (ContractError, parse_stage, prepare_patches,
                                  prepare_tests, validate_inspection, validate_selection)
-from .workspace import source_manifest
+from .workspace import safe_path, source_manifest
 
 
 class ControlledBlocked(ValueError):
@@ -249,6 +249,23 @@ class Controller:
         await self.read([*guidance, *self.profile["read_paths"]])
         def validate(result):
             self.fresh(self.state["read_manifest"], "Source changed during selection")
+            proposed_writes = [*result["edit_paths"], *result["new_test_paths"]]
+            if self.task.get("read_only") and proposed_writes:
+                try:
+                    for path in dict.fromkeys(proposed_writes):
+                        safe_path(self.root, path)
+                except (ValueError, OSError, RuntimeError) as exc:
+                    raise ContractError("Ignored write proposal violates read-only workspace boundaries: " + str(exc)) from exc
+                result = {**result, "edit_paths": [], "new_test_paths": []}
+                self.event("verification", "Enforced read-only selection; write proposals were ignored", {
+                    "phase": "select", "selection_normalization": "read_only_write_projection",
+                    "ignored_write_paths": len(set(proposed_writes))})
+            new_tests = set(result["new_test_paths"])
+            overlap = [path for path in result["edit_paths"] if path in new_tests]
+            if overlap:
+                result = {**result, "edit_paths": [path for path in result["edit_paths"] if path not in new_tests]}
+                self.event("verification", "Classified selected new tests separately from existing edits", {
+                    "phase": "select", "selection_normalization": "new_test_edit_overlap", "paths": overlap})
             result = validate_selection(self.root, result, test_roots=self.profile["test_roots"],
                 allowed_edit_paths=self.profile["allowed_edit_paths"], read_only=not self.editing,
                 request="\n\n".join(_requests(self.task)),
