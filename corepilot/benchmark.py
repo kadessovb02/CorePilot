@@ -58,13 +58,21 @@ class MeteredModel(ModelClient):
             pass
 
     async def complete(self, messages, *, tool_names=None):
+        complete = super().complete
+        return await self._meter(lambda: complete(messages, tool_names=tool_names))
+
+    async def complete_stage(self, stage, messages):
+        complete = super().complete_stage
+        return await self._meter(lambda: complete(stage, messages))
+
+    async def _meter(self, request):
         # Shared across role clients: reduce sustained GPU duty without parallel requests.
         previous = self.metrics.get("_last_completed")
         if previous is not None:
             await asyncio.sleep(max(0, previous + self.metrics.get("_request_pause_seconds", 3) - time.monotonic()))
         started = time.monotonic()
         try:
-            return await super().complete(messages, tool_names=tool_names)
+            return await request()
         finally:
             self.metrics["inference_seconds"] += time.monotonic() - started
             self.metrics["_last_completed"] = time.monotonic()

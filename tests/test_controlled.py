@@ -60,6 +60,18 @@ class CheckTools(WorkspaceTools):
                 "output": "Synthetic configured-check receipt", "sandbox": "mocked"}
 
 
+class TypedStages(ScriptedModel):
+    protocol = "native"
+
+    async def complete_stage(self, stage, messages):
+        message = await super().complete(messages, tool_names=[])
+        if "tool_calls" not in message:
+            message = {"role": "assistant", "content": "", "tool_calls": [{
+                "id": "stage_" + str(len(self.requests)), "type": "function", "function": {
+                    "name": "submit_" + stage, "arguments": message["content"]}}]}
+        return {**message, "_corepilot_stage_submission": stage}
+
+
 def fixture(tmp_path, responses, *, checks=None, repairs=0, read_only=False, max_steps=12, context_chars=22000):
     root, baseline, home = (tmp_path / name for name in ("workspace", "baseline", "state"))
     root.mkdir(parents=True)
@@ -106,6 +118,57 @@ def assert_paired(task):
                 identifiers.add(call["id"])
                 pending[call["id"]] = call["function"]["name"]
     assert not pending
+
+
+def test_typed_stage_workflow_preserves_native_arguments_and_host_default_metadata(tmp_path):
+    path = "tests/test_regression.py"
+    selection = {**SELECT, "new_test_paths": [path]}
+    engine, task, tools = fixture(tmp_path, [])
+    engine.model = TypedStages([selection, {"patches": EDIT["patches"]},
+        {"tests": [{"path": path, "content": NEW_TEST}]}, REVIEW])
+    run(engine, task, tools)
+    assert task["status"] == "completed", task["error"]
+    assert task["step"] == 4 and len(tools.commands) == 1
+    assert (tools.root / path).read_text() == NEW_TEST
+    submissions = [message for message in task["messages"] if message.get("_corepilot_stage_submission")]
+    assert [message["tool_calls"][0]["function"]["name"] for message in submissions] == [
+        "submit_select", "submit_edit", "submit_tests", "submit_review"]
+    assert json.loads(submissions[2]["tool_calls"][0]["function"]["arguments"]) == {"tests": [{"path": path, "content": NEW_TEST}]}
+    assert_paired(task)
+
+
+@pytest.mark.parametrize("invalid", ["wrong_name", "multiple", "malformed", "duplicate", "nonfinite", "length", "scope"])
+def test_typed_stage_invalid_submission_is_paired_bounded_and_never_applied(tmp_path, invalid):
+    call = {"id": "bad", "type": "function", "function": {"name": "submit_edit", "arguments": json.dumps(EDIT)}}
+    message = {"role": "assistant", "content": "", "tool_calls": [call]}
+    if invalid == "wrong_name":
+        call["function"]["name"] = "write_file"
+    elif invalid == "multiple":
+        message["tool_calls"].append({**copy.deepcopy(call), "id": "second"})
+    elif invalid == "malformed":
+        call["function"]["arguments"] = '{"patches":['
+    elif invalid == "duplicate":
+        call["function"]["arguments"] = '{"patches":[],"patches":[],"summary":"No"}'
+    elif invalid == "nonfinite":
+        call["function"]["arguments"] = '{"patches":[],"summary":NaN}'
+    elif invalid == "length":
+        message["_corepilot_finish_reason"] = "length"
+    else:
+        edit = copy.deepcopy(EDIT);edit["patches"][0]["path"] = "tests/test_existing.py"
+        call["function"]["arguments"] = json.dumps(edit)
+    second = copy.deepcopy(message)
+    for item in second["tool_calls"]:
+        item["id"] += "_retry"
+    engine, task, tools = fixture(tmp_path, [])
+    original = source_manifest(tools.root)
+    engine.model = TypedStages([SELECT, message, second])
+    run(engine, task, tools)
+    assert task["status"] == "interrupted" and task["step"] == 3
+    assert source_manifest(tools.root) == original and not tools.commands
+    assert not task["pending_calls"]
+    assert_paired(task)
+    replies = [json.loads(item["content"]) for item in task["messages"] if item.get("role") == "tool" and item["tool_call_id"].startswith("bad")]
+    assert replies and all("error" in reply for reply in replies)
 
 
 def test_host_observations_are_exact_data_and_do_not_mutate_checkpoint_pairs(tmp_path):
@@ -342,7 +405,12 @@ def test_real_model_adapter_keeps_stage_schema_requests_corrections_and_paired_e
             content = json.dumps(next(outputs))
             if protocol == "json":
                 content = json.dumps({"final": content})
-            return httpx.Response(200, json={"choices": [{"finish_reason": "stop", "message": {"role": "assistant", "content": content}}]})
+                message = {"role": "assistant", "content": content}
+            else:
+                message = {"role": "assistant", "content": None, "tool_calls": [{
+                    "id": "submission_" + str(len(payloads)), "type": "function", "function": {
+                        "name": payload["tools"][0]["function"]["name"], "arguments": content}}]}
+            return httpx.Response(200, json={"choices": [{"finish_reason": "tool_calls" if protocol != "json" else "stop", "message": message}]})
         cfg = Settings(root=engine.settings.root, projects={"demo": tools.root}, protocol=protocol)
         engine.settings.protocol = protocol
         client = ModelClient(cfg)
@@ -354,7 +422,12 @@ def test_real_model_adapter_keeps_stage_schema_requests_corrections_and_paired_e
         finally:
             await client.close()
         assert task["status"] == "completed", task["error"]
-        assert len(payloads) == 3 and all("tools" not in payload for payload in payloads)
+        assert len(payloads) == 3
+        for payload, stage in zip(payloads, ["select", "edit", "review"]):
+            if protocol == "json":
+                assert "tools" not in payload
+            else:
+                assert [spec["function"]["name"] for spec in payload["tools"]] == ["submit_" + stage]
         for payload in payloads:
             text = json.dumps(payload["messages"])
             assert task["prompt"] in text and "keep transform's public name" in text
@@ -669,7 +742,7 @@ def test_one_whole_answer_fence_keeps_strict_stages_and_exact_literal_patch(tmp_
         client = ModelClient(Settings(root=engine.settings.root, protocol=protocol))
         await client.http.aclose()
         client.http = httpx.AsyncClient(transport=httpx.MockTransport(respond))
-        engine.model = client
+        engine.model = SimpleNamespace(complete=client.complete)  # Legacy text-only client compatibility.
         try:
             await run_controlled(engine, task, tools)
         finally:
@@ -906,7 +979,7 @@ def test_missing_only_edit_test_summary_uses_host_metadata_and_preserves_raw_pro
         client = ModelClient(Settings(root=engine.settings.root, protocol=protocol))
         await client.http.aclose()
         client.http = httpx.AsyncClient(transport=httpx.MockTransport(respond))
-        engine.model = client
+        engine.model = SimpleNamespace(complete=client.complete)  # Legacy text-only client compatibility.
         try:
             await run_controlled(engine, task, tools)
         finally:

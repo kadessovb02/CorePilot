@@ -1068,3 +1068,33 @@ def test_cli_invalid_controlled_contract_never_constructs_models_or_resources(tm
     with pytest.raises(SystemExit) as error:
         main()
     assert error.value.code == 2 and not calls
+
+
+def test_native_stage_posts_and_auto_fallback_are_metered_without_workspace_tools(tmp_path):
+    async def exercise():
+        metrics = benchmark.new_metrics()
+        metrics['_request_pause_seconds'] = 0
+        model = benchmark.MeteredModel(Settings(root=tmp_path/'state', protocol='auto'), metrics)
+        requests = []
+        def respond(request):
+            payload = json.loads(request.content); requests.append(payload)
+            if len(requests) == 1:
+                return httpx.Response(400, json={'error': 'Synthetic unsupported tools'})
+            return httpx.Response(200, json={'choices': [{'finish_reason': 'stop', 'message': {
+                'role': 'assistant', 'content': json.dumps({'final': json.dumps({'answer': 'Observed source.', 'references': []})})}}],
+                'usage': {'prompt_tokens': 7, 'completion_tokens': 3}})
+        await model.http.aclose()
+        model.http = httpx.AsyncClient(transport=httpx.MockTransport(respond),
+            event_hooks={'request': [model.requested], 'response': [model.received]})
+        try:
+            message = await model.complete_stage('inspect', [{'role':'system','content':'Synthetic stage'},
+                {'role':'user','content':'Inspect source.'}])
+        finally:
+            await model.close()
+        assert [tool['function']['name'] for tool in requests[0]['tools']] == ['submit_inspect']
+        assert 'tools' not in requests[1]
+        assert json.loads(message['content'])['answer'] == 'Observed source.'
+        assert metrics['http_attempts'] == 2 and metrics['http_errors'] == 1
+        assert metrics['usage_responses'] == 1 and metrics['prompt_tokens'] == 7
+        assert metrics['completion_tokens'] == 3 and metrics['inference_seconds'] > 0
+    asyncio.run(exercise())

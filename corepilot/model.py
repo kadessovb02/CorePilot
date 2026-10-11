@@ -324,6 +324,36 @@ class ModelClient:
                 **({"_corepilot_finish_reason": choice["finish_reason"]} if isinstance(choice.get("finish_reason"), str) else {}),
                 **({"tool_calls": calls} if calls else {})}
 
+    async def complete_stage(self, stage: str, messages: list[dict]) -> dict:
+        """Collect a typed stage submission; it grants no workspace capability."""
+        from .stage_submission import stage_tool
+        tool = stage_tool(stage)
+        if self.protocol == "json":
+            return await ModelClient.complete(self, messages, tool_names=[])
+        protocol_messages = cap_messages(messages, self.settings.context_chars)
+        protocol_messages[0]["content"] += (
+            "\nSubmit this stage by calling only " + tool["function"]["name"] +
+            " exactly once with the complete stage object as arguments. "
+            "This function returns data to the host; it cannot read, write or run commands. "
+            "Do not return prose, a final wrapper, or workspace tool calls.")
+        payload = {"model": self.settings.model_name, "messages": protocol_messages,
+                   "temperature": 0.15, "max_tokens": self.settings.max_tokens, "stream": False,
+                   "tools": [tool], "tool_choice": {"type": "function", "function": {"name": tool["function"]["name"]}}}
+        response = await self.http.post(self.settings.model_url + "/chat/completions", json=payload)
+        if response.status_code in {400, 422, 501} and self.protocol == "auto":
+            self.protocol = "json"
+            return await ModelClient.complete(self, messages, tool_names=[])
+        response.raise_for_status()
+        choice = response.json()["choices"][0]
+        # Preserve native IDs and exact argument strings, including malformed
+        # input. The controller records and validates before any host effect.
+        message = deepcopy(choice["message"])
+        message.update(role="assistant", content=message.get("content") or "",
+                       _corepilot_stage_submission=stage)
+        if isinstance(choice.get("finish_reason"), str):
+            message["_corepilot_finish_reason"] = choice["finish_reason"]
+        return message
+
     @staticmethod
     def as_json_messages(messages: list[dict], *, tool_names=None) -> list[dict]:
         adapted = []
