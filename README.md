@@ -56,6 +56,8 @@ MLX, LM Studio and vLLM can be used when their local server supports the Chat Co
 
 Controlled native stages use `submit_select`, `submit_edit`, `submit_tests`, `submit_inspect` or `submit_review` to return data for strict host validation. Requesting a function with `tool_choice` does not enforce grammar-constrained decoding; a server can ignore that request. The JSON adapter remains available. This transport change alone demonstrates no coding-quality gain.
 
+Setting `controlled.artifact_protocol` to `"documents"` lets edit/test stages return one complete host-selected file instead of serializing patch or test arrays; the default remains `"stage"`. Host scope, syntax, freshness, check and review gates still apply. See the [controlled-workflow guide](docs/controlled-workflow.md).
+
 ## Bring your own history
 
 Only explicitly selected paths are read. CorePilot does not scan personal history folders by default.
@@ -145,6 +147,8 @@ Initial v3 development pilots with a stock 1.5B model scored **0/2 usable and or
 The later [4B controlled development task](benchmarks/results/2026-10-11-controlled-4b-scoped2048-pilot.json) also scored **0/1 usable**. Its implementation passed 12 external behavioral checks, but the required new test was never accepted, so the full task failed. Startup stops, interrupted attempts and changed resource limits are retained separately. This is partial implementation evidence, not a completed-task or training improvement.
 
 A separately steered [native saved-checkpoint continuation](benchmarks/results/2026-10-11-controlled-4b-native-checkpoint-continuation.json) also failed to finish. The [clean-start native run](benchmarks/results/2026-10-11-controlled-4b-native-initial-development.json) and [feedback follow-up](benchmarks/results/2026-10-11-controlled-4b-native-feedback-development.json) produced partial implementations but failed test creation or execution and did not complete review. These exposed development cases are **not fresh held-out evidence or a quality gain**; separate failures and diagnostics remain in the controlled-workflow guide.
+
+The later [pinned stock 4B native documents-mode run](benchmarks/results/2026-10-11-controlled-4b-native-documents-development.json) completed **one known development task**: implementation, a new test file, an actual passing host check and approved review, plus 28 external unittest executions with zero failures or errors. It used a clean baseline, no adapter or memory, and eight-call / 2048-token / 180-second limits. This first observed full cycle on a repeatedly used case is **not a fresh general-quality score or evidence of training, navigator, ranking or speed improvement**. Earlier failures remain published.
 
 ## Development
 

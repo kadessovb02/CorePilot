@@ -1,0 +1,125 @@
+{
+  "kind": "clean_start_development_task",
+  "fresh_held_out_evaluation": false,
+  "source_git_commit": "e2c31c70ad6e9ea799243bcb24fa4b8a12c86032",
+  "public_runtime_commit": "438259e136ba6780c03cc273b33317283b01284b",
+  "suite_sha256": "735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e",
+  "case_id": "edit-tag-normalization",
+  "prompt_sha256": "e43031eead623267a7a5add64ac34c107cdc45f87c2a646c84c9ba98ffb2eee6",
+  "original_case_prompt_unchanged": true,
+  "pre_existing_patch": false,
+  "controller_change": "opt-in host-selected complete source/test documents; native select/review remain typed",
+  "controlled_artifact_protocol": "documents",
+  "previous_failed_initial_report_sha256": "27182773761988d2a677e7756505560e7831f3971a1e28627255f556f6b9216b",
+  "model": "Qwen3.5-4B stock 4-bit",
+  "model_revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "adapter": null,
+  "memory": false,
+  "workflow": "controlled",
+  "protocol": "native",
+  "max_calls": 8,
+  "max_tokens": 2048,
+  "context_chars": 22000,
+  "task_seconds": 180,
+  "request_pause_seconds": 3,
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_own_rss_gib": 3.8,
+    "max_physical_footprint_gib": 3.8,
+    "max_swap_growth_mib": 2048,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "model_already_loaded": true,
+  "baseline_before_model_startup": true,
+  "checks": [
+    [
+      "python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ]
+  ],
+  "limitations": [
+    "Repeated development case after earlier contract adaptations.",
+    "One initial task; not model ranking, training, navigator or speed-comparison evidence."
+  ],
+  "plan_sha256": "242c9d96dee5315e10abdadc75638971787ec61ece3298b25e658728ea366837",
+  "record": {
+    "id": "edit-tag-normalization",
+    "category": "edit",
+    "read_only": false,
+    "mode": "controlled",
+    "protocol": "native",
+    "timeout_seconds": 180,
+    "max_calls": 8,
+    "seconds": 71.642,
+    "completed": true,
+    "task_status": "completed",
+    "oracle_passed": true,
+    "usable_passed": true,
+    "oracle": {
+      "passed": true,
+      "metric": "external_behavior_api_scope_style_unittest",
+      "failures": [],
+      "exit_code": 0,
+      "tests_run": 28,
+      "failure_count": 0,
+      "error_count": 0,
+      "integrity_error_count": 0,
+      "style_error_count": 0,
+      "required_reads_missing_count": 0,
+      "semantic_missing_count": 0,
+      "semantic_contradiction_count": 0
+    },
+    "timeout": false,
+    "safety_abort": false,
+    "safety_reasons": [],
+    "logical_calls": 4,
+    "calls_by_role": {
+      "single": 4
+    },
+    "tool_failures": 0,
+    "checks": 1,
+    "review_decisions": 1,
+    "changed_files": [
+      "notehub/parsing.py"
+    ],
+    "unexpected_changed_files": 0,
+    "read_only_integrity": null,
+    "http_attempts": 4,
+    "http_errors": 0,
+    "usage_responses": 4,
+    "prompt_tokens": 11877,
+    "completion_tokens": 1163,
+    "cached_prompt_tokens": 0,
+    "length_limited_responses": 0,
+    "inference_seconds": 62.41430758396746,
+    "resources": {
+      "samples": 24,
+      "max_rss_gib": 0.10821533203125,
+      "max_physical_footprint_gib": 3.23388671875,
+      "max_reported_peak_footprint_gib": 3.4407226562499997,
+      "physical_footprint_samples": 24,
+      "max_compressor_gib": 6.409423828125,
+      "max_used_swap_gib": 12.022890625,
+      "peak_swap_growth_mib": 0,
+      "pressure_levels": [
+        2
+      ],
+      "min_available_estimate_gib": 1.8375091552734375,
+      "min_speed_limit": null,
+      "min_scheduler_limit": null
+    },
+    "controlled_artifact_protocol": "documents",
+    "calls_by_stage": {
+      "edit": 1,
+      "review": 1,
+      "select": 1,
+      "tests": 1
+    }
+  }
+}
