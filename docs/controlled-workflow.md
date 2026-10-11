@@ -2,6 +2,8 @@
 
 CorePilot offers an opt-in host-controlled workflow for small local models. The host selects and reads real files, limits literal patches to a validated plan, creates tests at fixed paths, runs operator-configured checks, and requests a short review. After fresh checks and approval, the host produces the final report without another model turn. Existing free-form and specialist workflows remain available.
 
+Selection includes a lightweight project navigator. It ranks current file paths and observed Python definitions/imports against the request, with line numbers and source hashes. The map is rebuilt from the isolated checkout, bounded in files, bytes and output size, and marked incomplete when necessary. It uses the CPU and makes no model call. Other languages currently receive filename hints rather than parsed symbols. The map is untrusted location guidance: it does not satisfy required file reads, infer a complete call graph, choose check commands or approve changes.
+
 ```mermaid
 flowchart LR
   S[Select and read files] --> E[Literal edits]
@@ -32,4 +34,4 @@ Controlled tasks always use the resource guard. Legacy tasks opt in through `res
 
 A resource stop persists a local hold and preserves the task. Cancelling an HTTP request does not prove the external model stopped generating. Stop the model server, confirm it is idle, then use the interface's model-status panel to check resources and clear the hold. This explicit action does not restart models or tasks. CorePilot never kills unrelated applications or automatically restarts computation.
 
-The implementation is tested with scripted responses and actual sandbox checks. A controlled-mode local-model quality comparison has not yet been completed; consult the benchmark ledger for measured results from earlier workflows.
+The implementation is tested with scripted responses and actual sandbox checks. Initial 1.5B controlled-mode development comparisons failed to complete tasks; consult the [benchmark ledger](benchmarks.md) for separate frozen reports, diagnostic follow-ups and limitations. A controller passing scripted tests does not establish local-model coding quality.

@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "prepared_before_retry": true,
+  "time_utc": "2026-10-11T18:12:23.440953+00:00",
+  "parent_preregistration_sha256": "f6c91b6d374ba8c0b9e14b97d31cadf828f222be425b451f5452d9fc979ae60d",
+  "frozen_manager_sha256": "c7f7b863b81f7dfd31958affae2f4e87d36e220855d7df9c9509d3bbf3877e08",
+  "wrapper_sha256": "24ce9af9c9be5936772a4650b29da611bf66298ba3bb6b7951e4644856f33179",
+  "previous_attempt": {
+    "finalized_records": 0,
+    "started_ungraded": 1,
+    "never_started": 3,
+    "reason": "swap_growth_limit",
+    "owned_server_unloaded": true
+  },
+  "reason": "OS pressure returned to normal and available estimate exceeded 4 GiB after the owned server was unloaded. One explicitly declared restart with unchanged model/runtime/suite/configuration; no outcome-based tuning.",
+  "configuration_changed": false,
+  "planned_order": [
+    {
+      "id": "edit-tag-normalization",
+      "mode": "controlled"
+    },
+    {
+      "id": "edit-tag-normalization",
+      "mode": "single"
+    },
+    {
+      "id": "inspect-tag-current",
+      "mode": "single"
+    },
+    {
+      "id": "inspect-tag-current",
+      "mode": "controlled"
+    }
+  ],
+  "automatic_retries": 0,
+  "max_this_session_attempts": 4
+}

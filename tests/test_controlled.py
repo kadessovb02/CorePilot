@@ -108,6 +108,39 @@ def assert_paired(task):
     assert not pending
 
 
+def test_navigator_supplies_current_locations_without_replacing_reads(tmp_path):
+    engine, task, tools = fixture(tmp_path, [SELECT, EDIT, REVIEW])
+    run(engine, task, tools)
+    assert task["status"] == "completed"
+    context = json.loads(engine.model.requests[0][0][1]["content"].split("\n", 1)[1])
+    navigation = context["project_navigation_untrusted"]
+    entry = next(item for item in navigation["files"] if item["path"] == "helper.py")
+    assert entry["sha256"] == task["controlled"]["start_manifest"]["helper.py"]
+    assert any(item["name"] == "transform" and item["line"] == 1 for item in entry["symbols"])
+    events = task["events"]
+    assert any(item["type"] == "navigation" and item["data"]["model_calls"] == 0 for item in events)
+    assert any(item["type"] == "tool_result" and item["data"]["name"] == "read_file"
+               and item["data"]["arguments"]["path"] == "helper.py" for item in events)
+    assert len(engine.model.requests) == 3
+    assert_paired(task)
+
+
+def test_navigator_source_race_blocks_before_model_selection(tmp_path, monkeypatch):
+    engine, task, tools = fixture(tmp_path, [SELECT])
+    from corepilot import controlled
+    original = controlled.build_navigation
+    def mutate(root, query, **kwargs):
+        result = original(root, query, **kwargs)
+        (root / "helper.py").write_text("def transform(value):\n    return value + 10\n")
+        return result
+    monkeypatch.setattr(controlled, "build_navigation", mutate)
+    run(engine, task, tools)
+    assert task["status"] == "interrupted"
+    assert "navigation" in task["error"]
+    assert not engine.model.requests
+    assert_paired(task)
+
+
 def test_host_completes_without_final_model_loop_and_preserves_tests(tmp_path):
     selection = {**SELECT, "new_test_paths": ["tests/test_regression.py"]}
     engine, task, tools = fixture(tmp_path, [selection, EDIT,

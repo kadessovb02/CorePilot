@@ -29,6 +29,8 @@ Prepared dataset -> optional Soup / MLX trainer -> adapter -> user's model serve
 | `corepilot/redaction.py` | Shared input cleaning and heuristic secret removal |
 | `corepilot/dataset.py` | Deduplication, grouped splits, corpus and memory export |
 | `corepilot/indexing.py`, `memory.py` | Source chunks and lexical retrieval |
+| `corepilot/navigator.py` | Bounded current-source map, ranked paths and observed Python symbols with lines and hashes |
+| `corepilot/controlled.py`, `controlled_contract.py` | Host-owned selection, literal patches, checks and bounded structured review |
 | `corepilot/training.py` | Dry-run validation and optional MLX SFT |
 | `corepilot/model.py` | Local Chat Completions transport and bounded conversation context |
 | `corepilot/orchestration.py`, `model_pool.py`, `decision.py` | Bounded specialist workflow, independent role clients and optional local typed routing |
@@ -51,3 +53,5 @@ Mutable configuration, corpus, adapters and checkpoints live under the selected 
 Context compaction must preserve the active request and corrections, keep tool calls paired with responses, and retain a bounded account of successful file evidence. Repeated failed calls must not erase successful observations or masquerade as proof that files are absent.
 
 Optional [specialist orchestration](orchestration.md) uses the same isolated workspace and checkpoint boundaries. A code scheduler selects planner/coder/reviewer stages; a local typed router may select an inspection shortcut. Role permissions and completion gates are enforced by the runtime, independently of model decisions. Multiple tasks can overlap, while requests to the same model backend remain serialized.
+
+The [controlled workflow](controlled-workflow.md) builds its project navigation from the task checkout before asking for file selection. Navigation adds no resident model and does not execute repository code. Its bounded map is passed only as untrusted selection context; actual reads and source-freshness checks remain required before editing or answering. No map is written into the repository or shared across projects.

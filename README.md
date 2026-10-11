@@ -13,6 +13,7 @@ The project is an **alpha research tool**. Inference quality depends on the mode
 - Builds local retrieval memory from selected conversations and current source files.
 - Runs a tool loop against a **loopback OpenAI-compatible server**: read/search files, edit an isolated workspace, run supported sandboxed commands, inspect a diff, cancel and resume a task.
 - Provides an opt-in [controlled workflow](docs/controlled-workflow.md): the host bounds file edits, owns check commands and records completion from fresh checks plus structured review. Controlled tasks include a resource guard. This architecture is experimental; local-model task quality still needs evaluation.
+- Builds a bounded project navigator for controlled selection: ranked current files, Python symbols/imports, line numbers and source hashes, without another loaded model. Actual reads and checks remain required; other languages currently receive filename hints.
 - Offers an experimental **planner → coder → reviewer** workflow with explicit specialist models, bounded repair, independent-task concurrency, and optional local **Laya / Jev-compatible** typed routing. See [specialist orchestration](docs/orchestration.md).
 - Offers optional **MLX LoRA training through Soup** on Apple Silicon. Standard messages JSONL can also be used with other SFT trainers.
 
@@ -119,7 +120,7 @@ Commands fail closed when the supported sandbox is missing. There is no unsandbo
 
 ## Comparative benchmarks
 
-The harness compares a single agent with **planner → coder → reviewer** using the same stock weights, fresh workspaces, equal per-case budgets and no training or retrieval memory. The v1 suite contains 12 edits and 8 inspections. A **usable pass** requires both completed status and an external oracle pass; resource-cancelled attempts count as failures, while unstarted runs remain separate.
+The harness supports single-agent, **planner → coder → reviewer**, and controlled workflows using the same stock weights per comparison, fresh workspaces, equal per-case budgets and no training or retrieval memory. The v1 suite contains 12 edits and 8 inspections; the focused v3 suite contains six edits and six inspections. A **usable pass** requires both completed status and an external oracle pass; resource-cancelled attempts count as failures, while unstarted runs remain separate.
 
 Selected evidence from **2026-10-11, Apple M2 Pro, 16 GiB**:
 
@@ -136,6 +137,8 @@ The complete 1.5B trial scored **0/12 edits and 0/8 inspections per mode**. Late
 The latest v1 4B development pilot scored **1/2 oracle passes per mode**, with **1/2 usable for single and 0/2 for specialists**. The completed task passed three external behavior tests; its own check asserted positive cases but only printed negative cases. Specialists did not finish review, and the other single-agent edit removed existing functions and broke package imports. All four attempts were graded, with no timeout or resource abort. This small development pilot does not establish dependable coding or Codex parity. Protocols are selected explicitly, with no automatic fallback.
 
 See the [complete trial ledger, failed records, resource observations and methodology](docs/benchmarks.md), the [synthetic suite](benchmarks/synthetic_v1/README.md), and the candidate [4B](docs/local-model.md) / [7B](docs/local-coder-model.md) setup guides. Ordinary free-form serving uses a resource guard when explicitly enabled. The new controlled workflow always applies its runtime guard; this has not retroactively changed recorded benchmark settings.
+
+Initial v3 development pilots with a stock 1.5B model scored **0/2 usable and oracle passes per arm** for both single and controlled workflows. Host fixes allowed selection to proceed, but subsequent tiny-model patch/answer failures still prevented usable completion. These diagnostic runs are retained separately in the ledger; they do not demonstrate a navigator benefit, training gain or workflow superiority.
 
 ## Development
 

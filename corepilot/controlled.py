@@ -15,6 +15,7 @@ from pathlib import Path
 from .controlled_contract import (ContractError, parse_stage, prepare_patches,
                                  prepare_tests, validate_inspection, validate_selection)
 from .workspace import safe_path, source_manifest
+from .navigator import build_navigation
 
 
 class ControlledBlocked(ValueError):
@@ -247,6 +248,13 @@ class Controller:
             raise ControlledBlocked("Project inventory is unavailable")
         guidance = [path for path in ("AGENTS.md", "CLAUDE.md") if path in source_manifest(self.root)]
         await self.read([*guidance, *self.profile["read_paths"]])
+        navigation = await asyncio.to_thread(build_navigation, self.root,
+            "\n\n".join(reversed(_requests(self.task))), manifest=self.state["read_manifest"],
+            max_chars=min(5000, max(1000, self.engine.settings.context_chars // 4)))
+        self.fresh(self.state["read_manifest"], "Source changed while building project navigation")
+        self.event("navigation", "Prepared source-grounded project locations", {
+            "files": len(navigation["files"]), "incomplete": navigation["incomplete"],
+            "model_calls": 0})
         def validate(result):
             self.fresh(self.state["read_manifest"], "Source changed during selection")
             proposed_writes = [*result["edit_paths"], *result["new_test_paths"]]
@@ -281,6 +289,7 @@ class Controller:
                 raise ContractError("Authored test paths are fixed; use the existing test paths")
             return result
         _, result = await self.ask("select", self.context(inventory=inventory, profile=self.profile,
+            project_navigation_untrusted=navigation,
             read_only=not self.editing, fixed_new_test_paths=self.state.get("fixed_new_test_paths")),
             validate=validate)
         self.state.setdefault("fixed_new_test_paths", result["new_test_paths"])

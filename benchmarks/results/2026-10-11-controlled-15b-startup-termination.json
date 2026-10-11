@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "report": "2026-10-11-controlled-15b-startup-partial.json",
+  "report_sha256": "f95af9952900bbcd8497e15aaefe0ea2285ce7e16e71aae02a44ef3d7c35a7be",
+  "stop_origin": "owned_session_manager",
+  "reason_codes": [
+    "swap_growth_limit"
+  ],
+  "planned_runs": 4,
+  "finalized_graded_records": 0,
+  "started_ungraded_runs": 1,
+  "truly_never_started_runs": 3,
+  "started_mode": "controlled",
+  "logical_model_attempts": 1,
+  "persisted_completed_model_responses": 0,
+  "source_changes": 0,
+  "swap_growth_mib": 803.0,
+  "configured_max_swap_growth_mib": 512.0,
+  "owned_server_unloaded": true,
+  "prior_server_restoration_attempted": false,
+  "quality_score_available": false,
+  "note": "Raw unattempted_runs=4 counts missing finalized records. Raw stop_reasons=[] omits the outer-session stop. This sidecar preserves that provenance; a later explicitly declared retry has separate evidence."
+}
