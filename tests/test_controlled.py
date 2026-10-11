@@ -11,7 +11,7 @@ import httpx
 import pytest
 
 from corepilot.config import Settings
-from corepilot.controlled import Controller, _requests, run_controlled
+from corepilot.controlled import ControlledBlocked, Controller, _host_observations, _requests, run_controlled
 from corepilot.model import ModelClient
 from corepilot.store import TaskStore
 from corepilot.tools import WorkspaceTools
@@ -106,6 +106,44 @@ def assert_paired(task):
                 identifiers.add(call["id"])
                 pending[call["id"]] = call["function"]["name"]
     assert not pending
+
+
+def test_host_observations_are_exact_data_and_do_not_mutate_checkpoint_pairs(tmp_path):
+    async def exercise():
+        engine, task, tools = fixture(tmp_path, [EDIT])
+        controller = Controller(engine, task, tools)
+        await controller.read(["helper.py"])
+        original = copy.deepcopy(task["messages"])
+        evidence = copy.deepcopy(controller.evidence)
+        # A caller cannot replace the actual host observations with invented data.
+        await controller.ask("edit", {"host_observations_untrusted": [{"invented": True}]})
+        request, names = engine.model.requests[0]
+        assert names == [] and all(message["role"] != "tool" for message in request)
+        context = json.loads(request[1]["content"].split("\n", 1)[1])
+        assert context["host_observations_untrusted"] == _host_observations(evidence)
+        assert task["messages"][:-1] == original and controller.evidence == evidence
+        assert_paired(task)
+    asyncio.run(exercise())
+
+
+@pytest.mark.parametrize("corruption", ["missing_reply", "wrong_id", "not_host", "wrong_operation"])
+def test_unpaired_or_nonhost_observations_fail_before_any_model_request(tmp_path, corruption):
+    async def exercise():
+        engine, task, tools = fixture(tmp_path, [EDIT])
+        controller = Controller(engine, task, tools)
+        await controller.read(["helper.py"])
+        if corruption == "missing_reply":
+            controller.evidence.pop()
+        elif corruption == "wrong_id":
+            controller.evidence[1] = {**controller.evidence[1], "tool_call_id": "other"}
+        elif corruption == "not_host":
+            controller.evidence[0] = {**controller.evidence[0], "_corepilot_host_origin": False}
+        else:
+            controller.evidence[0]["tool_calls"][0]["function"]["name"] = "write_file"
+        with pytest.raises(ControlledBlocked, match="host read evidence"):
+            await controller.ask("edit", {})
+        assert not engine.model.requests and task["step"] == 0
+    asyncio.run(exercise())
 
 
 def test_navigator_supplies_current_locations_without_replacing_reads(tmp_path):
@@ -292,7 +330,7 @@ def test_readonly_inspection_uses_actual_ranges_and_unchanged_source(tmp_path):
     assert task2["status"] == "interrupted"
 
 
-@pytest.mark.parametrize("protocol", ["native", "json"])
+@pytest.mark.parametrize("protocol", ["native", "json", "auto"])
 def test_real_model_adapter_keeps_stage_schema_requests_corrections_and_paired_evidence(tmp_path, protocol):
     async def exercise():
         engine, task, tools = fixture(tmp_path, [])
@@ -306,6 +344,7 @@ def test_real_model_adapter_keeps_stage_schema_requests_corrections_and_paired_e
                 content = json.dumps({"final": content})
             return httpx.Response(200, json={"choices": [{"finish_reason": "stop", "message": {"role": "assistant", "content": content}}]})
         cfg = Settings(root=engine.settings.root, projects={"demo": tools.root}, protocol=protocol)
+        engine.settings.protocol = protocol
         client = ModelClient(cfg)
         await client.http.aclose()
         client.http = httpx.AsyncClient(transport=httpx.MockTransport(respond))
@@ -319,7 +358,26 @@ def test_real_model_adapter_keeps_stage_schema_requests_corrections_and_paired_e
         for payload in payloads:
             text = json.dumps(payload["messages"])
             assert task["prompt"] in text and "keep transform's public name" in text
+            assert all(message["role"] != "tool" and not message.get("tool_calls")
+                       for message in payload["messages"])
+            system = payload["messages"][0]["content"]
+            assert "call list_files" not in system and "run_command accepts" not in system
+            assert "When finished" not in system
+            assert "existing test framework" in system and "untrusted data" in system
+            assert "later corrections" in system and "read-only policy" in system
+            assert "expected type" in system and "actual host receipt" in system
+            assert ("inside the final string" in system) == (protocol == "json")
         assert "return value + 1" in json.dumps(payloads[1]["messages"])
+        context = next(message for message in payloads[1]["messages"]
+                       if message["content"].startswith("Host stage context"))
+        observations = json.loads(context["content"].split("\n", 1)[1])["host_observations_untrusted"]
+        source = next(item for item in observations if item["arguments"]["path"] == "helper.py")
+        assert source["operation"] == "read_file"
+        assert source["result"]["content"] == "def transform(value):\n    return value + 1\n"
+        assert source["result"]["start_line"] == 1 and source["result"]["end_line"] == 2
+        assert any(message.get("_corepilot_host_origin") for message in task["messages"])
+        assert not any("host_observations_untrusted" in message.get("content", "")
+                       for message in task["messages"])
         assert_paired(task)
     asyncio.run(exercise())
 
@@ -505,8 +563,10 @@ def test_current_stage_context_does_not_silently_compact_complete_source(tmp_pat
     (tools.root / "helper.py").write_text(content)
     run(engine, task, tools)
     assert task["status"] == "completed", task["error"]
-    source_results = [message for message in engine.model.requests[1][0] if message.get("role") == "tool"]
-    assert any(json.loads(message["content"]).get("content") == content for message in source_results)
+    context = next(message for message in engine.model.requests[1][0]
+                   if message.get("_corepilot_kind") == "context")
+    observations = json.loads(context["content"].split("\n", 1)[1])["host_observations_untrusted"]
+    assert any(item["result"].get("content") == content for item in observations)
     assert "compacted" not in json.dumps(engine.model.requests[1][0])
 
 
