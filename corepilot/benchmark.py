@@ -232,6 +232,12 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
         except asyncio.TimeoutError:
             timed_out = True
             await engine.cancel(created["id"])
+        except asyncio.CancelledError:
+            # The resource watcher cancels the engine job, not this runner.
+            # Preserve that attempt; an operator cancelling the runner still
+            # propagates even if a resource abort raced with their request.
+            if not abort or asyncio.current_task().cancelling():
+                raise
         elapsed = time.monotonic() - started
         # Measurement ends with generation. Drain the watcher before deciding
         # whether it is safe to grade, so its last callback cannot change an

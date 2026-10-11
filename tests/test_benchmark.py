@@ -578,7 +578,7 @@ def test_real_native_clients_use_identical_caps_and_effective_task_timeout_for_b
     asyncio.run(run())
 
 
-def fake_runtime(monkeypatch, suite, *, hang=False, change=False):
+def fake_runtime(monkeypatch, suite, *, hang=False, change=False, propagate_cancel=False):
     models, engines = [], []
     class Model:
         def __init__(self, settings, metrics):
@@ -613,6 +613,8 @@ def fake_runtime(monkeypatch, suite, *, hang=False, change=False):
                     self.data["status"] = "completed"
                 except asyncio.CancelledError:
                     self.data["status"] = "cancelled"
+                    if propagate_cancel:
+                        raise
             self.jobs[self.data["id"]] = asyncio.create_task(job())
             return {"id": self.data["id"]}
         async def cancel(self, task_id):
@@ -705,6 +707,74 @@ def test_external_runner_cancellation_stops_watch_and_closes_model_clients(tmp_p
         assert engines[0].closed and monitor.stopped
         assert all(job.done() for job in engines[0].jobs.values())
         assert all(model.closed for model in models)
+    asyncio.run(run())
+
+
+@pytest.mark.parametrize("mode", ["single", "controlled"])
+def test_internal_resource_job_cancellation_persists_ungraded_attempt(tmp_path, suite, monkeypatch, mode):
+    models, engines = fake_runtime(monkeypatch, suite, hang=True, propagate_cancel=True)
+    async def forbidden_grade(*args):
+        pytest.fail("Resource-cancelled work must never reach the oracle")
+    monkeypatch.setattr(benchmark, "grade", forbidden_grade)
+    monitor, output = Monitor(abort=True), tmp_path / "report.json"
+    async def run():
+        report = await benchmark.compare(Settings(root=tmp_path / "state"), suite, output,
+            monitor=monitor, modes=(mode,), controlled_checks=[["python", "-m", "unittest"]],
+            max_calls=8, max_tokens=768, context_chars=14000)
+        assert len(report["records"]) == 1 and report["unattempted_runs"] == 1
+        record = report["records"][0]
+        assert record["safety_abort"] and record["safety_reasons"] == ["memory_pressure_warning"]
+        assert not record["completed"] and not record["usable_passed"] and not record["oracle_passed"]
+        assert record["oracle"] == {"passed": False, "failures": ["resource_abort"]}
+        assert record["resources"]["samples"] == 1 and not record["timeout"]
+        assert json.loads(output.read_text())["records"] == report["records"]
+        assert engines[0].cancelled == 1 and engines[0].closed and monitor.stopped
+        assert all(job.done() for job in engines[0].jobs.values()) and all(model.closed for model in models)
+    asyncio.run(run())
+
+
+def test_external_cancellation_propagates_even_after_internal_abort_was_recorded(tmp_path, suite, monkeypatch):
+    models, engines = fake_runtime(monkeypatch, suite, hang=True, propagate_cancel=True)
+    async def forbidden_grade(*args):
+        pytest.fail("Externally cancelled runner reached the oracle")
+    monkeypatch.setattr(benchmark, "grade", forbidden_grade)
+    async def run():
+        entered, release = asyncio.Event(), asyncio.Event()
+        original_cancel = benchmark.AgentEngine.cancel
+        async def paused_cancel(self, task_id):
+            entered.set()  # unsafe() has already appended its abort causes.
+            await release.wait()
+            await original_cancel(self, task_id)
+        monkeypatch.setattr(benchmark.AgentEngine, "cancel", paused_cancel)
+        monitor = Monitor(abort=True)
+        runner = asyncio.create_task(benchmark.run_case(Settings(root=tmp_path / "state"), suite,
+            benchmark.load_cases(suite)[0], "single", monitor, safe(), timeout=60,
+            max_calls=8, max_tokens=768, context_chars=14000))
+        await asyncio.wait_for(entered.wait(), 1)
+        runner.cancel()
+        release.set()
+        with pytest.raises(asyncio.CancelledError):
+            await runner
+        assert monitor.stopped and engines[0].closed and all(model.closed for model in models)
+        assert all(job.done() for job in engines[0].jobs.values())
+    asyncio.run(run())
+
+
+def test_job_cancellation_without_resource_causes_is_not_a_safety_record(tmp_path, suite, monkeypatch):
+    models, engines = fake_runtime(monkeypatch, suite, hang=True, propagate_cancel=True)
+    async def forbidden_grade(*args):
+        pytest.fail("Unexplained cancelled job reached the oracle")
+    monkeypatch.setattr(benchmark, "grade", forbidden_grade)
+    async def run():
+        monitor = Monitor()
+        runner = asyncio.create_task(benchmark.run_case(Settings(root=tmp_path / "state"), suite,
+            benchmark.load_cases(suite)[0], "single", monitor, safe(), timeout=60,
+            max_calls=8, max_tokens=768, context_chars=14000))
+        await asyncio.sleep(0)
+        engines[0].jobs["synthetic-task"].cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await runner
+        assert monitor.stopped and engines[0].closed and all(model.closed for model in models)
     asyncio.run(run())
 
 
