@@ -193,3 +193,21 @@ def test_inspection_references_actual_observed_slice(workspace):
     with pytest.raises(ContractError, match="references"):
         validate_inspection(workspace, {**answer, "references": []}, read_ranges=ranges)
     assert validate_inspection(workspace, {"answer": "No files.", "references": []}, read_ranges={})["references"] == []
+
+
+def test_syntax_rejection_reports_bounded_exact_location_and_source_line(workspace):
+    content = 'from helpers import calculate\n\ndef test_result():\\n    assert calculate(3) == 4\n'
+    with pytest.raises(ContractError, match='Python syntax is invalid') as caught:
+        prepare_tests(workspace, [{'path':'tests/test_new.py','content':content}],
+                      selected_paths=['tests/test_new.py'], test_roots=['tests'])
+    data = caught.value.diagnostics
+    assert data['lineno'] == 3 and data['offset'] > 0
+    assert 'unexpected character' in data['msg']
+    assert data['offending_line'] == 'def test_result():\\n    assert calculate(3) == 4'
+    assert data['line_truncated'] is False
+    assert not (workspace/'tests/test_new.py').exists()
+    long_line = 'def test_result():\\n' + ' ' * 300 + 'assert calculate(3) == 4'
+    with pytest.raises(ContractError) as long:
+        validate_test_source(long_line)
+    assert len(long.value.diagnostics['offending_line']) == 250
+    assert long.value.diagnostics['line_truncated'] is True

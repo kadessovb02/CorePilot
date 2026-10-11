@@ -22,6 +22,10 @@ MAX_READS, MAX_EDITS, MAX_TESTS, MAX_PATCHES = 12, 6, 2, 12
 class ContractError(ValueError):
     """Actionable contract, evidence or scope blocker."""
 
+    def __init__(self, message, *, diagnostics=None):
+        super().__init__(message)
+        self.diagnostics = diagnostics
+
 
 def _fail(message: str) -> None:
     raise ContractError(message)
@@ -276,7 +280,13 @@ def validate_selection(root: Path, selection: dict, *, test_roots: Sequence[str]
 def _python_tree(content: str, label: str) -> ast.Module:
     try:
         return ast.parse(content, filename=label)
-    except (SyntaxError, ValueError, RecursionError) as exc:
+    except SyntaxError as exc:
+        line = (exc.text or "").rstrip("\r\n")
+        diagnostics = {"lineno": exc.lineno, "offset": exc.offset,
+                       "msg": exc.msg[:250], "offending_line": line[:250],
+                       "line_truncated": len(line) > 250}
+        raise ContractError(f"Python syntax is invalid: {label}", diagnostics=diagnostics) from exc
+    except (ValueError, RecursionError) as exc:
         raise ContractError(f"Python syntax is invalid: {label}") from exc
 
 

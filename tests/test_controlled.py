@@ -1085,3 +1085,75 @@ def test_summary_default_cannot_supply_review_authority_or_test_assertions(tmp_p
     run(engine2, task2, tools2)
     assert task2["status"] == "interrupted" and task2["step"] == 4
     assert not (tools2.root / path).exists() and not tools2.commands
+
+
+@pytest.mark.parametrize('typed', [False, True])
+def test_retry_receives_exact_rejected_test_draft_and_syntax_without_applying_it(tmp_path, typed):
+    path = 'tests/test_regression.py'
+    selection = {**SELECT, 'new_test_paths': [path]}
+    bad_body = NEW_TEST.replace('def test_result(self):\n', 'def test_result(self):\\n')
+    bad = {'tests': [{'path':path,'content':bad_body}], 'summary':'Proposed draft'}
+    engine, task, tools = fixture(tmp_path, [])
+    def correct(messages):
+        assert not (tools.root/path).exists()
+        context = json.loads(next(item['content'].split('\n',1)[1] for item in messages
+                                  if item.get('_corepilot_kind') == 'context'))
+        prior = context['previous_rejected_submission_untrusted']
+        assert prior['format'] == ('native_arguments' if typed else 'stage_text')
+        assert prior['content'] == json.dumps(bad) and prior['truncated'] is False
+        data = context['host_syntax_diagnostics_untrusted']
+        assert data['lineno'] == 4 and data['offset'] > 0
+        assert 'unexpected character' in data['msg'] and '\\n' in data['offending_line']
+        assert task['prompt'] in json.dumps(messages)
+        return {'tests':[{'path':path,'content':NEW_TEST}], 'summary':'Corrected draft'}
+    cls = TypedStages if typed else ScriptedModel
+    engine.model = cls([selection, EDIT, bad, correct, REVIEW])
+    run(engine, task, tools)
+    assert task['status'] == 'completed', task['error']
+    assert task['step'] == 5 and (tools.root/path).read_text() == NEW_TEST
+    assert len(tools.commands) == 1
+    assert len([e for e in task['events'] if e['type']=='tool_start' and e['data']['name']=='write_file']) == 1
+    assert not any('previous_rejected_submission_untrusted' in item.get('content','') for item in task['messages'])
+    persisted = engine.store.load(task['id'])
+    diagnostics = [event['data']['syntax_diagnostics_untrusted'] for event in persisted['events']
+                   if 'syntax_diagnostics_untrusted' in event['data']]
+    assert len(diagnostics) == 1 and diagnostics[0]['lineno'] == 4
+    assert diagnostics[0]['offset'] > 0 and '\\n' in diagnostics[0]['offending_line']
+    if typed:
+        receipts = [json.loads(item['content']) for item in persisted['messages']
+                    if item.get('role')=='tool' and item.get('name')=='submit_tests']
+        assert receipts[0]['syntax_diagnostics_untrusted'] == diagnostics[0]
+        assert 'error' in receipts[0] and receipts[1] == {'accepted':True, 'stage':'tests'}
+    assert_paired(task)
+
+
+def test_large_rejected_draft_is_explicitly_bounded_and_counts_against_context(tmp_path):
+    bad = {'patches': [{'path':'helper.py','old_text':'missing'*6000,'new_text':'different'}], 'summary':'Draft'}
+    engine, task, tools = fixture(tmp_path, [SELECT, bad, EDIT, REVIEW])
+    run(engine, task, tools)
+    assert task['status'] == 'completed', task['error']
+    retry = engine.model.requests[2][0]
+    context = json.loads(next(item['content'].split('\n',1)[1] for item in retry if item.get('_corepilot_kind')=='context'))
+    prior = context['previous_rejected_submission_untrusted']
+    original = json.dumps(bad)
+    assert prior == {'format':'stage_text','content':original[:4000],'total_chars':len(original),'truncated':True}
+    assert len(json.dumps(retry,ensure_ascii=False)) <= engine.settings.context_chars - 600
+    small, stopped, scoped = fixture(tmp_path/'small', [SELECT, bad], context_chars=6000)
+    run(small, stopped, scoped)
+    assert stopped['status'] == 'interrupted' and 'context' in stopped['error'].lower()
+    assert stopped['step'] == 2 and not scoped.commands
+    assert (scoped.root/'helper.py').read_text().endswith('return value + 1\n')
+
+
+def test_noop_guidance_does_not_admit_unchanged_initial_implementation(tmp_path):
+    noop = {'patches': [], 'summary':'Already correct'}
+    engine, task, tools = fixture(tmp_path, [SELECT, noop, noop])
+    before = source_manifest(tools.root)
+    run(engine, task, tools)
+    assert task['status'] == 'interrupted' and task['step'] == 3
+    assert 'meaningful source change' in task['error']
+    assert source_manifest(tools.root) == before and not tools.commands
+    instruction = engine.model.requests[1][0][0]['content']
+    assert 'patches:[]' in instruction and 'identical old/new' in instruction
+    assert 'compact' in instruction and 'retain requested behavior coverage' in instruction
+    assert_paired(task)
