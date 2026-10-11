@@ -547,3 +547,112 @@ def test_json_inspection_repeated_invalid_does_not_complete(tmp_path):
     run(engine, task, tools)
     assert task["status"] == "interrupted" and task["step"] == 3
     assert task["answer"] == ""
+
+
+@pytest.mark.parametrize("protocol", ["native", "json"])
+@pytest.mark.parametrize("label", ["json", ""])
+def test_one_whole_answer_fence_keeps_strict_stages_and_exact_literal_patch(tmp_path, protocol, label):
+    async def exercise():
+        engine, task, tools = fixture(tmp_path, [])
+        edit = copy.deepcopy(EDIT)
+        # Backticks inside a JSON string are source text, not another fence.
+        edit["patches"][0]["new_text"] = "return value + 2  # marker ```json"
+        originals = ["```" + label + "\r\n" + json.dumps(value) + "\r\n```"
+                     for value in (SELECT, edit, REVIEW)]
+        outputs, payloads = iter(originals), []
+        def respond(request):
+            payloads.append(json.loads(request.content))
+            content = next(outputs)
+            if protocol == "json":
+                content = json.dumps({"final": content})
+            return httpx.Response(200, json={"choices": [{"finish_reason": "stop", "message": {
+                "role": "assistant", "content": content}}]})
+        client = ModelClient(Settings(root=engine.settings.root, protocol=protocol))
+        await client.http.aclose()
+        client.http = httpx.AsyncClient(transport=httpx.MockTransport(respond))
+        engine.model = client
+        try:
+            await run_controlled(engine, task, tools)
+        finally:
+            await client.close()
+        assert task["status"] == "completed", task["error"]
+        assert task["step"] == 3 and len(payloads) == 3
+        assert (tools.root / "helper.py").read_text() == (
+            "def transform(value):\n    return value + 2  # marker ```json\n")
+        persisted = engine.store.load(task["id"])
+        saved = [message["content"] for message in persisted["messages"]
+                 if message.get("_corepilot_controlled_stage")]
+        assert saved == originals
+        normalizations = [event for event in persisted["events"]
+                          if event["data"].get("format_normalization") == "markdown_json_fence"]
+        assert [event["data"]["phase"] for event in normalizations] == ["select", "edit", "review"]
+        assert all(event["type"] == "verification" for event in normalizations)
+        assert len(tools.commands) == 1
+        assert_paired(persisted)
+    asyncio.run(exercise())
+
+
+def test_controller_keeps_delivered_fenced_response_whitespace_in_checkpoint(tmp_path):
+    content = " \n```json\n" + json.dumps(SELECT) + "\n```\n "
+    engine, task, tools = fixture(tmp_path, [{"role": "assistant", "content": content}, EDIT, REVIEW])
+    run(engine, task, tools)
+    assert task["status"] == "completed", task["error"]
+    persisted = engine.store.load(task["id"])
+    saved = [message["content"] for message in persisted["messages"]
+             if message.get("_corepilot_controlled_stage") == "select"]
+    assert saved == [content] and task["step"] == 3
+
+
+@pytest.mark.parametrize("wrapped", [
+    "Before the answer:\n```json\n{selection}\n```",
+    "```json\n{selection}\n```\nAfter the answer.",
+    "```json\n{selection}\n```\n```json\n{selection}\n```",
+    "```python\n{selection}\n```",
+    "```json {selection}\n```",
+    "````json\n{selection}\n````",
+])
+def test_refusal_wrappers_never_normalize_or_consume_more_than_two_attempts(tmp_path, wrapped):
+    content = wrapped.replace("{selection}", json.dumps(SELECT))
+    response = {"role": "assistant", "content": content}
+    engine, task, tools = fixture(tmp_path, [response, response])
+    before = source_manifest(tools.root)
+    run(engine, task, tools)
+    assert task["status"] == "interrupted" and task["step"] == 2
+    assert len(engine.model.requests) == 2 and not tools.commands
+    assert source_manifest(tools.root) == before
+    assert not any(event["data"].get("format_normalization") for event in task["events"])
+    assert [message["content"] for message in task["messages"]
+            if message.get("_corepilot_controlled_stage")] == [content, content]
+    assert_paired(task)
+
+
+@pytest.mark.parametrize("invalid", [
+    '{"read_paths": [], "read_paths": [], "edit_paths": [], "new_test_paths": []}',
+    '{"read_paths": [NaN], "edit_paths": [], "new_test_paths": []}',
+    '{"read_paths": [Infinity], "edit_paths": [], "new_test_paths": []}',
+    '"not a stage object"',
+    '[]',
+    '{"read_paths": ["../outside.py"], "edit_paths": ["../outside.py"], "new_test_paths": []}',
+])
+def test_fenced_contents_still_require_strict_json_schema_and_scope(tmp_path, invalid):
+    response = {"role": "assistant", "content": "```json\n" + invalid + "\n```"}
+    engine, task, tools = fixture(tmp_path, [response, response])
+    before = source_manifest(tools.root)
+    run(engine, task, tools)
+    assert task["status"] == "interrupted" and task["step"] == 2
+    assert source_manifest(tools.root) == before and not tools.commands
+    assert len([event for event in task["events"] if
+                event["data"].get("format_normalization") == "markdown_json_fence"]) == 2
+    assert_paired(task)
+
+
+def test_fenced_truncated_stage_cannot_be_accepted_or_normalized(tmp_path):
+    response = {"role": "assistant", "content": "```json\n" + json.dumps(SELECT) + "\n```",
+                "_corepilot_finish_reason": "length"}
+    engine, task, tools = fixture(tmp_path, [response, response])
+    before = source_manifest(tools.root)
+    run(engine, task, tools)
+    assert task["status"] == "interrupted" and task["step"] == 2
+    assert source_manifest(tools.root) == before
+    assert "truncated" in task["error"]
+    assert not any(event["data"].get("format_normalization") for event in task["events"])

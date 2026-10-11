@@ -78,6 +78,17 @@ def _requests_json(task):
         r"[\s\S]{0,100}\bjson\b|\bjson\b[\s\S]{0,40}\b(?:only|object|array|объект|массив)\b", latest, re.I))
 
 
+def _stage_content(content):
+    """Unwrap only one whole-answer JSON fence; leave validation unchanged."""
+    if not isinstance(content, str):
+        return content, False
+    wrapped = re.fullmatch(
+        r"[ \t\r\n]*```(?:json)?[ \t]*\r?\n([\s\S]*?)\r?\n```[ \t\r\n]*", content)
+    if wrapped is None or re.search(r"(?m)^[ \t]*```", wrapped[1]):
+        return content, False
+    return wrapped[1], True
+
+
 class Controller:
     def __init__(self, engine, task, tools):
         self.engine, self.task, self.tools = engine, task, tools
@@ -207,7 +218,12 @@ class Controller:
                 reason = "Output was truncated; return a shorter complete object"
             else:
                 try:
-                    result = parse_stage(stage, message.get("content", ""))
+                    content, normalized = _stage_content(message.get("content", ""))
+                    if normalized:
+                        self.event("verification", "Normalized whole-answer JSON fence", {
+                            "phase": stage, "retry": attempt + 1,
+                            "format_normalization": "markdown_json_fence"})
+                    result = parse_stage(stage, content)
                     return (result, validate(result)) if validate is not None else result
                 except ContractError as exc:
                     reason = str(exc)[:1000]
