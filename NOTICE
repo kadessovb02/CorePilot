@@ -1,0 +1,5 @@
+CorePilot
+Copyright 2026 CorePilot contributors
+
+CorePilot does not bundle model weights, datasets, or third-party trainers.
+Their licenses and usage terms apply separately.

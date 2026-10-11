@@ -1,0 +1,14 @@
+{
+  "model": {
+    "url": "http://127.0.0.1:11434/v1",
+    "name": "your-tool-capable-model",
+    "display_name": "Local model",
+    "protocol": "auto",
+    "max_tokens": 2048,
+    "context_chars": 32000
+  },
+  "projects": {},
+  "history_sources": [],
+  "max_steps": 32,
+  "command_timeout": 90
+}

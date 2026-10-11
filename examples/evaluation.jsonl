@@ -1,0 +1,2 @@
+{"id":"demo-read","project":"demo","prompt":"Read calculator.py and explain how discount_percent is validated. Do not edit files.","required_reads":["calculator.py"],"required_phrases":["100"],"expect_changes":false}
+{"id":"demo-check","project":"demo","prompt":"Read calculator.py and run python -m unittest discover -s tests -v. Report the actual result. Do not edit files.","required_reads":["calculator.py"],"require_successful_check":true,"expect_changes":false}

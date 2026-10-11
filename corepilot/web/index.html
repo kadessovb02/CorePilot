@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#161817">
+  <meta name="description" content="Local coding agent for your repositories. Private context, resumable tasks, and reviewable changes.">
+  <title>CorePilot — local coding agent</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23263029'/%3E%3Cpath d='m8 10 6 6-6 6m9 0h7' fill='none' stroke='%23b0d5ae' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-send" viewBox="0 0 24 24"><path d="M12 19V5m-6 6 6-6 6 6"/></symbol>
+    <symbol id="i-stop" viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="1"/></symbol>
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m9 5 11 7-11 7Z"/></symbol>
+    <symbol id="i-terminal" viewBox="0 0 24 24"><path d="m5 7 5 5-5 5m8 0h6"/></symbol>
+    <symbol id="i-branch" viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M6 7v10m0-4h5a7 7 0 0 0 7-6"/></symbol>
+    <symbol id="i-panel" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="3"/><path d="M15 4v16"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M13 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10Zm0 0v7h7M8 15h8m-8 3h5"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m8 5 7 7-7 7"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5m-4-3a8 8 0 0 1 13-5l2 3M4 17l2 3a8 8 0 0 0 13-5"/></symbol>
+    <symbol id="i-cpu" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 3v3m6-3v3M9 18v3m6-3v3M3 9h3m-3 6h3m12-6h3m-3 6h3"/><rect x="10" y="10" width="4" height="4" rx="1"/></symbol>
+  </svg>
+
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar" aria-label="Projects and task history">
+      <a href="/" class="brand" aria-label="CorePilot home"><span class="brand-mark"><svg><use href="#i-terminal"/></svg></span><span>CorePilot<small>Local coding agent</small></span></a>
+      <button class="new-task" id="new-task"><svg><use href="#i-plus"/></svg><span>New task</span><kbd>⌘ K</kbd></button>
+      <button class="import-history-button" id="import-history"><svg><use href="#i-refresh"/></svg><span>Continue from history</span></button>
+      <div class="sidebar-heading">PROJECTS</div>
+      <div id="project-list" class="project-list"><span class="muted loading-label">Connecting to server…</span></div>
+      <div class="history-header"><span class="sidebar-heading">HISTORY</span><span id="history-count" class="count"></span></div>
+      <div id="task-list" class="task-list"><div class="sidebar-empty">Saved tasks will appear here</div></div>
+      <div class="sidebar-footer"><span class="local-dot"></span><span>On your computer<small>Context and tasks stay local</small></span><svg><use href="#i-cpu"/></svg></div>
+    </aside>
+
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <main class="main-panel">
+      <header class="topbar">
+        <div class="topbar-left"><button class="icon-button mobile-menu" id="menu-toggle" aria-label="Show history" aria-expanded="false"><svg><use href="#i-menu"/></svg></button><span class="page-name" id="page-name">New task</span><span class="status-pill" id="task-status" hidden></span></div>
+        <div class="topbar-right">
+          <div class="model-menu-wrap"><button class="model-button" id="model-button" aria-expanded="false"><span class="status-dot" id="model-dot"></span><span id="model-label">Connecting…</span><svg class="small-icon"><use href="#i-chevron"/></svg></button><div class="model-popover" id="model-popover" hidden><div class="popover-title">Local model</div><dl id="model-details"></dl><p class="model-config-hint">Choose your model and optional adapter in the CorePilot configuration, then restart the server.</p><code class="model-config-command">corepilot model set --url http://127.0.0.1:11434/v1 --name MODEL --protocol auto</code><div class="training-status" id="training-status" hidden></div><button class="text-button" id="refresh-status"><svg><use href="#i-refresh"/></svg>Check connection</button></div></div>
+          <button class="icon-button" id="inspector-toggle" aria-label="Show activity and changes" aria-expanded="false"><svg><use href="#i-panel"/></svg></button>
+        </div>
+      </header>
+
+      <div class="connection-banner" id="connection-banner" role="status" hidden><span id="connection-message"></span><button id="reconnect" class="text-button">Retry</button></div>
+      <div class="content-row">
+        <section class="conversation" aria-label="Conversation with agent">
+          <div class="chat-scroll" id="chat-scroll">
+            <div class="welcome" id="welcome">
+              <div class="welcome-mark"><svg><use href="#i-terminal"/></svg><span class="welcome-dot"></span></div>
+              <p class="eyebrow">YOUR PROJECTS. YOUR MODEL.</p>
+              <h1 id="welcome-title">What shall we work on?</h1>
+              <p class="welcome-description" id="welcome-description">Describe a task. Your agent reads code, makes changes<br class="desktop-break"> and runs checks in an isolated workspace.</p>
+              <div class="setup-panel" id="setup-panel" hidden>
+                <div class="setup-heading">Let your coding agent handle setup</div>
+                <p>Copy this prompt into Codex or Claude in your repository.</p>
+                <button class="setup-cta" id="copy-setup-prompt" type="button"><svg><use href="#i-copy"/></svg>Ask your coding agent to set up CorePilot</button>
+                <details class="setup-prompt" id="setup-prompt-details"><summary>View setup prompt</summary><p id="setup-agent-prompt">Set up CorePilot for the current repository. Use its actual absolute path with corepilot setup --repo /path/to/repository. Let setup detect a running local model, or use a local model endpoint I have provided. Check the JSON setup report and resolve any missing configuration. History sources must remain empty unless I explicitly provide one. Start corepilot serve and give me the local interface URL and readiness result.</p></details>
+                <p class="setup-command-label">Or run one command:</p>
+                <pre><code>corepilot setup --repo /path/to/repository</code></pre>
+                <p>Setup connects this repository and looks for a running local model. History is imported only from sources you add.</p>
+              </div>
+              <div class="suggestions" aria-label="Task suggestions">
+                <button class="suggestion" data-prompt="Inspect this project’s architecture. Find the main entry points, integrations, and tests. Explain how they connect, with file references."><svg><use href="#i-branch"/></svg><span>Explore the project<small>Architecture, integrations, entry points</small></span><svg class="suggestion-arrow"><use href="#i-chevron"/></svg></button>
+                <button class="suggestion" data-prompt="Find a small reproducible bug in this project. Explain the cause, fix it, and validate the change with an appropriate check."><svg><use href="#i-terminal"/></svg><span>Find and fix a bug<small>Cause, change, and validation</small></span><svg class="suggestion-arrow"><use href="#i-chevron"/></svg></button>
+              </div>
+              <button class="welcome-import text-button" id="welcome-import">Continue earlier work from history <svg><use href="#i-chevron"/></svg></button>
+            </div>
+            <div class="messages" id="messages" hidden></div>
+          </div>
+
+          <div class="composer-area">
+            <div class="task-actions" id="task-actions" hidden><span id="checkpoint-label"></span><button id="resume-task" class="compact-button"><svg><use href="#i-play"/></svg>Resume from checkpoint</button></div>
+            <div class="form-error" id="form-error" role="alert" hidden></div>
+            <form class="composer" id="composer">
+              <label class="sr-only" for="prompt">Task for the agent</label>
+              <textarea id="prompt" rows="2" placeholder="Describe what to do…" spellcheck="false" required></textarea>
+              <div class="composer-toolbar">
+                <div class="composer-options"><label class="project-select-wrap"><svg><use href="#i-branch"/></svg><span class="sr-only">Project</span><select id="project-select" aria-label="Project for this task" disabled><option value="">Loading projects…</option></select><span class="project-branch" id="project-branch" hidden></span></label><label class="memory-toggle"><input type="checkbox" id="memory-toggle" checked><span class="toggle-icon"><svg><use href="#i-check"/></svg></span><span>Project memory</span></label></div>
+                <button class="send-button" id="send-button" type="submit" aria-label="Send task" disabled><svg><use href="#i-send"/></svg></button>
+                <button class="send-button stop-button" id="stop-button" type="button" aria-label="Stop task" hidden><svg><use href="#i-stop"/></svg></button>
+              </div>
+            </form>
+            <div class="composer-caption"><span id="composer-hint">Enter to send · Shift + Enter for a new line</span><span class="caption-local"><span class="local-dot"></span>Local</span></div>
+          </div>
+        </section>
+
+        <aside class="inspector" id="inspector" aria-label="Activity and changes" hidden>
+          <div class="inspector-top"><div class="inspector-tabs" role="tablist" aria-label="Task details"><button id="activity-tab" role="tab" aria-selected="true" aria-controls="activity-panel" class="active">Activity</button><button id="diff-tab" role="tab" aria-selected="false" aria-controls="diff-panel">Changes <span id="diff-count"></span></button></div><button class="icon-button close-inspector" id="inspector-close" aria-label="Close panel"><svg><use href="#i-close"/></svg></button></div>
+          <div class="inspector-body" id="activity-panel" role="tabpanel" aria-labelledby="activity-tab">
+            <div class="checkpoint-card" id="checkpoint-card" hidden><div class="checkpoint-top"><svg><use href="#i-check"/></svg><span>Checkpoint saved</span></div><div class="step-progress"><span id="step-label"></span><span id="step-status"></span></div><div class="progress-track"><span id="step-progress"></span></div><details class="workspace-details"><summary>Workspace</summary><code id="workspace-path"></code><span class="source-label">Source project</span><code id="source-path"></code><code id="source-branch" hidden></code></details></div>
+            <div class="activity-list" id="activity-list"><div class="inspector-empty"><svg><use href="#i-terminal"/></svg><span>Activity will appear here</span><p>File reads, commands, and check results appear when you start a task.</p></div></div>
+          </div>
+          <div class="inspector-body" id="diff-panel" role="tabpanel" aria-labelledby="diff-tab" hidden><div class="diff-toolbar"><span id="diff-summary">No changes</span><button class="icon-button" id="copy-diff" aria-label="Copy diff" disabled><svg><use href="#i-copy"/></svg></button></div><div id="changed-files" class="changed-files"></div><div class="diff-content" id="diff-content"><div class="inspector-empty"><svg><use href="#i-file"/></svg><span>File changes</span><p>Review the diff before applying changes to your source repository.</p></div></div><div class="apply-area" id="apply-area" hidden><p id="apply-description">Copy these changes from the isolated workspace to your source repository.</p><button id="apply-changes" class="apply-button"><svg><use href="#i-check"/></svg>Apply to project</button></div></div>
+        </aside>
+      </div>
+    </main>
+  </div>
+  <dialog class="history-dialog" id="history-dialog" aria-labelledby="history-dialog-title" aria-describedby="history-dialog-description">
+    <div class="history-dialog-header"><div><p class="eyebrow">CONTEXT HANDOFF</p><h2 id="history-dialog-title">Continue from history</h2></div><button type="button" class="icon-button" id="close-history" aria-label="Close history picker"><svg><use href="#i-close"/></svg></button></div>
+    <p class="history-dialog-description" id="history-dialog-description">Choose a session. The agent receives a context summary and continues with the project’s current files.</p>
+    <div class="history-project-toolbar"><label><span>Project</span><select id="history-project" aria-label="History project"></select></label><label><span>Source</span><select id="history-provider" aria-label="History source"><option value="all">All sources</option><option value="codex">Codex</option><option value="claude">Claude</option><option value="canonical">JSONL</option></select></label><button class="text-button" id="refresh-history"><svg><use href="#i-refresh"/></svg>Refresh</button></div>
+    <div class="history-chat-list" id="history-chat-list" role="listbox" aria-label="Available history sessions"></div>
+    <p class="history-setup-hint">Only configured sources are read. Add one with <code>corepilot history add --provider claude --project my-project --path /path/to/session</code>.</p>
+    <div class="history-steering"><label for="history-prompt">What to do next <span>optional</span></label><textarea id="history-prompt" rows="2" placeholder="Add a next step, or continue the imported task…"></textarea></div>
+    <div class="history-import-note" id="history-import-note">A session summary becomes context for a new task. Old commands are not replayed. The current branch is checked at startup.</div>
+    <div class="history-error" id="history-error" role="alert" hidden></div>
+    <div class="history-dialog-footer"><span id="history-model-hint"></span><button class="apply-button" id="continue-history" disabled><svg><use href="#i-play"/></svg>Continue locally</button></div>
+  </dialog>
+  <div class="toast" id="toast" role="status" hidden></div>
+</body>
+</html>
