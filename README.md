@@ -144,7 +144,7 @@ Initial v3 development pilots with a stock 1.5B model scored **0/2 usable and or
 
 The later [4B controlled development task](benchmarks/results/2026-10-11-controlled-4b-scoped2048-pilot.json) also scored **0/1 usable**. Its implementation passed 12 external behavioral checks, but the required new test was never accepted, so the full task failed. Startup stops, interrupted attempts and changed resource limits are retained separately. This is partial implementation evidence, not a completed-task or training improvement.
 
-A separately steered [native saved-checkpoint continuation](benchmarks/results/2026-10-11-controlled-4b-native-checkpoint-continuation.json) also failed to finish, with no new source change or check. A [clean-start native development run](benchmarks/results/2026-10-11-controlled-4b-native-initial-development.json) again produced a behavior-correct partial implementation but invalid Python tests, leaving the full task failed. Both reused an exposed development case and are **not fresh held-out evidence or a quality gain**.
+A separately steered [native saved-checkpoint continuation](benchmarks/results/2026-10-11-controlled-4b-native-checkpoint-continuation.json) also failed to finish. The [clean-start native run](benchmarks/results/2026-10-11-controlled-4b-native-initial-development.json) and [feedback follow-up](benchmarks/results/2026-10-11-controlled-4b-native-feedback-development.json) produced partial implementations but failed test creation or execution and did not complete review. These exposed development cases are **not fresh held-out evidence or a quality gain**; separate failures and diagnostics remain in the controlled-workflow guide.
 
 ## Development
 

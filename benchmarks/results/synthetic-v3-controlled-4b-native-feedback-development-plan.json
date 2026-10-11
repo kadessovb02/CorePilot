@@ -1,0 +1,49 @@
+{
+  "kind": "clean_start_development_task",
+  "fresh_held_out_evaluation": false,
+  "source_git_commit": "7ed8b18ea75f62c407d445d0c17d46a5daacf99d",
+  "public_runtime_commit": "6c4aed991a1ae554879e8616f7ae6522d0cc2da2",
+  "suite_sha256": "735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e",
+  "case_id": "edit-tag-normalization",
+  "prompt_sha256": "e43031eead623267a7a5add64ac34c107cdc45f87c2a646c84c9ba98ffb2eee6",
+  "original_case_prompt_unchanged": true,
+  "pre_existing_patch": false,
+  "controller_change": "bounded syntax diagnostics and rejected draft in untrusted retry context, general no-op and compact-test guidance",
+  "previous_failed_initial_report_sha256": "f43993f9812ed700d3c91fe848db96d748f5f71ab8be74d969af4c8af2151590",
+  "model": "Qwen3.5-4B stock 4-bit",
+  "model_revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "adapter": null,
+  "memory": false,
+  "workflow": "controlled",
+  "protocol": "native",
+  "max_calls": 8,
+  "max_tokens": 2048,
+  "context_chars": 22000,
+  "task_seconds": 180,
+  "request_pause_seconds": 3,
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_own_rss_gib": 3.8,
+    "max_physical_footprint_gib": 3.8,
+    "max_swap_growth_mib": 2048,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "model_already_loaded": true,
+  "baseline_before_model_startup": true,
+  "checks": [
+    [
+      "python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ]
+  ],
+  "limitations": [
+    "Repeated development case after earlier contract adaptations.",
+    "One initial task; not model ranking, training, navigator or speed-comparison evidence."
+  ]
+}
