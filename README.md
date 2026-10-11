@@ -12,7 +12,7 @@ The project is an **alpha research tool**. Inference quality depends on the mode
 - Redacts common secrets, excludes hidden reasoning, deduplicates examples, and separates training, validation and held-out sessions.
 - Builds local retrieval memory from selected conversations and current source files.
 - Runs a tool loop against a **loopback OpenAI-compatible server**: read/search files, edit an isolated workspace, run supported sandboxed commands, inspect a diff, cancel and resume a task.
-- Provides an opt-in [controlled workflow](docs/controlled-workflow.md): the host bounds file edits, owns check commands and records completion from fresh checks plus structured review. Controlled tasks include a resource guard. This architecture is experimental; local-model task quality still needs evaluation.
+- Provides an opt-in [controlled workflow](docs/controlled-workflow.md): native stages submit typed data through stage-specific functions; the host validates scope, bounds file edits, owns check commands and records completion from fresh checks plus structured review. Submission functions grant no workspace capabilities. Controlled tasks include a resource guard. This architecture is experimental; local-model task quality still needs evaluation.
 - Builds a bounded project navigator for controlled selection: ranked current files, Python symbols/imports, line numbers and source hashes, without another loaded model. Actual reads and checks remain required; other languages currently receive filename hints.
 - Offers an experimental **planner → coder → reviewer** workflow with explicit specialist models, bounded repair, independent-task concurrency, and optional local **Laya / Jev-compatible** typed routing. See [specialist orchestration](docs/orchestration.md).
 - Offers optional **MLX LoRA training through Soup** on Apple Silicon. Standard messages JSONL can also be used with other SFT trainers.
@@ -53,6 +53,8 @@ corepilot serve
 Open **http://127.0.0.1:8765**. `corepilot init` also registers a synthetic calculator demo. The interface shows the selected source branch/commit, task events, checks and diff. **Apply** explicitly copies reviewed changes back to the original project with conflict checks.
 
 MLX, LM Studio and vLLM can be used when their local server supports the Chat Completions contract. Native tool calls are preferred. `--protocol json` provides a documented action fallback for servers without native tool calls. Compatibility is based on this protocol, not a promise that every model behaves well.
+
+Controlled native stages use `submit_select`, `submit_edit`, `submit_tests`, `submit_inspect` or `submit_review` to return data for strict host validation. Requesting a function with `tool_choice` does not enforce grammar-constrained decoding; a server can ignore that request. The JSON adapter remains available. This transport change alone demonstrates no coding-quality gain.
 
 ## Bring your own history
 
@@ -141,6 +143,8 @@ See the [complete trial ledger, failed records, resource observations and method
 Initial v3 development pilots with a stock 1.5B model scored **0/2 usable and oracle passes per arm** for both single and controlled workflows. Host fixes allowed selection to proceed, but subsequent tiny-model patch/answer failures still prevented usable completion. These diagnostic runs are retained separately in the ledger; they do not demonstrate a navigator benefit, training gain or workflow superiority.
 
 The later [4B controlled development task](benchmarks/results/2026-10-11-controlled-4b-scoped2048-pilot.json) also scored **0/1 usable**. Its implementation passed 12 external behavioral checks, but the required new test was never accepted, so the full task failed. Startup stops, interrupted attempts and changed resource limits are retained separately. This is partial implementation evidence, not a completed-task or training improvement.
+
+A separately steered [native saved-checkpoint continuation](benchmarks/results/2026-10-11-controlled-4b-native-checkpoint-continuation.json) also failed to finish, with no new source change or check. A [clean-start native development run](benchmarks/results/2026-10-11-controlled-4b-native-initial-development.json) again produced a behavior-correct partial implementation but invalid Python tests, leaving the full task failed. Both reused an exposed development case and are **not fresh held-out evidence or a quality gain**.
 
 ## Development
 

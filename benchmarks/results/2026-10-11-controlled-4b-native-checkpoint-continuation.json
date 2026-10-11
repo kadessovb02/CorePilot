@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "kind": "saved_checkpoint_continuation",
+  "fresh_evaluation": false,
+  "pre_existing_partial_implementation": true,
+  "explicit_operator_steering": true,
+  "original_development_report": "2026-10-11-controlled-4b-scoped2048-pilot.json",
+  "private_report_sha256": "f479429cbc185d8c04f315fd8a750a741557479f97e4060031f2341e459a4cbd",
+  "plan_sha256": "462868175b7420c122dc13518829c74bc285eef1e42d2d15aabb7ad189bb690f",
+  "original_checkpoint_sha256": "d3fadcd461bd7efe278970a906adddd877df72825d397e33621b2d8014bc2eae",
+  "result_checkpoint_sha256": "db142672b3c4c2d89aee58f544cc8477468d4398a511868b5bcf804833f338d1",
+  "source_git_commit": "a392dc18975bb0357bb207743219fd7b195c7b88",
+  "public_runtime_commit": "98869f9ce4252d5d78d166585d0a08f4e0febcc5",
+  "full_suite_sha256": "735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e",
+  "case_id": "edit-tag-normalization",
+  "model": "Qwen3.5-4B stock 4-bit",
+  "model_revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "adapter": null,
+  "memory": false,
+  "protocol": "native",
+  "max_new_calls": 8,
+  "max_tokens": 2048,
+  "context_chars": 22000,
+  "task_seconds": 180,
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_own_rss_gib": 3.8,
+    "max_physical_footprint_gib": 3.8,
+    "max_swap_growth_mib": 2048,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "baseline_before_model_startup": true,
+  "completed": false,
+  "task_status": "interrupted",
+  "usable_passed": false,
+  "oracle": {
+    "passed": false,
+    "metric": "external_behavior_api_scope_style_unittest",
+    "failures": [
+      "requested_test_file_missing"
+    ],
+    "exit_code": 1,
+    "tests_run": 12,
+    "failure_count": 0,
+    "error_count": 1,
+    "integrity_error_count": 0,
+    "style_error_count": 0,
+    "required_reads_missing_count": 0,
+    "semantic_missing_count": 0,
+    "semantic_contradiction_count": 0
+  },
+  "seconds_including_external_grade": 53.453,
+  "new_calls": 4,
+  "calls_by_stage": {
+    "select": 2,
+    "edit": 2,
+    "tests": 0,
+    "review": 0
+  },
+  "typed_submissions_accepted": 1,
+  "accepted_stage": "select",
+  "checks": 0,
+  "review_decisions": 0,
+  "new_source_changes": {
+    "modified": 0,
+    "added": 0,
+    "deleted": 0
+  },
+  "pre_existing_changed_files": 1,
+  "final_changed_files": 1,
+  "resource_stop_reasons": [],
+  "rejected_edit_submissions": 2,
+  "rejection_observations": {
+    "missing_patch_path_count": 2,
+    "identical_old_new_text_count": 2
+  },
+  "original_checkpoint_unchanged": true,
+  "source_clean_and_revision_verified": true,
+  "full_suite_hash_verified": true,
+  "starting_workspace_unchanged": true,
+  "limitations": [
+    "Reused exposed development task with a pre-existing model-written partial implementation; not a fresh benchmark attempt.",
+    "Explicit operator steering and a changed native-stage submission contract were used.",
+    "The surviving implementation passed 12 external unittest executions, but the requested test file remained absent; no new check or review occurred.",
+    "Both rejected edit submissions omitted a patch path and supplied identical old/new text; no new source effect was accepted.",
+    "No training, navigator benefit, model ranking or comparative speed claim."
+  ]
+}
