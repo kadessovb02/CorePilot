@@ -1,0 +1,93 @@
+{
+  "kind": "two_fixed_replications_of_observed_successful_development_case",
+  "declared_at": "2026-10-12T19:53:05.401604+05:00",
+  "source_git_commit": "e2c31c70ad6e9ea799243bcb24fa4b8a12c86032",
+  "public_runtime_commit": "438259e136ba6780c03cc273b33317283b01284b",
+  "public_repository_commit": "dde7cfa53b6cc8c90e0d8f42857ab1106a22fd09",
+  "suite_sha256": "735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e",
+  "replications": {
+    "repeat-01": "edit-falsey-handler",
+    "repeat-02": "edit-falsey-handler"
+  },
+  "original_confirmation_report_sha256": "07fe27415537b8bd74231c8f958e956e97b9d6c3c07fd3472f659613d9a0df4e",
+  "case_prompt_sha256": {
+    "repeat-01": "6255f303120063355e7067ef865e4b6403a440ea19176d04794ee6b59e0ce6a4",
+    "repeat-02": "6255f303120063355e7067ef865e4b6403a440ea19176d04794ee6b59e0ce6a4"
+  },
+  "original_case_prompts_unchanged": true,
+  "clean_original_baseline_per_case": true,
+  "selection_rule": "two predeclared replications of falsey-handler selected after its success in the five-case development series",
+  "target_additional_usable_passes": 2,
+  "maximum_attempts": 2,
+  "stopping_rule": "complete two fixed replications; stop on resource stop, timeout or runner failure",
+  "fresh_held_out_evaluation": false,
+  "adaptive_success_target": false,
+  "case_selection_used_observed_success": true,
+  "model": "Qwen3.5-4B stock 4-bit",
+  "model_revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "adapter": null,
+  "memory": false,
+  "workflow": "controlled",
+  "protocol": "native",
+  "controlled_artifact_protocol": "documents",
+  "max_calls": 8,
+  "max_tokens": 2048,
+  "context_chars": 22000,
+  "task_seconds": 180,
+  "request_pause_seconds": 3,
+  "between_task_rest_seconds": 20,
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_own_rss_gib": 3.8,
+    "max_physical_footprint_gib": 3.8,
+    "max_swap_growth_mib": 2048,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "baseline_kind": "same original five-case-series baseline; pre-existing server startup excluded",
+  "baseline_resources": {
+    "timestamp": 1791815910.026825,
+    "available_estimate_gib": 2.586669921875,
+    "compressor_gib": 7.3938446044921875,
+    "purgeable_gib": 0.0,
+    "used_swap_gib": 16.2264453125,
+    "own_rss_gib": 0.090362548828125,
+    "process_count": 2,
+    "physical_footprint_gib": 2.5328125,
+    "peak_physical_footprint_gib": 2.63291015625,
+    "footprint_age_seconds": 2.167013008147478e-06,
+    "pressure_level": 2,
+    "pressure_some_avg10": null,
+    "pressure_full_avg10": null,
+    "speed_limit": null,
+    "scheduler_limit": null,
+    "thermal_warning_level": null,
+    "load_1m": null,
+    "supported": true,
+    "platform": "darwin",
+    "rss_complete": true,
+    "footprint_available": true
+  },
+  "same_baseline_across_cases": true,
+  "warm_up_performed": false,
+  "model_loading_state_assumed": false,
+  "exclusive_requester": "owned idle UI paused during series; model server unchanged",
+  "checks": [
+    [
+      "python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ]
+  ],
+  "runner_sha256": "e4162a44ceff3dee9ed34942ce2789a8ac62b62e2a256381e3a021b176e118c5",
+  "limitations": [
+    "Exposed synthetic development suite; no fresh held-out quality estimate.",
+    "Successful-case selection is adaptive; fixed repeat count is not a fresh general-quality estimate.",
+    "Controlled-only; no paired speed/model ranking/training or navigator gain.",
+    "Same baseline continues the earlier series; no restart or per-case resource reset."
+  ]
+}

@@ -124,15 +124,18 @@ Commands fail closed when the supported sandbox is missing. There is no unsandbo
 
 ## Benchmark evidence
 
-Latest recorded development result on **Apple M2 Pro, 16 GiB**. A **usable pass** requires both a completed task and a passing independent external oracle.
+Recorded development blocks on **Apple M2 Pro, 16 GiB**, using controlled native documents and stock Qwen3.5-4B 4-bit. A **usable pass** requires both a completed task and a passing independent external oracle.
 
-| Workflow / model / report | Usable | Oracle | Time / model calls | Verified result |
-|---|---:|---:|---|---|
-| [Controlled · native documents · stock Qwen3.5-4B 4-bit](benchmarks/results/2026-10-11-controlled-4b-native-documents-development.json) | **1/1** | **1/1** | **71.642 s / 4 calls** | Source edit, new test file, passing host check, approved review; 28 external unittest executions, zero failures or errors |
+| Development block / report | Usable | Oracle | Completed | Verified scope |
+|---|---:|---:|---:|---|
+| [Earlier tag task](benchmarks/results/2026-10-11-controlled-4b-native-documents-development.json) | **1/1** | **1/1** | 1/1 | Source edit, new test, host check and approved review; 28 external unittest executions, zero failures or errors |
+| [Five cases in fixed suite order](benchmarks/results/2026-10-12-controlled-4b-documents-development-series.json) | **1/5** | **1/5** | 2/5 | All five graded; 23 HTTP attempts; four failures retained |
+| [Two selected-case repeats](benchmarks/results/2026-10-12-controlled-4b-documents-replication.json) | **0/2** | **0/2** | 0/2 | Both graded; eight HTTP attempts; neither task completed |
+| [Six cases after bounded-feedback / formatting changes](benchmarks/results/2026-10-12-controlled-4b-documents-repairstyle.json) | **1/6** | **1/6** | 2/6 | All six graded; 30 HTTP attempts; five failures retained |
 
-This is **one repeatedly used development task**, started from its clean original baseline with no adapter or retrieval memory. The run used eight-call / 2048-token / 180-second limits. The 28 test executions are checks within that task, not 28 independent tasks. This result does not establish a general success rate, a fresh held-out score, training or navigator gain, model ranking, or comparative speed improvement.
+Every task started from its clean original baseline, without an adapter or retrieval memory, under eight-call / 2048-token / 180-second limits. Each fixed-order series targeted two usable passes but produced **only one**; those two successes were the **same falsey-handler case under different controller configurations** (63.611 and 58.776 seconds, four calls each). The two fixed repeats were selected **after observing the first success**, and both failed. The six-case block explicitly allowed two repair rounds, with unchanged global budgets. These separate blocks are not pooled. **Current completion reliability is insufficient:** repeatability, a general success rate and an improvement from the controller changes have not been established. These development cases also provide no fresh held-out score, training or navigator gain, model ranking or comparative speed result. The earlier tag task's 28 unittest executions are checks within one task, not 28 independent tasks.
 
-The [full benchmark journal and methodology](docs/benchmarks.md) contains earlier failed, partial and resource-stopped experiments, with their exact reports kept separately. The harness supports single-agent, **planner → coder → reviewer**, and controlled workflows; this latest controlled-only run is not a paired comparison. See the [controlled-workflow guide](docs/controlled-workflow.md) for the file-response protocol and completion gates.
+The [full benchmark journal and methodology](docs/benchmarks.md) preserves every earlier failed, partial and resource-stopped experiment, along with exact reports and plans. The harness supports single-agent, **planner → coder → reviewer**, and controlled workflows; these controlled-only blocks are not paired comparisons. See the [controlled-workflow guide](docs/controlled-workflow.md) for the file-response protocol and completion gates.
 
 ## Development
 

@@ -1,0 +1,505 @@
+{
+  "kind": "fixed_order_success_targeted_development_series",
+  "declared_at": "2026-10-12T19:38:30.027091+05:00",
+  "source_git_commit": "e2c31c70ad6e9ea799243bcb24fa4b8a12c86032",
+  "public_runtime_commit": "438259e136ba6780c03cc273b33317283b01284b",
+  "public_repository_commit": "dde7cfa53b6cc8c90e0d8f42857ab1106a22fd09",
+  "suite_sha256": "735a3ea9eb0c725e25e11be4008ab6e6741dc30a7b620320b3d83980c37dd46e",
+  "case_ids": [
+    "edit-page-window",
+    "edit-label-copy",
+    "edit-text-escaping",
+    "edit-sparse-identifiers",
+    "edit-falsey-handler"
+  ],
+  "case_prompt_sha256": {
+    "edit-page-window": "81344269369ee22608e057b6490794dd5bb6ba011d6748e6c1730f993fa3b464",
+    "edit-label-copy": "0cd27184a12241f2d5a8845de67f2990606e939898b839dbf5d1a17a2368a251",
+    "edit-text-escaping": "0ff920cf1bebb0f8a09c36803cefc29276d6e50e3b3ef74bfc49e49d592b5057",
+    "edit-sparse-identifiers": "e0711063f76119c0e399e55b0f50c1b65793267c84ff404ea04aef4da1dabeb0",
+    "edit-falsey-handler": "6255f303120063355e7067ef865e4b6403a440ea19176d04794ee6b59e0ce6a4"
+  },
+  "original_case_prompts_unchanged": true,
+  "clean_original_baseline_per_case": true,
+  "selection_rule": "remaining edit cases in frozen suite order; prior tag case excluded",
+  "target_additional_usable_passes": 2,
+  "maximum_attempts": 5,
+  "stopping_rule": "stop after two usable passes, five attempted cases, resource stop, timeout or runner failure",
+  "fresh_held_out_evaluation": false,
+  "adaptive_success_target": true,
+  "model": "Qwen3.5-4B stock 4-bit",
+  "model_revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "adapter": null,
+  "memory": false,
+  "workflow": "controlled",
+  "protocol": "native",
+  "controlled_artifact_protocol": "documents",
+  "max_calls": 8,
+  "max_tokens": 2048,
+  "context_chars": 22000,
+  "task_seconds": 180,
+  "request_pause_seconds": 3,
+  "between_task_rest_seconds": 20,
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_own_rss_gib": 3.8,
+    "max_physical_footprint_gib": 3.8,
+    "max_swap_growth_mib": 2048,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "baseline_kind": "fresh series baseline on pre-existing server; startup excluded",
+  "baseline_resources": {
+    "timestamp": 1791815910.026825,
+    "available_estimate_gib": 2.586669921875,
+    "compressor_gib": 7.3938446044921875,
+    "purgeable_gib": 0.0,
+    "used_swap_gib": 16.2264453125,
+    "own_rss_gib": 0.090362548828125,
+    "process_count": 2,
+    "physical_footprint_gib": 2.5328125,
+    "peak_physical_footprint_gib": 2.63291015625,
+    "footprint_age_seconds": 2.167013008147478e-06,
+    "pressure_level": 2,
+    "pressure_some_avg10": null,
+    "pressure_full_avg10": null,
+    "speed_limit": null,
+    "scheduler_limit": null,
+    "thermal_warning_level": null,
+    "load_1m": null,
+    "supported": true,
+    "platform": "darwin",
+    "rss_complete": true,
+    "footprint_available": true
+  },
+  "same_baseline_across_cases": true,
+  "warm_up_performed": false,
+  "model_loading_state_assumed": false,
+  "exclusive_requester": "owned idle UI paused during series; model server unchanged",
+  "checks": [
+    [
+      "python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ]
+  ],
+  "runner_sha256": "303ee9785039ef77706dd0813318a51caee5dfe93efc6bd8375c520f3b198edb",
+  "limitations": [
+    "Exposed synthetic development suite; no fresh held-out quality estimate.",
+    "Success-target stopping; preserve every failure and every unstarted case.",
+    "Controlled-only; no paired speed/model ranking/training or navigator gain.",
+    "New session resource baseline excludes existing server startup; do not pool with prior run."
+  ],
+  "plan_sha256": "26ead61b62cef4496cc85f1d11b7b0208a72424d6401de7bd56cb601835b74f0",
+  "status": "attempt_limit_reached",
+  "records": [
+    {
+      "id": "edit-page-window",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 100.272,
+      "completed": true,
+      "task_status": "completed",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "external_behavior_api_scope_style_unittest",
+        "failures": [
+          "scope_or_read_or_style"
+        ],
+        "exit_code": 1,
+        "tests_run": 30,
+        "failure_count": 0,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 1,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 4,
+      "calls_by_role": {
+        "single": 4
+      },
+      "tool_failures": 0,
+      "checks": 1,
+      "review_decisions": 1,
+      "changed_files": [
+        "notehub/paging.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 4,
+      "http_errors": 0,
+      "usage_responses": 4,
+      "prompt_tokens": 12562,
+      "completion_tokens": 1601,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 91.04718395898817,
+      "resources": {
+        "samples": 34,
+        "max_rss_gib": 0.1124420166015625,
+        "max_physical_footprint_gib": 3.040234375,
+        "max_reported_peak_footprint_gib": 3.44033203125,
+        "physical_footprint_samples": 34,
+        "max_compressor_gib": 7.447235107421875,
+        "max_used_swap_gib": 16.40875,
+        "peak_swap_growth_mib": 186.6800000000003,
+        "pressure_levels": [
+          1,
+          2
+        ],
+        "min_available_estimate_gib": 1.8527679443359375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "calls_by_stage": {
+        "edit": 1,
+        "review": 1,
+        "select": 1,
+        "tests": 1
+      }
+    },
+    {
+      "id": "edit-label-copy",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 111.967,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "external_behavior_api_scope_style_unittest",
+        "failures": [
+          "test_duplicate_independent",
+          "test_no_mutation",
+          "existing_or_authored_test_failure",
+          "existing_or_authored_test_failure"
+        ],
+        "exit_code": 1,
+        "tests_run": 23,
+        "failure_count": 4,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 5,
+      "calls_by_role": {
+        "single": 5
+      },
+      "tool_failures": 0,
+      "checks": 2,
+      "review_decisions": 0,
+      "changed_files": [
+        "notehub/revision.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 5,
+      "http_errors": 0,
+      "usage_responses": 5,
+      "prompt_tokens": 16941,
+      "completion_tokens": 1986,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 99.60641029197723,
+      "resources": {
+        "samples": 38,
+        "max_rss_gib": 0.10272216796875,
+        "max_physical_footprint_gib": 3.3404296875,
+        "max_reported_peak_footprint_gib": 3.44052734375,
+        "physical_footprint_samples": 38,
+        "max_compressor_gib": 7.3941497802734375,
+        "max_used_swap_gib": 16.676640625,
+        "peak_swap_growth_mib": 461.0,
+        "pressure_levels": [
+          2
+        ],
+        "min_available_estimate_gib": 1.89764404296875,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "calls_by_stage": {
+        "edit": 2,
+        "select": 1,
+        "tests": 2
+      }
+    },
+    {
+      "id": "edit-text-escaping",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 102.987,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "external_behavior_api_scope_style_unittest",
+        "failures": [
+          "existing_or_authored_test_failure",
+          "existing_or_authored_test_failure"
+        ],
+        "exit_code": 1,
+        "tests_run": 31,
+        "failure_count": 2,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 5,
+      "calls_by_role": {
+        "single": 5
+      },
+      "tool_failures": 0,
+      "checks": 2,
+      "review_decisions": 0,
+      "changed_files": [
+        "notehub/export.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 5,
+      "http_errors": 0,
+      "usage_responses": 5,
+      "prompt_tokens": 16192,
+      "completion_tokens": 1748,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 90.46528099995339,
+      "resources": {
+        "samples": 35,
+        "max_rss_gib": 0.10595703125,
+        "max_physical_footprint_gib": 3.24267578125,
+        "max_reported_peak_footprint_gib": 3.443359375,
+        "physical_footprint_samples": 35,
+        "max_compressor_gib": 6.979339599609375,
+        "max_used_swap_gib": 16.75037109375,
+        "peak_swap_growth_mib": 536.5,
+        "pressure_levels": [
+          2
+        ],
+        "min_available_estimate_gib": 1.8662261962890625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "calls_by_stage": {
+        "edit": 2,
+        "select": 1,
+        "tests": 2
+      }
+    },
+    {
+      "id": "edit-sparse-identifiers",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 114.046,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "external_behavior_api_scope_style_unittest",
+        "failures": [
+          "scope_or_read_or_style",
+          "existing_or_authored_test_error"
+        ],
+        "exit_code": 1,
+        "tests_run": 25,
+        "failure_count": 0,
+        "error_count": 1,
+        "integrity_error_count": 0,
+        "style_error_count": 1,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 5,
+      "calls_by_role": {
+        "single": 5
+      },
+      "tool_failures": 0,
+      "checks": 2,
+      "review_decisions": 0,
+      "changed_files": [
+        "notehub/counters.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 5,
+      "http_errors": 0,
+      "usage_responses": 5,
+      "prompt_tokens": 16762,
+      "completion_tokens": 1972,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 101.6251977099455,
+      "resources": {
+        "samples": 38,
+        "max_rss_gib": 0.099456787109375,
+        "max_physical_footprint_gib": 3.2455078125,
+        "max_reported_peak_footprint_gib": 3.44599609375,
+        "physical_footprint_samples": 38,
+        "max_compressor_gib": 7.07672119140625,
+        "max_used_swap_gib": 17.71728515625,
+        "peak_swap_growth_mib": 1526.619999999999,
+        "pressure_levels": [
+          1,
+          2
+        ],
+        "min_available_estimate_gib": 1.8035125732421875,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "calls_by_stage": {
+        "edit": 2,
+        "select": 1,
+        "tests": 2
+      }
+    },
+    {
+      "id": "edit-falsey-handler",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 63.611,
+      "completed": true,
+      "task_status": "completed",
+      "oracle_passed": true,
+      "usable_passed": true,
+      "oracle": {
+        "passed": true,
+        "metric": "external_behavior_api_scope_style_unittest",
+        "failures": [],
+        "exit_code": 0,
+        "tests_run": 16,
+        "failure_count": 0,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 4,
+      "calls_by_role": {
+        "single": 4
+      },
+      "tool_failures": 0,
+      "checks": 1,
+      "review_decisions": 1,
+      "changed_files": [
+        "notehub/routing.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 4,
+      "http_errors": 0,
+      "usage_responses": 4,
+      "prompt_tokens": 10637,
+      "completion_tokens": 702,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 54.30081937497016,
+      "resources": {
+        "samples": 22,
+        "max_rss_gib": 0.1005401611328125,
+        "max_physical_footprint_gib": 3.1482421875,
+        "max_reported_peak_footprint_gib": 3.4485351562499997,
+        "physical_footprint_samples": 22,
+        "max_compressor_gib": 7.0830078125,
+        "max_used_swap_gib": 17.2412109375,
+        "peak_swap_growth_mib": 1039.119999999999,
+        "pressure_levels": [
+          2
+        ],
+        "min_available_estimate_gib": 1.8802947998046875,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "calls_by_stage": {
+        "edit": 1,
+        "review": 1,
+        "select": 1,
+        "tests": 1
+      }
+    }
+  ],
+  "started_case_ids": [
+    "edit-page-window",
+    "edit-label-copy",
+    "edit-text-escaping",
+    "edit-sparse-identifiers",
+    "edit-falsey-handler"
+  ],
+  "started_ungraded_case_ids": [],
+  "unstarted_case_ids": [],
+  "stop_reasons": [],
+  "target_reached": false,
+  "summary": {
+    "attempted": 5,
+    "finalized": 5,
+    "completed": 2,
+    "oracle_passed": 1,
+    "usable_passed": 1
+  },
+  "observed_server_chat_posts": 23,
+  "recorded_http_attempts": 23,
+  "server_posts_match_finalized_http_attempts": true,
+  "source_and_suite_unchanged": true
+}
