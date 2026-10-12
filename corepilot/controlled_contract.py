@@ -187,7 +187,8 @@ _FILE_TOKEN = re.compile(r"[^\s,;\x60\"'()<>:]+")
 
 
 def explicit_edit_scope(request: str) -> set[str] | None:
-    """Only literal path lists are understood; the newest explicit list wins."""
+    """Literal path lists or explicit body/file clauses; newest scope wins."""
+    from .scope import function_scope_clause
     markers = list(_ONLY.finditer(request))
     scopes = []
     for marker in markers[-1:]:
@@ -196,6 +197,10 @@ def explicit_edit_scope(request: str) -> set[str] | None:
         tail = request[marker.end():]
         end = re.search(r"[;\n!?]|\.(?=\s|$)", tail)
         clause = tail[:end.start()] if end else tail
+        body = function_scope_clause(clause)
+        if body is not None:
+            scopes.append({relative_path(path) for path in body['paths']})
+            continue
         found = []
         for token in _FILE_TOKEN.findall(clause):
             if token.casefold() in {"and", "or", "и", "или", "the", "files", "file", "файл", "файлы"}:
