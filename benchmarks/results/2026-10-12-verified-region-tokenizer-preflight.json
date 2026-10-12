@@ -1,0 +1,136 @@
+{
+  "adapter_trained": false,
+  "complete_windows": 2,
+  "created_at_utc": "2026-10-12T19:18:29.304875+00:00",
+  "enable_thinking": false,
+  "inputs": {
+    "actual_candidate_assertion_failures": 0,
+    "actual_original_assertion_failures": 4,
+    "all_current_host_quality_gates_passed": true,
+    "external_dev_pass_required": true,
+    "failed_receipts_retained": 2,
+    "files_arm_examples_included": 0,
+    "heldout_examples_included": 0,
+    "independent_families": 2,
+    "prepared_artifact_hashes_verified": 6,
+    "proofs_verified": 2,
+    "records": 2,
+    "records_sha256": "78f58246bed543aae9b18886efe1c2365ebdf6d4ff2ef7b7f0a01e8e8423d5f8",
+    "seed": 42,
+    "split_examples": {
+      "test": 0,
+      "train": 1,
+      "valid": 1
+    },
+    "split_families": {
+      "train": 1,
+      "valid": 1
+    }
+  },
+  "kind": "actual_cpu_tokenizer_preflight",
+  "limitations": [
+    "Two known-development examples demonstrate token/mask compatibility only; they are too few for a dependable quality claim.",
+    "Test partition is empty; no examples were promoted or copied to fill it.",
+    "Assistant targets contain accepted function replacements, without fabricated native tool calls.",
+    "No adapter was trained, loaded or evaluated; successful preflight is not evidence of model improvement.",
+    "Resource observations cover this short CPU process and are not a guarantee for model/training admission."
+  ],
+  "mask_count_basis": "Validated causal-prefix lengths; target_windows constructs zero context masks and one assistant-suffix masks.",
+  "max_length": 2048,
+  "memory_admission": {
+    "available_after_gib": 3.5623931884765625,
+    "available_before_gib": 3.8644561767578125,
+    "min_available_gib": 3.0,
+    "pressure_after": 1,
+    "pressure_before": 1,
+    "reason_codes": [],
+    "swap_after_gib": 14.41314453125,
+    "swap_before_gib": 14.43658203125
+  },
+  "mlx_imported": false,
+  "model": {
+    "chat_template_sha256": "12de9034d5269e8b1fe6012b3538374fcb3941bf93c95fc81b0cf5acf3f08ce4",
+    "repository": "Qwen3.5-4B MLX 4-bit stock",
+    "revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+    "tokenizer_artifact_sha256": {
+      "chat_template.jinja": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+      "tokenizer.json": "87a7830d63fcf43bf241c3c5242e96e62dd3fdc29224ca26fed8ea333db72de4",
+      "tokenizer_config.json": "e98f1901ac6f0adff67b1d540bfa0c36ac1a0cf59eb72ed78146ef89aafa1182"
+    },
+    "tokenizer_local_files_only": true,
+    "trust_remote_code": false,
+    "weights_loaded": false
+  },
+  "model_inference": false,
+  "model_score": false,
+  "optimizer_steps": 0,
+  "partitions": {
+    "test": {
+      "max_assistant_tokens": 0,
+      "max_window_tokens": 0,
+      "min_assistant_tokens": 0,
+      "min_window_tokens": 0,
+      "records": 0,
+      "targets": 0,
+      "token_boundary_rejections": 0,
+      "whole_window_exclusions": 0,
+      "windows": 0
+    },
+    "train": {
+      "max_assistant_tokens": 131,
+      "max_window_tokens": 465,
+      "min_assistant_tokens": 131,
+      "min_window_tokens": 465,
+      "records": 1,
+      "targets": 1,
+      "token_boundary_rejections": 0,
+      "whole_window_exclusions": 0,
+      "windows": 1
+    },
+    "valid": {
+      "max_assistant_tokens": 87,
+      "max_window_tokens": 397,
+      "min_assistant_tokens": 87,
+      "min_window_tokens": 397,
+      "records": 1,
+      "targets": 1,
+      "token_boundary_rejections": 0,
+      "whole_window_exclusions": 0,
+      "windows": 1
+    }
+  },
+  "peak_process_rss_bytes": 451248128,
+  "private_receipt_sha256": "8c8ec84b2a342326d3ba80649aaf3a074a4c23a42c9d55d236b6093451b01071",
+  "scope": "synthetic_v4_known_development_regions_only",
+  "source_runtime_commit": "276090d0af3e01c42bd165e03ff9040e6b9d0fb2",
+  "token_boundary_rejections": 0,
+  "tokenizer_loaded": true,
+  "trainer_imported": false,
+  "version": 1,
+  "weights_loaded": false,
+  "whole_window_exclusions": 0,
+  "windows": [
+    {
+      "assistant_target_tokens": 131,
+      "full_tokens": 465,
+      "input_context_tokens": 334,
+      "masked_context_tokens": 334,
+      "prefix_boundary_verified": true,
+      "split": "train",
+      "target_labels_nonempty": true,
+      "unmasked_target_tokens": 131,
+      "whole_window_fit": true
+    },
+    {
+      "assistant_target_tokens": 87,
+      "full_tokens": 397,
+      "input_context_tokens": 310,
+      "masked_context_tokens": 310,
+      "prefix_boundary_verified": true,
+      "split": "valid",
+      "target_labels_nonempty": true,
+      "unmasked_target_tokens": 87,
+      "whole_window_fit": true
+    }
+  ]
+}

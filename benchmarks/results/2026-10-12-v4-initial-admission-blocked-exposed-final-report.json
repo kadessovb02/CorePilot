@@ -1,0 +1,899 @@
+{
+  "schema": 1,
+  "kind": "synthetic_v4_separate_final",
+  "phase": "heldout",
+  "source_commits": {
+    "files": "52c333c8aeb5874495acbbc4776983da69df123f",
+    "regions": "f70233989242e885cb4c1133957c9b1df8d54a39"
+  },
+  "suite_sha256": "499ad6aa2acea8dc004a5ffdedff29dd2050c00d4292f856a8763619c3fd5f9a",
+  "case_suite_sha256": {
+    "final-strict-order": "be8624b67d26701e6d3f4cfea08bea6bfa899bec8cd55feb2e03c8a9ab477e61",
+    "final-ceiling-blocks": "ad78140b693b50461360cb328d5aa3f8768255694521d293455262d60b2a976f"
+  },
+  "case_prompt_sha256": {
+    "final-strict-order": "61d66781e9179425c2f006eb61d313835625f79c62520a5a8d640569ad629737",
+    "final-ceiling-blocks": "ac601f6e2b9ccfc6e08de84ea0355e15dc1cbd1c5af5bdd50d381c765cc1e82b"
+  },
+  "order": [
+    {
+      "id": "final-strict-order",
+      "arm": "files"
+    },
+    {
+      "id": "final-strict-order",
+      "arm": "regions"
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "arm": "regions"
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "arm": "files"
+    }
+  ],
+  "planned_attempts": 4,
+  "stopping_rule": "Complete all fixed attempts regardless of quality outcomes; stop only for resource/timeout/operator/runner failure, retaining unfinished and unstarted attempts.",
+  "same_clean_original_fixture_each_arm": true,
+  "reference_and_oracle_excluded_during_generation": true,
+  "protocol": "native",
+  "artifact_protocol": "documents",
+  "max_repairs": 2,
+  "max_calls": 8,
+  "max_tokens": 2048,
+  "context_chars": 22000,
+  "task_seconds": 180,
+  "request_pause_seconds": 3,
+  "between_task_rest_seconds": 20,
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_own_rss_gib": 3.8,
+    "max_physical_footprint_gib": 3.8,
+    "max_swap_growth_mib": 2048,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "same_resource_baseline_all_attempts": true,
+  "same_inner_resource_baseline_both_arms": true,
+  "baseline_kind": "Fresh experiment baseline on one pre-existing server; startup excluded.",
+  "adapter": null,
+  "memory": false,
+  "warmup_performed": false,
+  "operator_exclusive_requester_confirmed": true,
+  "runner_sha256": "8ea3412d64c8db1217a0f06a3e77e3c5f791187c013a15be2ac650f4737b88cb",
+  "model": "Qwen3.5-4B MLX 4-bit stock",
+  "model_revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "limitations": [
+    "Four fixed development edits and a separately authored final set; no broad project quality claim.",
+    "Changed runtime/workflow is the experimental treatment; same model/caps do not make requests identical.",
+    "Only matched cases usable in both arms support latency comparisons.",
+    "Client cancellation/health readiness is not proof an external backend is idle.",
+    "The operator owns one exclusive existing server; this runner never starts/stops UI or models."
+  ],
+  "baseline_resources": {
+    "timestamp": 1791823436.615077,
+    "available_estimate_gib": 2.6407470703125,
+    "compressor_gib": 4.6384429931640625,
+    "purgeable_gib": 0.0,
+    "used_swap_gib": 11.775146484375,
+    "own_rss_gib": 0.0815277099609375,
+    "process_count": 2,
+    "physical_footprint_gib": 2.61904296875,
+    "peak_physical_footprint_gib": 3.41904296875,
+    "footprint_age_seconds": 7.0410314947366714e-06,
+    "pressure_level": 2,
+    "pressure_some_avg10": null,
+    "pressure_full_avg10": null,
+    "speed_limit": null,
+    "scheduler_limit": null,
+    "thermal_warning_level": null,
+    "load_1m": null,
+    "supported": true,
+    "platform": "darwin",
+    "rss_complete": true,
+    "footprint_available": true
+  },
+  "plan_sha256": "2dbbc693b23bc8f82dacb7f1dd7a8ec5e3133dbd851e8931accf24084d374405",
+  "records": [
+    {
+      "id": "final-strict-order",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 23.491,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "v4_behavior_compatibility_scope_style_differential_regression",
+        "failures": [
+          "external_behavior_failure",
+          "external_behavior_failure",
+          "external_behavior_failure",
+          "implementation_unchanged",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "requested_test_file_missing"
+        ],
+        "exit_code": 1,
+        "tests_run": 13,
+        "failure_count": 3,
+        "error_count": 1,
+        "integrity_error_count": 1,
+        "style_error_count": 0,
+        "required_reads_missing_count": 4,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 2,
+      "calls_by_role": {
+        "single": 2
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 2,
+      "http_errors": 0,
+      "usage_responses": 2,
+      "prompt_tokens": 4853,
+      "completion_tokens": 188,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 19.16883608401986,
+      "resources": {
+        "samples": 8,
+        "max_rss_gib": 0.1138763427734375,
+        "max_physical_footprint_gib": 3.23564453125,
+        "max_reported_peak_footprint_gib": 3.43564453125,
+        "physical_footprint_samples": 8,
+        "max_compressor_gib": 5.295135498046875,
+        "max_used_swap_gib": 11.775146484375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          1,
+          2
+        ],
+        "min_available_estimate_gib": 2.0264892578125,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "controlled_max_repairs": 2,
+      "calls_by_stage": {
+        "select": 2
+      },
+      "inner_resource_baseline_shared": true,
+      "external_grade_seconds": 0.316,
+      "fullcycle_end_to_end_seconds": 23.863,
+      "arm": "files",
+      "runtime_commit": "52c333c8aeb5874495acbbc4776983da69df123f",
+      "fixture_sha256": "11a18de80396fb5370b70ccaad3201673c1ffaa20457b67d328c7c1d2a9efc7c",
+      "v4_external": {
+        "authored_candidate": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 0,
+          "tests_run": 0,
+          "unexpected_successes": 0
+        },
+        "authored_pristine_baseline": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 0,
+          "tests_run": 0,
+          "unexpected_successes": 0
+        },
+        "compatibility": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": true,
+          "skipped": 0,
+          "target_calls": 4,
+          "tests_run": 4,
+          "unexpected_successes": 0
+        },
+        "differential_regression_proven": false,
+        "error_count": 1,
+        "errors": [
+          {
+            "test": "requested_test_file_missing"
+          }
+        ],
+        "external": {
+          "assertion_failure_count": 3,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 3,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 9,
+          "tests_run": 9,
+          "unexpected_successes": 0
+        },
+        "failure_count": 3,
+        "failures": [
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "implementation_unchanged"
+          },
+          {
+            "test": "contracts.md"
+          },
+          {
+            "test": "fixturekit/ordering.py"
+          },
+          {
+            "test": "tests/test_compatibility.py"
+          },
+          {
+            "test": "tests/test_requirements.py"
+          }
+        ],
+        "integrity_errors": [
+          "implementation_unchanged"
+        ],
+        "oracle_kind": "v4_behavior_compatibility_scope_style_differential_regression",
+        "passed": false,
+        "required_reads_missing": [
+          "contracts.md",
+          "fixturekit/ordering.py",
+          "tests/test_compatibility.py",
+          "tests/test_requirements.py"
+        ],
+        "style_errors": [],
+        "tests_run": 13
+      }
+    },
+    {
+      "id": "final-strict-order",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 1.255,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "v4_behavior_compatibility_scope_style_differential_regression",
+        "failures": [
+          "external_behavior_failure",
+          "external_behavior_failure",
+          "external_behavior_failure",
+          "implementation_unchanged",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "requested_test_file_missing"
+        ],
+        "exit_code": 1,
+        "tests_run": 13,
+        "failure_count": 3,
+        "error_count": 1,
+        "integrity_error_count": 1,
+        "style_error_count": 0,
+        "required_reads_missing_count": 5,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 0,
+      "calls_by_role": {},
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 0,
+      "http_errors": 0,
+      "usage_responses": 0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 0,
+      "resources": {
+        "samples": 1,
+        "max_rss_gib": 0.0594329833984375,
+        "max_physical_footprint_gib": 2.63291015625,
+        "max_reported_peak_footprint_gib": 3.4330078125,
+        "physical_footprint_samples": 1,
+        "max_compressor_gib": 6.4542999267578125,
+        "max_used_swap_gib": 11.743896484375,
+        "peak_swap_growth_mib": 0,
+        "pressure_levels": [
+          2
+        ],
+        "min_available_estimate_gib": 3.11865234375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "controlled_max_repairs": 2,
+      "controlled_execution_mode": "regions",
+      "calls_by_stage": {},
+      "inner_resource_baseline_shared": true,
+      "external_grade_seconds": 0.262,
+      "fullcycle_end_to_end_seconds": 1.6,
+      "arm": "regions",
+      "runtime_commit": "f70233989242e885cb4c1133957c9b1df8d54a39",
+      "fixture_sha256": "11a18de80396fb5370b70ccaad3201673c1ffaa20457b67d328c7c1d2a9efc7c",
+      "v4_external": {
+        "authored_candidate": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 0,
+          "tests_run": 0,
+          "unexpected_successes": 0
+        },
+        "authored_pristine_baseline": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 0,
+          "tests_run": 0,
+          "unexpected_successes": 0
+        },
+        "compatibility": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": true,
+          "skipped": 0,
+          "target_calls": 4,
+          "tests_run": 4,
+          "unexpected_successes": 0
+        },
+        "differential_regression_proven": false,
+        "error_count": 1,
+        "errors": [
+          {
+            "test": "requested_test_file_missing"
+          }
+        ],
+        "external": {
+          "assertion_failure_count": 3,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 3,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 9,
+          "tests_run": 9,
+          "unexpected_successes": 0
+        },
+        "failure_count": 3,
+        "failures": [
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "implementation_unchanged"
+          },
+          {
+            "test": "AGENTS.md"
+          },
+          {
+            "test": "contracts.md"
+          },
+          {
+            "test": "fixturekit/ordering.py"
+          },
+          {
+            "test": "tests/test_compatibility.py"
+          },
+          {
+            "test": "tests/test_requirements.py"
+          }
+        ],
+        "integrity_errors": [
+          "implementation_unchanged"
+        ],
+        "oracle_kind": "v4_behavior_compatibility_scope_style_differential_regression",
+        "passed": false,
+        "required_reads_missing": [
+          "AGENTS.md",
+          "contracts.md",
+          "fixturekit/ordering.py",
+          "tests/test_compatibility.py",
+          "tests/test_requirements.py"
+        ],
+        "style_errors": [],
+        "tests_run": 13
+      }
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 1.328,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "v4_behavior_compatibility_scope_style_differential_regression",
+        "failures": [
+          "external_behavior_failure",
+          "external_behavior_failure",
+          "external_behavior_failure",
+          "external_behavior_failure",
+          "implementation_unchanged",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "requested_test_file_missing"
+        ],
+        "exit_code": 1,
+        "tests_run": 13,
+        "failure_count": 4,
+        "error_count": 1,
+        "integrity_error_count": 1,
+        "style_error_count": 0,
+        "required_reads_missing_count": 5,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 0,
+      "calls_by_role": {},
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 0,
+      "http_errors": 0,
+      "usage_responses": 0,
+      "prompt_tokens": 0,
+      "completion_tokens": 0,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 0,
+      "resources": {
+        "samples": 1,
+        "max_rss_gib": 0.058929443359375,
+        "max_physical_footprint_gib": 2.6326171875,
+        "max_reported_peak_footprint_gib": 3.4326171875,
+        "physical_footprint_samples": 1,
+        "max_compressor_gib": 6.7578125,
+        "max_used_swap_gib": 12.01373046875,
+        "peak_swap_growth_mib": 244.3099999999995,
+        "pressure_levels": [
+          2
+        ],
+        "min_available_estimate_gib": 2.90924072265625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "controlled_max_repairs": 2,
+      "controlled_execution_mode": "regions",
+      "calls_by_stage": {},
+      "inner_resource_baseline_shared": true,
+      "external_grade_seconds": 0.285,
+      "fullcycle_end_to_end_seconds": 1.702,
+      "arm": "regions",
+      "runtime_commit": "f70233989242e885cb4c1133957c9b1df8d54a39",
+      "fixture_sha256": "082247334bf66ec31531b9e68afcbbe38d877970f0d216a30b4b8f57fd3ccb75",
+      "v4_external": {
+        "authored_candidate": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 0,
+          "tests_run": 0,
+          "unexpected_successes": 0
+        },
+        "authored_pristine_baseline": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 0,
+          "tests_run": 0,
+          "unexpected_successes": 0
+        },
+        "compatibility": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": true,
+          "skipped": 0,
+          "target_calls": 4,
+          "tests_run": 4,
+          "unexpected_successes": 0
+        },
+        "differential_regression_proven": false,
+        "error_count": 1,
+        "errors": [
+          {
+            "test": "requested_test_file_missing"
+          }
+        ],
+        "external": {
+          "assertion_failure_count": 4,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 4,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 9,
+          "tests_run": 9,
+          "unexpected_successes": 0
+        },
+        "failure_count": 4,
+        "failures": [
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "implementation_unchanged"
+          },
+          {
+            "test": "AGENTS.md"
+          },
+          {
+            "test": "contracts.md"
+          },
+          {
+            "test": "fixturekit/packing.py"
+          },
+          {
+            "test": "tests/test_compatibility.py"
+          },
+          {
+            "test": "tests/test_requirements.py"
+          }
+        ],
+        "integrity_errors": [
+          "implementation_unchanged"
+        ],
+        "oracle_kind": "v4_behavior_compatibility_scope_style_differential_regression",
+        "passed": false,
+        "required_reads_missing": [
+          "AGENTS.md",
+          "contracts.md",
+          "fixturekit/packing.py",
+          "tests/test_compatibility.py",
+          "tests/test_requirements.py"
+        ],
+        "style_errors": [],
+        "tests_run": 13
+      }
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 24.778,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "metric": "v4_behavior_compatibility_scope_style_differential_regression",
+        "failures": [
+          "external_behavior_failure",
+          "external_behavior_failure",
+          "external_behavior_failure",
+          "external_behavior_failure",
+          "implementation_unchanged",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "oracle_assertion_failed",
+          "requested_test_file_missing"
+        ],
+        "exit_code": 1,
+        "tests_run": 13,
+        "failure_count": 4,
+        "error_count": 1,
+        "integrity_error_count": 1,
+        "style_error_count": 0,
+        "required_reads_missing_count": 4,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 2,
+      "calls_by_role": {
+        "single": 2
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 2,
+      "http_errors": 0,
+      "usage_responses": 2,
+      "prompt_tokens": 4863,
+      "completion_tokens": 188,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 20.47636045794934,
+      "resources": {
+        "samples": 9,
+        "max_rss_gib": 0.10595703125,
+        "max_physical_footprint_gib": 3.1359375000000003,
+        "max_reported_peak_footprint_gib": 3.43603515625,
+        "physical_footprint_samples": 9,
+        "max_compressor_gib": 6.429931640625,
+        "max_used_swap_gib": 12.00591796875,
+        "peak_swap_growth_mib": 236.3099999999995,
+        "pressure_levels": [
+          2
+        ],
+        "min_available_estimate_gib": 2.058013916015625,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "controlled_max_repairs": 2,
+      "calls_by_stage": {
+        "select": 2
+      },
+      "inner_resource_baseline_shared": true,
+      "external_grade_seconds": 0.311,
+      "fullcycle_end_to_end_seconds": 25.151,
+      "arm": "files",
+      "runtime_commit": "52c333c8aeb5874495acbbc4776983da69df123f",
+      "fixture_sha256": "082247334bf66ec31531b9e68afcbbe38d877970f0d216a30b4b8f57fd3ccb75",
+      "v4_external": {
+        "authored_candidate": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 0,
+          "tests_run": 0,
+          "unexpected_successes": 0
+        },
+        "authored_pristine_baseline": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 0,
+          "tests_run": 0,
+          "unexpected_successes": 0
+        },
+        "compatibility": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": true,
+          "skipped": 0,
+          "target_calls": 4,
+          "tests_run": 4,
+          "unexpected_successes": 0
+        },
+        "differential_regression_proven": false,
+        "error_count": 1,
+        "errors": [
+          {
+            "test": "requested_test_file_missing"
+          }
+        ],
+        "external": {
+          "assertion_failure_count": 4,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 4,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 9,
+          "tests_run": 9,
+          "unexpected_successes": 0
+        },
+        "failure_count": 4,
+        "failures": [
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "external_behavior_failure"
+          },
+          {
+            "test": "implementation_unchanged"
+          },
+          {
+            "test": "contracts.md"
+          },
+          {
+            "test": "fixturekit/packing.py"
+          },
+          {
+            "test": "tests/test_compatibility.py"
+          },
+          {
+            "test": "tests/test_requirements.py"
+          }
+        ],
+        "integrity_errors": [
+          "implementation_unchanged"
+        ],
+        "oracle_kind": "v4_behavior_compatibility_scope_style_differential_regression",
+        "passed": false,
+        "required_reads_missing": [
+          "contracts.md",
+          "fixturekit/packing.py",
+          "tests/test_compatibility.py",
+          "tests/test_requirements.py"
+        ],
+        "style_errors": [],
+        "tests_run": 13
+      }
+    }
+  ],
+  "started": [
+    {
+      "id": "final-strict-order",
+      "arm": "files"
+    },
+    {
+      "id": "final-strict-order",
+      "arm": "regions"
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "arm": "regions"
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "arm": "files"
+    }
+  ],
+  "started_ungraded": [],
+  "unstarted": [],
+  "stop_reasons": [],
+  "status": "all_fixed_attempts_finalized",
+  "summary": {
+    "files": {
+      "graded": 2,
+      "finalized": 2,
+      "completed": 0,
+      "oracle_passed": 0,
+      "usable_passed": 0,
+      "http_attempts": 4
+    },
+    "regions": {
+      "graded": 2,
+      "finalized": 2,
+      "completed": 0,
+      "oracle_passed": 0,
+      "usable_passed": 0,
+      "http_attempts": 0
+    },
+    "paired": {
+      "count": 2,
+      "both_usable": 0,
+      "files_only_usable": 0,
+      "regions_only_usable": 0,
+      "both_failed": 2,
+      "seconds_both_usable": []
+    }
+  },
+  "owned_server_identity_sha256": "6b0fc9b0f04f9122b90f2d9d0dc7bfb108eb3d02a270077fd1d7853a08bb1781",
+  "runtime_pins_unchanged": {
+    "files": true,
+    "regions": true
+  },
+  "source_and_suite_unchanged": true
+}

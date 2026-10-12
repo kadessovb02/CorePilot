@@ -82,8 +82,10 @@ class BoundedController(Controller):
         previous = self.execution.setdefault('rejected_submissions', [])
         repeated = any(row['fingerprint'] == signature for row in previous)
         diagnostics = error.diagnostics if isinstance(error.diagnostics, dict) else {}
-        code = diagnostics.get('error_code', 'stage_format_rejected')
-        row = {'fingerprint': signature, 'stage': stage, 'category': 'format', 'reason_code': code,
+        truncated = message.get('_corepilot_finish_reason') == 'length'
+        code = ('model_output_token_budget_reached' if truncated else
+                diagnostics.get('error_code', 'stage_format_rejected'))
+        row = {'fingerprint': signature, 'stage': stage, 'category': 'budget' if truncated else 'format', 'reason_code': code,
                'repeated': repeated, 'step': self.task['step']}
         previous.append(row)
         self.event('repair_decision', 'Rejected stage proposal' + (' repeated unchanged' if repeated else ''), row)

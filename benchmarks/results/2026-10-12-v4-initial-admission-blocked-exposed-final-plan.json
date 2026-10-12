@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "kind": "synthetic_v4_separate_final",
+  "phase": "heldout",
+  "source_commits": {
+    "files": "52c333c8aeb5874495acbbc4776983da69df123f",
+    "regions": "f70233989242e885cb4c1133957c9b1df8d54a39"
+  },
+  "suite_sha256": "499ad6aa2acea8dc004a5ffdedff29dd2050c00d4292f856a8763619c3fd5f9a",
+  "case_suite_sha256": {
+    "final-strict-order": "be8624b67d26701e6d3f4cfea08bea6bfa899bec8cd55feb2e03c8a9ab477e61",
+    "final-ceiling-blocks": "ad78140b693b50461360cb328d5aa3f8768255694521d293455262d60b2a976f"
+  },
+  "case_prompt_sha256": {
+    "final-strict-order": "61d66781e9179425c2f006eb61d313835625f79c62520a5a8d640569ad629737",
+    "final-ceiling-blocks": "ac601f6e2b9ccfc6e08de84ea0355e15dc1cbd1c5af5bdd50d381c765cc1e82b"
+  },
+  "order": [
+    {
+      "id": "final-strict-order",
+      "arm": "files"
+    },
+    {
+      "id": "final-strict-order",
+      "arm": "regions"
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "arm": "regions"
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "arm": "files"
+    }
+  ],
+  "planned_attempts": 4,
+  "stopping_rule": "Complete all fixed attempts regardless of quality outcomes; stop only for resource/timeout/operator/runner failure, retaining unfinished and unstarted attempts.",
+  "same_clean_original_fixture_each_arm": true,
+  "reference_and_oracle_excluded_during_generation": true,
+  "protocol": "native",
+  "artifact_protocol": "documents",
+  "max_repairs": 2,
+  "max_calls": 8,
+  "max_tokens": 2048,
+  "context_chars": 22000,
+  "task_seconds": 180,
+  "request_pause_seconds": 3,
+  "between_task_rest_seconds": 20,
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_own_rss_gib": 3.8,
+    "max_physical_footprint_gib": 3.8,
+    "max_swap_growth_mib": 2048,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "same_resource_baseline_all_attempts": true,
+  "same_inner_resource_baseline_both_arms": true,
+  "baseline_kind": "Fresh experiment baseline on one pre-existing server; startup excluded.",
+  "adapter": null,
+  "memory": false,
+  "warmup_performed": false,
+  "operator_exclusive_requester_confirmed": true,
+  "runner_sha256": "8ea3412d64c8db1217a0f06a3e77e3c5f791187c013a15be2ac650f4737b88cb",
+  "model": "Qwen3.5-4B MLX 4-bit stock",
+  "model_revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "limitations": [
+    "Four fixed development edits and a separately authored final set; no broad project quality claim.",
+    "Changed runtime/workflow is the experimental treatment; same model/caps do not make requests identical.",
+    "Only matched cases usable in both arms support latency comparisons.",
+    "Client cancellation/health readiness is not proof an external backend is idle.",
+    "The operator owns one exclusive existing server; this runner never starts/stops UI or models."
+  ],
+  "baseline_resources": {
+    "timestamp": 1791823436.615077,
+    "available_estimate_gib": 2.6407470703125,
+    "compressor_gib": 4.6384429931640625,
+    "purgeable_gib": 0.0,
+    "used_swap_gib": 11.775146484375,
+    "own_rss_gib": 0.0815277099609375,
+    "process_count": 2,
+    "physical_footprint_gib": 2.61904296875,
+    "peak_physical_footprint_gib": 3.41904296875,
+    "footprint_age_seconds": 7.0410314947366714e-06,
+    "pressure_level": 2,
+    "pressure_some_avg10": null,
+    "pressure_full_avg10": null,
+    "speed_limit": null,
+    "scheduler_limit": null,
+    "thermal_warning_level": null,
+    "load_1m": null,
+    "supported": true,
+    "platform": "darwin",
+    "rss_complete": true,
+    "footprint_available": true
+  }
+}

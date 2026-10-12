@@ -382,3 +382,122 @@ The 4B trial used [mlx-community/Qwen3-4B-4bit](https://huggingface.co/mlx-commu
 The [suite audit](../benchmarks/results/synthetic-v1-selfcheck.json) verifies 12 intended baseline failures, 12 isolated reference-fix passes, eight inspection reference answers and six rejected adversarial variants. It validates the grader; it is not a local-model score. The workflow harness does not benchmark routing, cross-machine scaling, fine-tuning gains or separately trained specialists.
 
 Before publishing a report, inspect the numerical JSON and run the public-tree audit. Share only reviewed aggregates and controlled failure codes. The harness records no raw answers or machine paths in its report; local state still contains task traces and must remain private.
+
+
+## V4 initial admission failure — retained separately
+
+The first frozen V4 comparison used the original file controller at `52c333c` and
+the new region controller at `f702339`. Its exact function-body requests were
+rejected by the shared scope parser before either controller edited code. The
+[development report](../benchmarks/results/2026-10-12-v4-initial-admission-blocked-development-report.json)
+and [pre-inference plan](../benchmarks/results/2026-10-12-v4-initial-admission-blocked-development-plan.json)
+retain all eight finalized attempts: **0/4 usable in each arm**, with eight HTTP
+requests for files and zero for regions. Neither arm ran implementation checks.
+This block measures an admission failure and cannot establish a coding-quality
+or speed advantage.
+
+The initially reserved final cases were also presented in this failed series:
+[all four attempts and their failures](../benchmarks/results/2026-10-12-v4-initial-admission-blocked-exposed-final-report.json),
+[plan](../benchmarks/results/2026-10-12-v4-initial-admission-blocked-exposed-final-plan.json).
+They produced **0/2 usable in each arm** and are now marked exposed, rather than
+reused as fresh final evaluation.
+
+After explicit approval to repeat the eight development attempts, the same
+scope-only parser correction was applied to both arms. The old strategy remains
+`52c333c` plus only that common correction (`6e7be99`). The four development
+fixtures and requests are byte-identical to the initial series. Two new final
+cases were authored and CPU-admitted before corrected development inference.
+The [frozen comparison contract](../benchmarks/synthetic_v4/comparison-contract.json)
+records equal budgets and preserves the earlier exposed cases. Original failures
+are not pooled with the corrected comparison.
+
+
+## V4 corrected development comparison
+
+The [pre-inference plan](../benchmarks/results/2026-10-12-v4-corrected-development-plan.json)
+pins files `6e7be998c62962f1d0bbe7261ed2e8ea43d2ff8b` and regions
+`276090d0af3e01c42bd165e03ff9040e6b9d0fb2`. Both include the same pure scope
+correction. All four original development fixtures, requests, reference
+solutions and oracles remained byte-identical to the first series. Four cases
+ran AB/BA, with one existing stock model, no adapter, no retrieval, eight calls,
+2048 output tokens, 22000 context characters, 180 seconds, two repair rounds,
+and one shared resource baseline. Checks and external grading were unchanged
+within each case. The region workflow is a bundle of changes, not an ablation
+of individual gates or prompts.
+
+| Development case | Files usable / seconds / HTTP | Regions usable / seconds / HTTP | Retained limitation |
+|---|---|---|---|
+| Negative index | yes / 58.694 / 4 | yes / 40.519 / 3 | One matched successful pair |
+| Assignment separator | no / 140.313 / 4 | yes / 46.569 / 3 | Files test output truncated twice |
+| Overlapping marker | yes / 61.818 / 4 | no / 132.067 / 3 | Regions test output truncated twice |
+| Stable lowest | yes / 136.543 / 5 | no / 56.675 / 3 | Correct region candidate/test passed the independent oracle; host rejected assigned-result attribution, then stopped an identical test repair |
+
+Times above are the recorded task durations; the
+[complete report](../benchmarks/results/2026-10-12-v4-corrected-development-report.json)
+also records external grading and full end-to-end durations for every attempt.
+**Files: 3/4 usable; regions: 2/4 usable.** Independent oracle passes were 3/4
+in each mode. All eight attempts were finalized and independently graded, with
+zero task timeouts or resource aborts. Every existing requirement/compatibility
+suite passed on the generated implementations; neither arm introduced an
+observed compatibility regression. Missing authored tests still fail the full
+external oracle. These finite checks do not exclude untested regressions.
+
+Only the negative-index case was usable in both arms, with end-to-end durations
+59.140 versus 41.025 seconds and four versus three calls. Comparing different
+sets of successful cases or assigning zero time to failed attempts would
+misrepresent speed. The 17 versus 12 total HTTP attempts include failures.
+**This experiment does not establish improved reliability or a general speed
+advantage.** The [saved-evidence audit](../benchmarks/results/2026-10-12-v4-corrected-evidence-audit.json)
+confirms 29 POST attempts/received usage responses, 182 paired host/model tool
+results, no pending calls, all current positive manifests/test hashes, actual
+pristine AssertionErrors and approved review for every completed record.
+
+## Fresh final evaluation interrupted by resource protection
+
+Two new tasks were authored and admitted before corrected development inference.
+Their immutable [plan](../benchmarks/results/2026-10-12-v4-fresh-final-partial-plan.json)
+and [partial report](../benchmarks/results/2026-10-12-v4-fresh-final-partial-report.json)
+preserve all four planned attempts. The files prefix-anchoring task completed
+and passed its independent oracle (53.198 task seconds, four HTTP attempts).
+The region attempt was canceled during its third HTTP request after an inner
+guard observed `memory_pressure_critical`: it is **resource-stopped and ungraded**,
+with two received usage responses, one canceled request, no authored test and
+no approved review. The two integer-sign attempts had not started. No coding
+success rate or speed comparison is inferred from this partial block.
+
+The owned server was subsequently stopped and its exit confirmed; client
+cancellation and a ready health endpoint alone were not treated as backend
+idleness. The original reports remain immutable. Finishing only the never-started
+attempts requires memory recovery, a separately linked continuation plan, the
+same pinned fixtures/runtime/budgets, and explicit disclosure of a backend
+restart and its new resource baseline. An aborted task is not silently retried.
+
+## Post-freeze fixes and verified action preparation
+
+The development evidence identified two corrections after the measured runtime
+was frozen. Output truncation now records a budget category without changing
+retry/call limits. Regression attribution now permits a single immediately
+assigned target result followed by a recognized assertion with literal fixture
+setup; reassignment, mutation, dynamic aliasing and control gaps remain rejected,
+and explicit operator vectors stay strict. Actual sandboxed pristine-assertion
+failure/candidate success and negative fixtures verify this change. The measured
+scores were **not retroactively regraded**, and these fixes have no measured
+post-fix model-quality gain.
+
+The final local Python suite passes **1246 tests, with one optional test skipped**;
+JavaScript syntax, public-tree privacy and diff checks pass. CPU oracle admission
+independently accepted six reference fixes and rejected 72 negative variants
+without loading a model. Scripted host-cycle tests exercise addressed component
+repair, exact frozen-base alternatives, preservation of verified implementation,
+repetition detection and shared resume budgets; they are not model-quality tasks.
+
+Only the two completed, externally passed region development tasks were admitted
+for verified action preparation: two independent families, **train 1 / valid 1 /
+test 0**. Unfinished, file-mode and all final-evaluation tasks were excluded.
+The [actual CPU tokenizer preflight](../benchmarks/results/2026-10-12-verified-region-tokenizer-preflight.json)
+used the local stock tokenizer and retained complete 2048-token windows: train
+465 tokens including 131 assistant tokens; validation 397 including 87 assistant
+tokens. Both target masks passed, with zero truncation/exclusions and no model
+weights, MLX, trainer or optimizer loaded. This tiny corpus establishes technical
+preparation compatibility, not training readiness for a credible quality study;
+it has no dataset test holdout. No LoRA or specialist-model improvement is claimed.

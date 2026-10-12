@@ -82,6 +82,43 @@ def test_unittest_direct_assertion_and_import_alias_are_supported():
     assert validate(base, current, test)["passed"]
 
 
+def test_immediate_target_result_identity_uses_literal_fixture_without_claiming_requirement_proof():
+    test = ('from helpers import calculate\nimport unittest\nclass Probe(unittest.TestCase):\n'
+            '    def test_value(self):\n        first = {"value": 1}\n'
+            '        second = {"value": 2}\n        actual = calculate([first, second])\n'
+            '        self.assertIs(actual, first)\n')
+    base, current = receipts(test)
+    base['failures'][0]['assertion_line'] = 8
+    result = validate(base, current, test)
+    assert result['passed'] and result['operator_vectors_checked'] is False
+    assert result['semantic_scope'] == 'observed_regression_not_requirements_proof'
+    # Explicit operator vectors still require their literal arguments/expected value.
+    assert not validate(base, current, test, expectations=expectation())['passed']
+
+
+@pytest.mark.parametrize('body', [
+    'actual = calculate([first])\n        actual = first\n        self.assertIs(actual, first)',
+    'actual = calculate([first])\n        actual["value"] = 0\n        self.assertIs(actual, first)',
+    'actual = calculate([first])\n        actual.clear()\n        self.assertIs(actual, first)',
+    'first["value"] = 0\n        actual = calculate([first])\n        self.assertIs(actual, first)',
+    'first = {"value": 0}\n        actual = calculate([first])\n        self.assertIs(actual, first)',
+    'actual = calculate([first])\n        alias = actual\n        self.assertIs(alias, first)',
+    'alias = calculate\n        actual = alias([first])\n        self.assertIs(actual, first)',
+    'if True:\n            actual = calculate([first])\n        self.assertIs(actual, first)',
+    'actual = calculate([first])\n        pass\n        self.assertIs(actual, first)',
+])
+def test_assigned_target_admission_rejects_rebinding_mutation_aliases_and_control_gaps(body):
+    import ast
+    test = ('from helpers import calculate\nimport unittest\nclass Probe(unittest.TestCase):\n'
+            '    def test_value(self):\n        first = {"value": 1}\n        ' + body + '\n')
+    base, current = receipts(test)
+    assertion = next(node for node in ast.walk(ast.parse(test))
+                     if isinstance(node, ast.Expr) and isinstance(node.value, ast.Call)
+                     and isinstance(node.value.func, ast.Attribute) and node.value.func.attr == 'assertIs')
+    base['failures'][0]['assertion_line'] = assertion.lineno
+    assert not validate(base, current, test)['passed']
+
+
 @pytest.mark.parametrize("bad_line", [4, 6, None, True])
 def test_failure_line_must_be_the_target_assertion_not_other_failure(bad_line):
     test = "from helpers import calculate\nimport unittest\nclass Probe(unittest.TestCase):\n    def test_value(self):\n        self.assertEqual(calculate(3), 6)\n        self.fail('unrelated')\n"
@@ -234,7 +271,8 @@ def test_missing_actual_test_or_target_is_not_differential_evidence():
     assert not validate(base, current, target_identifier="other")["passed"]
 
 
-def test_real_sandboxed_unittest_baseline_assertion_and_candidate_pass(tmp_path):
+@pytest.mark.parametrize('identity', [False, True])
+def test_real_sandboxed_unittest_baseline_assertion_and_candidate_pass(tmp_path, identity):
     """Actual small host receipts, with execution inside the normal OS sandbox."""
     import json
     from pathlib import Path
@@ -245,10 +283,15 @@ def test_real_sandboxed_unittest_baseline_assertion_and_candidate_pass(tmp_path)
     from corepilot.tools import sandbox_command
     if sys.platform != "darwin" or shutil.which("sandbox-exec") is None:
         pytest.skip("Actual command admission requires the supported macOS sandbox")
-    original = b"def calculate(value):\n    return value + 1\n"
+    original = (b"def calculate(values):\n    return values[-1]\n" if identity else
+                b"def calculate(value):\n    return value + 1\n")
     region = select_python_region(original, "calculate")
-    changed, _ = replace_python_region(original, region, region["content"].replace("value + 1", "value * 2"))
-    test = "from helpers import calculate\nimport unittest\nclass Probe(unittest.TestCase):\n    def test_value(self):\n        self.assertEqual(calculate(3), 6)\n"
+    changed, _ = replace_python_region(original, region, region["content"].replace(
+        "values[-1]" if identity else "value + 1", "values[0]" if identity else "value * 2"))
+    test = ('from helpers import calculate\nimport unittest\nclass Probe(unittest.TestCase):\n'
+            '    def test_value(self):\n        first = {"value": 1}\n        second = {"value": 2}\n'
+            '        actual = calculate([first, second])\n        self.assertIs(actual, first)\n' if identity else
+            "from helpers import calculate\nimport unittest\nclass Probe(unittest.TestCase):\n    def test_value(self):\n        self.assertEqual(calculate(3), 6)\n")
     observer = '''import hashlib, json, sys, unittest
 from pathlib import Path
 class Result(unittest.TestResult):
@@ -288,8 +331,9 @@ sys.exit(0 if result.wasSuccessful() else 1)
                                  env={"PYTHONDONTWRITEBYTECODE": "1", "PATH": "/usr/bin:/bin"})
         assert outcome.returncode == (1 if name == "baseline" else 0), outcome.stderr
         captured.append(json.loads(outcome.stdout))
-    assert captured[0]["failures"][0]["assertion_line"] == 5
+    assert captured[0]["failures"][0]["assertion_line"] == (8 if identity else 5)
     result = validate_differential_regression(*captured, test_source=test, target_identifier="calculate",
         expected_source_sha256=hashlib.sha256(changed).hexdigest(),
-        expected_baseline_source_sha256=hashlib.sha256(original).hexdigest(), expectations=expectation())
+        expected_baseline_source_sha256=hashlib.sha256(original).hexdigest(),
+        expectations=None if identity else expectation())
     assert result["passed"]

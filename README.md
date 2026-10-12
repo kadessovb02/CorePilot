@@ -125,18 +125,50 @@ Commands fail closed when the supported sandbox is missing. There is no unsandbo
 
 ## Benchmark evidence
 
-Recorded development blocks on **Apple M2 Pro, 16 GiB**, using controlled native documents and stock Qwen3.5-4B 4-bit. A **usable pass** requires both a completed task and a passing independent external oracle.
+A frozen comparison on **Apple M2 Pro, 16 GiB**, using stock Qwen3.5-4B MLX
+4-bit, native stages and document responses. Four predeclared development tasks
+ran in both modes from identical clean fixtures. A **usable pass** requires
+`Completed` plus an independent oracle that checks behavior, compatibility,
+function scope, style, required reads and an actual original-bug regression.
 
-| Development block / report | Usable | Oracle | Completed | Verified scope |
-|---|---:|---:|---:|---|
-| [Earlier tag task](benchmarks/results/2026-10-11-controlled-4b-native-documents-development.json) | **1/1** | **1/1** | 1/1 | Source edit, new test, host check and approved review; 28 external unittest executions, zero failures or errors |
-| [Five cases in fixed suite order](benchmarks/results/2026-10-12-controlled-4b-documents-development-series.json) | **1/5** | **1/5** | 2/5 | All five graded; 23 HTTP attempts; four failures retained |
-| [Two selected-case repeats](benchmarks/results/2026-10-12-controlled-4b-documents-replication.json) | **0/2** | **0/2** | 0/2 | Both graded; eight HTTP attempts; neither task completed |
-| [Six cases after bounded-feedback / formatting changes](benchmarks/results/2026-10-12-controlled-4b-documents-repairstyle.json) | **1/6** | **1/6** | 2/6 | All six graded; 30 HTTP attempts; five failures retained |
+| Frozen development mode | Usable | Independent oracle | Completed | Model HTTP attempts |
+|---|---:|---:|---:|---:|
+| Previous file workflow, with the common scope-parser fix | **3/4** | 3/4 | 3/4 | 17 |
+| Function-scoped workflow | **2/4** | 3/4 | 2/4 | 12 |
 
-Every task started from its clean original baseline, without an adapter or retrieval memory, under eight-call / 2048-token / 180-second limits. Each fixed-order series targeted two usable passes but produced **only one**; those two successes were the **same falsey-handler case under different controller configurations** (63.611 and 58.776 seconds, four calls each). The two fixed repeats were selected **after observing the first success**, and both failed. The six-case block explicitly allowed two repair rounds, with unchanged global budgets. These separate blocks are not pooled. **Current completion reliability is insufficient:** repeatability, a general success rate and an improvement from the controller changes have not been established. These development cases also provide no fresh held-out score, training or navigator gain, model ranking or comparative speed result. The earlier tag task's 28 unittest executions are checks within one task, not 28 independent tasks.
+[All eight attempts](benchmarks/results/2026-10-12-v4-corrected-development-report.json)
+· [immutable execution plan](benchmarks/results/2026-10-12-v4-corrected-development-plan.json)
+· [fixture/oracle admission](benchmarks/synthetic_v4/selfcheck-report.json).
+Both arms had eight calls, 2048 output tokens, 22000 context characters,
+180 seconds and at most two repair alternatives. Every attempt was graded;
+all failures remain available. Both modes produced a truncated test response on
+one different task. The region mode also rejected a correct identity regression
+using an assigned result, and correctly withheld completion despite an external
+oracle pass. The original admission-blocked series is retained separately in the
+[benchmark journal](docs/benchmarks.md).
 
-The [full benchmark journal and methodology](docs/benchmarks.md) preserves every earlier failed, partial and resource-stopped experiment, along with exact reports and plans. The harness supports single-agent, **planner → coder → reviewer**, and controlled workflows; these controlled-only blocks are not paired comparisons. See the [controlled-workflow guide](docs/controlled-workflow.md) for the file-response protocol and completion gates.
+**No reliability improvement is established.** Only one development case was
+usable in both modes: 59.140 seconds end to end / four calls for files versus
+41.025 seconds / three calls for regions. One matched case cannot establish a
+general speed gain; aggregate call counts include failed attempts.
+
+The separately authored final evaluation reached one complete files result,
+then the region attempt was stopped by a critical-memory signal. Two planned
+attempts had not started. This partial block provides **no final success-rate
+estimate**. Resource-stopped attempts are not counted as independently graded
+coding failures. Its exact evidence and any continuation are documented in the
+[benchmark journal](docs/benchmarks.md).
+
+After the frozen experiment, CPU-verified fixes classify output truncation as a
+budget failure and recognize a conservative, immediately assigned target result
+in identity assertions. The frozen scores above were **not regraded**; no
+post-fix model-quality improvement is claimed. The workflow is still experimental
+and currently limited to explicitly named Python functions and registered checks.
+Verified action preparation excludes unfinished tasks and final evaluation;
+LoRA and specialist-model benefits remain unmeasured.
+The [CPU tokenizer preflight](benchmarks/results/2026-10-12-verified-region-tokenizer-preflight.json)
+retained two complete verified examples (465 and 397 tokens in a 2048-token
+window), split train 1 / valid 1 / test 0. No weights or training were loaded.
 
 ## Development
 

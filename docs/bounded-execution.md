@@ -55,7 +55,10 @@ Before `Completed`, the host requires all of:
 
 Regression attribution conservatively recognizes direct equality/identity or
 expected-exception assertions on the named function and verifies the failing
-assertion's source line. Unrelated `self.fail`, import/syntax/environment errors,
+assertion's source line. A single local result assignment immediately followed by
+an equality/identity assertion may also be attributed, with literal fixture
+setup; rebinding, mutation, dynamic aliases and intervening control flow stop
+that attribution. Explicit operator vectors retain their strict literal checks. Unrelated `self.fail`, import/syntax/environment errors,
 target or framework mutation, stale source, changed tests and empty collection
 cannot establish this proof. Optional operator literal input/output vectors
 constrain recognized expectations further. This finite observation is not a
@@ -84,6 +87,14 @@ a model or executes recorded commands. An explicit unchanged resume continues
 the saved action with its remaining call/time and alternative budgets. Changing
 the objective or registered checks/budgets requires a new bounded task. A saved
 current review admission can be reused only after verifying its source manifest.
+The 180-second allowance in the frozen benchmark is a comparison budget for its
+small synthetic tasks, rather than a universal task duration. Interactive
+configuration can set `resource_guard.max_task_seconds` up to 3600 seconds and
+choose its own call allowance. Every alternative and unchanged resume shares
+that original allowance; extending it requires a new task. Larger changes should
+be divided into separately reviewed functions rather than widening an existing
+function-scoped task.
+
 The resource guard still requires backend-idle confirmation after cancellation;
 a cancelled HTTP request does not establish that inference stopped.
 

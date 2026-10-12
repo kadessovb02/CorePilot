@@ -1,0 +1,374 @@
+{
+  "schema": 1,
+  "kind": "synthetic_v4_separate_final",
+  "phase": "heldout",
+  "source_commits": {
+    "files": "6e7be998c62962f1d0bbe7261ed2e8ea43d2ff8b",
+    "regions": "276090d0af3e01c42bd165e03ff9040e6b9d0fb2"
+  },
+  "suite_sha256": "f71ba5ab17d843ae345970037ba6fd379f1a144e60848a2a3e582794b35ae841",
+  "case_suite_sha256": {
+    "final-prefix-anchor": "349a35239338ab044b724401d13516669b8b3945ac2aa0af38526163615d5a45",
+    "final-integer-sign": "998a3451ce39bbc28f65e8ff18b8a30f0694f71f2ce08e2788a871642fa6db75"
+  },
+  "case_prompt_sha256": {
+    "final-prefix-anchor": "fca8fe56f4d7f516d54af149a2ec27d9ce2efac1e16f46107612f4dd13018506",
+    "final-integer-sign": "51e7c33770327d1a014cc3687bb8416f5ac5b392d1f4f41da48f0add4e200f6f"
+  },
+  "order": [
+    {
+      "id": "final-prefix-anchor",
+      "arm": "files"
+    },
+    {
+      "id": "final-prefix-anchor",
+      "arm": "regions"
+    },
+    {
+      "id": "final-integer-sign",
+      "arm": "regions"
+    },
+    {
+      "id": "final-integer-sign",
+      "arm": "files"
+    }
+  ],
+  "planned_attempts": 4,
+  "stopping_rule": "Complete all fixed attempts regardless of quality outcomes; stop only for resource/timeout/operator/runner failure, retaining unfinished and unstarted attempts.",
+  "same_clean_original_fixture_each_arm": true,
+  "reference_and_oracle_excluded_during_generation": true,
+  "protocol": "native",
+  "artifact_protocol": "documents",
+  "max_repairs": 2,
+  "max_calls": 8,
+  "max_tokens": 2048,
+  "context_chars": 22000,
+  "task_seconds": 180,
+  "request_pause_seconds": 3,
+  "between_task_rest_seconds": 20,
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_own_rss_gib": 3.8,
+    "max_physical_footprint_gib": 3.8,
+    "max_swap_growth_mib": 2048,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "same_resource_baseline_all_attempts": true,
+  "same_inner_resource_baseline_both_arms": true,
+  "baseline_kind": "Fresh experiment baseline on one pre-existing server; startup excluded.",
+  "adapter": null,
+  "memory": false,
+  "warmup_performed": false,
+  "operator_exclusive_requester_confirmed": true,
+  "runner_sha256": "8ea3412d64c8db1217a0f06a3e77e3c5f791187c013a15be2ac650f4737b88cb",
+  "model": "Qwen3.5-4B MLX 4-bit stock",
+  "model_revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "limitations": [
+    "Four fixed development edits and a separately authored final set; no broad project quality claim.",
+    "Changed runtime/workflow is the experimental treatment; same model/caps do not make requests identical.",
+    "Only matched cases usable in both arms support latency comparisons.",
+    "Client cancellation/health readiness is not proof an external backend is idle.",
+    "The operator owns one exclusive existing server; this runner never starts/stops UI or models."
+  ],
+  "baseline_resources": {
+    "timestamp": 1791832086.488375,
+    "available_estimate_gib": 2.476776123046875,
+    "compressor_gib": 5.003936767578125,
+    "purgeable_gib": 0.000579833984375,
+    "used_swap_gib": 14.229677734375,
+    "own_rss_gib": 0.08209228515625,
+    "process_count": 2,
+    "physical_footprint_gib": 2.61904296875,
+    "peak_physical_footprint_gib": 3.41904296875,
+    "footprint_age_seconds": 2.1669548004865646e-06,
+    "pressure_level": 2,
+    "pressure_some_avg10": null,
+    "pressure_full_avg10": null,
+    "speed_limit": null,
+    "scheduler_limit": null,
+    "thermal_warning_level": null,
+    "load_1m": null,
+    "supported": true,
+    "platform": "darwin",
+    "rss_complete": true,
+    "footprint_available": true
+  },
+  "plan_sha256": "e1848cd5adf54f66174e39a26b13d7e9adf616a8099331fe1772ccd336d4625e",
+  "records": [
+    {
+      "id": "final-prefix-anchor",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 53.198,
+      "completed": true,
+      "task_status": "completed",
+      "oracle_passed": true,
+      "usable_passed": true,
+      "oracle": {
+        "passed": true,
+        "metric": "v4_behavior_compatibility_scope_style_differential_regression",
+        "failures": [],
+        "exit_code": 0,
+        "tests_run": 24,
+        "failure_count": 0,
+        "error_count": 0,
+        "integrity_error_count": 0,
+        "style_error_count": 0,
+        "required_reads_missing_count": 0,
+        "semantic_missing_count": 0,
+        "semantic_contradiction_count": 0
+      },
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "logical_calls": 4,
+      "calls_by_role": {
+        "single": 4
+      },
+      "tool_failures": 0,
+      "checks": 1,
+      "review_decisions": 1,
+      "changed_files": [
+        "fixturekit/prefixes.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 4,
+      "http_errors": 0,
+      "usage_responses": 4,
+      "prompt_tokens": 8532,
+      "completion_tokens": 731,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 0,
+      "inference_seconds": 42.85031458293088,
+      "resources": {
+        "samples": 18,
+        "max_rss_gib": 0.105010986328125,
+        "max_physical_footprint_gib": 3.23583984375,
+        "max_reported_peak_footprint_gib": 3.4359375,
+        "physical_footprint_samples": 18,
+        "max_compressor_gib": 5.637847900390625,
+        "max_used_swap_gib": 14.58056640625,
+        "peak_swap_growth_mib": 359.3099999999995,
+        "pressure_levels": [
+          1,
+          2
+        ],
+        "min_available_estimate_gib": 1.906341552734375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "controlled_max_repairs": 2,
+      "calls_by_stage": {
+        "edit": 1,
+        "review": 1,
+        "select": 1,
+        "tests": 1
+      },
+      "inner_resource_baseline_shared": true,
+      "external_grade_seconds": 0.499,
+      "fullcycle_end_to_end_seconds": 53.761,
+      "arm": "files",
+      "runtime_commit": "6e7be998c62962f1d0bbe7261ed2e8ea43d2ff8b",
+      "fixture_sha256": "2f1e52bab8ecc7b695ee855de748384bfc3c8a01fdfcc8ae7b3b86c2a6557840",
+      "v4_external": {
+        "authored_candidate": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": true,
+          "skipped": 0,
+          "target_calls": 11,
+          "tests_run": 10,
+          "unexpected_successes": 0
+        },
+        "authored_pristine_baseline": {
+          "assertion_failure_count": 3,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 3,
+          "nonassertion_failure_count": 0,
+          "passed": false,
+          "skipped": 0,
+          "target_calls": 11,
+          "tests_run": 10,
+          "unexpected_successes": 0
+        },
+        "compatibility": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": true,
+          "skipped": 0,
+          "target_calls": 4,
+          "tests_run": 4,
+          "unexpected_successes": 0
+        },
+        "differential_regression_proven": true,
+        "error_count": 0,
+        "errors": [],
+        "external": {
+          "assertion_failure_count": 0,
+          "error_count": 0,
+          "expected_failures": 0,
+          "failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "passed": true,
+          "skipped": 0,
+          "target_calls": 11,
+          "tests_run": 10,
+          "unexpected_successes": 0
+        },
+        "failure_count": 0,
+        "failures": [],
+        "integrity_errors": [],
+        "oracle_kind": "v4_behavior_compatibility_scope_style_differential_regression",
+        "passed": true,
+        "required_reads_missing": [],
+        "style_errors": [],
+        "tests_run": 24
+      }
+    },
+    {
+      "id": "final-prefix-anchor",
+      "category": "edit",
+      "read_only": false,
+      "mode": "controlled",
+      "protocol": "native",
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "seconds": 75.805,
+      "completed": false,
+      "task_status": "interrupted",
+      "oracle_passed": false,
+      "usable_passed": false,
+      "oracle": {
+        "passed": false,
+        "failures": [
+          "resource_abort"
+        ]
+      },
+      "timeout": false,
+      "safety_abort": true,
+      "safety_reasons": [
+        "memory_pressure_critical"
+      ],
+      "logical_calls": 3,
+      "calls_by_role": {
+        "single": 3
+      },
+      "tool_failures": 0,
+      "checks": 0,
+      "review_decisions": 0,
+      "changed_files": [
+        "fixturekit/prefixes.py"
+      ],
+      "unexpected_changed_files": 0,
+      "read_only_integrity": null,
+      "http_attempts": 3,
+      "http_errors": 0,
+      "usage_responses": 2,
+      "prompt_tokens": 5480,
+      "completion_tokens": 2113,
+      "cached_prompt_tokens": 0,
+      "length_limited_responses": 1,
+      "inference_seconds": 68.45026158296969,
+      "resources": {
+        "samples": 26,
+        "max_rss_gib": 0.1019439697265625,
+        "max_physical_footprint_gib": 3.136328125,
+        "max_reported_peak_footprint_gib": 3.43662109375,
+        "physical_footprint_samples": 26,
+        "max_compressor_gib": 6.7209930419921875,
+        "max_used_swap_gib": 14.768740234375,
+        "peak_swap_growth_mib": 552.0,
+        "pressure_levels": [
+          2
+        ],
+        "min_available_estimate_gib": 1.9255218505859375,
+        "min_speed_limit": null,
+        "min_scheduler_limit": null
+      },
+      "controlled_artifact_protocol": "documents",
+      "controlled_max_repairs": 2,
+      "controlled_execution_mode": "regions",
+      "calls_by_stage": {
+        "edit": 1,
+        "tests": 2
+      },
+      "inner_resource_baseline_shared": true,
+      "external_grade_seconds": 0.0,
+      "fullcycle_end_to_end_seconds": 75.885,
+      "arm": "regions",
+      "runtime_commit": "276090d0af3e01c42bd165e03ff9040e6b9d0fb2",
+      "fixture_sha256": "2f1e52bab8ecc7b695ee855de748384bfc3c8a01fdfcc8ae7b3b86c2a6557840"
+    }
+  ],
+  "started": [
+    {
+      "id": "final-prefix-anchor",
+      "arm": "files"
+    },
+    {
+      "id": "final-prefix-anchor",
+      "arm": "regions"
+    }
+  ],
+  "started_ungraded": [],
+  "unstarted": [
+    {
+      "id": "final-integer-sign",
+      "arm": "regions"
+    },
+    {
+      "id": "final-integer-sign",
+      "arm": "files"
+    }
+  ],
+  "stop_reasons": [
+    "memory_pressure_critical"
+  ],
+  "status": "backend_idle_confirmation_required",
+  "summary": {
+    "files": {
+      "graded": 1,
+      "finalized": 1,
+      "completed": 1,
+      "oracle_passed": 1,
+      "usable_passed": 1,
+      "http_attempts": 4
+    },
+    "regions": {
+      "graded": 0,
+      "finalized": 1,
+      "completed": 0,
+      "oracle_passed": 0,
+      "usable_passed": 0,
+      "http_attempts": 3
+    },
+    "paired": {
+      "count": 1,
+      "both_usable": 0,
+      "files_only_usable": 1,
+      "regions_only_usable": 0,
+      "both_failed": 0,
+      "seconds_both_usable": []
+    }
+  },
+  "owned_server_identity_sha256": "6b0fc9b0f04f9122b90f2d9d0dc7bfb108eb3d02a270077fd1d7853a08bb1781",
+  "runtime_pins_unchanged": {
+    "files": true,
+    "regions": true
+  },
+  "source_and_suite_unchanged": true
+}

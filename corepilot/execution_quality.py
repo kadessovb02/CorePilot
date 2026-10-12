@@ -232,15 +232,41 @@ def _regression_targets(test_source: str, target: str, expectations: Mapping | N
     admitted = {}
     for fn in (n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name.startswith("test_")):
         values = {}
+        fixtures = {}
+        stores = {}
+        for node in ast.walk(fn):
+            if isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+                stores[node.id] = stores.get(node.id, 0) + 1
+
+        def fixture_value(node):
+            if isinstance(node, ast.Name) and node.id in fixtures:
+                return fixtures[node.id]
+            if isinstance(node, ast.Subscript):
+                try:
+                    return fixture_value(node.value)[_literal(node.slice)]
+                except (TypeError, KeyError, IndexError):
+                    raise QualityError("Expected fixture is not a literal item")
+            return _literal(node)
+
         # Fail closed for nested controls/functions and late rebinding. Only
-        # straight-line direct calls can establish this static attribution.
+        # an immediately preceding single assignment may attribute a local name.
         for statement in fn.body:
+            previous_values, values = values, {}
             if isinstance(statement, ast.Assign) and len(statement.targets) == 1 and isinstance(statement.targets[0], ast.Name):
                 name = statement.targets[0].id
                 if name in aliases or name == target.split(".")[0]:
                     values.clear()
                     break
-                values[name] = statement.value if target_call(statement.value) else None
+                if stores.get(name) == 1:
+                    if target_call(statement.value):
+                        values[name] = statement.value
+                    else:
+                        try:
+                            fixtures[name] = _literal(statement.value)
+                        except QualityError:
+                            fixtures.pop(name, None)
+                else:
+                    fixtures.pop(name, None)
             candidate = None
             if isinstance(statement, ast.Assert) and isinstance(statement.test, ast.Compare) and len(statement.test.ops) == 1 and isinstance(statement.test.ops[0], ast.Eq):
                 candidate = (statement.test.left, statement.test.comparators[0])
@@ -248,8 +274,16 @@ def _regression_targets(test_source: str, target: str, expectations: Mapping | N
                 candidate = tuple(statement.value.args)
             if candidate:
                 left, right = candidate
-                call = values.get(left.id) if isinstance(left, ast.Name) else left
-                if target_call(call) and vector_matches(call, right):
+                assigned = isinstance(left, ast.Name) and left.id in previous_values
+                call = previous_values.get(left.id) if isinstance(left, ast.Name) else left
+                matches = target_call(call) and vector_matches(call, right)
+                if not matches and assigned and not vectors:
+                    try:
+                        fixture_value(right)
+                        matches = True
+                    except QualityError:
+                        pass
+                if matches:
                     admitted.setdefault(fn.name, set()).add(statement.lineno)
             if isinstance(statement, ast.With) and len(statement.items) == 1:
                 context = statement.items[0].context_expr
@@ -258,6 +292,12 @@ def _regression_targets(test_source: str, target: str, expectations: Mapping | N
                     calls = [child.value for child in statement.body if isinstance(child, ast.Expr) and target_call(child.value)]
                     if len(statement.body) == len(calls) == 1 and raises_matches(calls[0], exception):
                         admitted.setdefault(fn.name, set()).add(statement.lineno)
+            if not isinstance(statement, (ast.Assign, ast.Assert)) and not candidate:
+                fixtures.clear()
+            elif isinstance(statement, ast.Assign) and any(
+                    isinstance(node, (ast.Attribute, ast.Subscript)) and isinstance(node.ctx, (ast.Store, ast.Del))
+                    for node in ast.walk(statement)):
+                fixtures.clear()
         # An assertion containing a constant or self.fail cannot qualify by
         # itself; the target call must actually supply the compared value.
     return admitted
