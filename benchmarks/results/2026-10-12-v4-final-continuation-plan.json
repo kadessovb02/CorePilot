@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "kind": "synthetic_v4_resource_continuation",
+  "phase": "heldout",
+  "source_commits": {
+    "files": "6e7be998c62962f1d0bbe7261ed2e8ea43d2ff8b",
+    "regions": "276090d0af3e01c42bd165e03ff9040e6b9d0fb2"
+  },
+  "suite_sha256": "f71ba5ab17d843ae345970037ba6fd379f1a144e60848a2a3e582794b35ae841",
+  "case_suite_sha256": {
+    "final-prefix-anchor": "349a35239338ab044b724401d13516669b8b3945ac2aa0af38526163615d5a45",
+    "final-integer-sign": "998a3451ce39bbc28f65e8ff18b8a30f0694f71f2ce08e2788a871642fa6db75"
+  },
+  "case_prompt_sha256": {
+    "final-prefix-anchor": "fca8fe56f4d7f516d54af149a2ec27d9ce2efac1e16f46107612f4dd13018506",
+    "final-integer-sign": "51e7c33770327d1a014cc3687bb8416f5ac5b392d1f4f41da48f0add4e200f6f"
+  },
+  "order": [
+    {
+      "id": "final-integer-sign",
+      "arm": "regions"
+    },
+    {
+      "id": "final-integer-sign",
+      "arm": "files"
+    }
+  ],
+  "planned_attempts": 2,
+  "stopping_rule": "Complete all fixed attempts regardless of quality outcomes; stop only for resource/timeout/operator/runner failure, retaining unfinished and unstarted attempts.",
+  "same_clean_original_fixture_each_arm": true,
+  "reference_and_oracle_excluded_during_generation": true,
+  "protocol": "native",
+  "artifact_protocol": "documents",
+  "max_repairs": 2,
+  "max_calls": 8,
+  "max_tokens": 2048,
+  "context_chars": 22000,
+  "task_seconds": 180,
+  "request_pause_seconds": 3,
+  "between_task_rest_seconds": 20,
+  "resource_thresholds": {
+    "min_available_gib": 1.5,
+    "max_own_rss_gib": 3.8,
+    "max_physical_footprint_gib": 3.8,
+    "max_swap_growth_mib": 2048,
+    "min_performance_limit": 100.0,
+    "allow_memory_warning": true
+  },
+  "same_resource_baseline_all_attempts": true,
+  "same_inner_resource_baseline_both_arms": true,
+  "baseline_kind": "Fresh shared continuation baseline after memory recovery; restarted backend loads weights lazily in first arm. No warmup inference. Latency is not pooled with pre-restart trials.",
+  "adapter": null,
+  "memory": false,
+  "warmup_performed": false,
+  "operator_exclusive_requester_confirmed": true,
+  "runner_sha256": "8ea3412d64c8db1217a0f06a3e77e3c5f791187c013a15be2ac650f4737b88cb",
+  "model": "Qwen3.5-4B MLX 4-bit stock",
+  "model_revision": "0e7ffd5c629ef7719d4cbc04069232580bfa9d9c",
+  "limitations": [
+    "Four fixed development edits and a separately authored final set; no broad project quality claim.",
+    "Changed runtime/workflow is the experimental treatment; same model/caps do not make requests identical.",
+    "Only matched cases usable in both arms support latency comparisons.",
+    "Client cancellation/health readiness is not proof an external backend is idle.",
+    "The operator owns one exclusive existing server; this runner never starts/stops UI or models."
+  ],
+  "baseline_resources": {
+    "timestamp": 1791833846.027584,
+    "available_estimate_gib": 2.2279205322265625,
+    "compressor_gib": 6.64141845703125,
+    "purgeable_gib": 1.52587890625e-05,
+    "used_swap_gib": 10.458740234375,
+    "own_rss_gib": 1.907623291015625,
+    "process_count": 2,
+    "physical_footprint_gib": 2.62216796875,
+    "peak_physical_footprint_gib": 2.6222656250000003,
+    "footprint_age_seconds": 4.832982085645199e-06,
+    "pressure_level": 2,
+    "pressure_some_avg10": null,
+    "pressure_full_avg10": null,
+    "speed_limit": null,
+    "scheduler_limit": null,
+    "thermal_warning_level": null,
+    "load_1m": null,
+    "supported": true,
+    "platform": "darwin",
+    "rss_complete": true,
+    "footprint_available": true
+  },
+  "parent_plan_sha256": "e1848cd5adf54f66174e39a26b13d7e9adf616a8099331fe1772ccd336d4625e",
+  "parent_report_sha256": "2e65da30645e60a11c8cb6131e25087b7243133290debabcec6bee57b2ac0cac",
+  "continued_only_original_unstarted_attempts": true,
+  "continuation_wrapper_sha256": "208c38bdc93921e896fe5f4f9fffe405e96809025b5d95101f129128758b9fa6",
+  "backend_restarted_after_confirmed_exit": true,
+  "same_baseline_as_parent_phase": false
+}

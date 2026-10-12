@@ -152,12 +152,15 @@ usable in both modes: 59.140 seconds end to end / four calls for files versus
 41.025 seconds / three calls for regions. One matched case cannot establish a
 general speed gain; aggregate call counts include failed attempts.
 
-The separately authored final evaluation reached one complete files result,
-then the region attempt was stopped by a critical-memory signal. Two planned
-attempts had not started. This partial block provides **no final success-rate
-estimate**. Resource-stopped attempts are not counted as independently graded
-coding failures. Its exact evidence and any continuation are documented in the
-[benchmark journal](docs/benchmarks.md).
+The separately authored final set now accounts for all four planned attempts:
+files had one success and one independently graded implementation failure;
+regions had one implementation failure and one critical-memory cancellation
+without an independent grade. After memory recovery, only the two never-started
+attempts continued under the same runtime/model/budgets. The canceled task was
+not retried. This interrupted, two-task final set provides **no reliable final
+success-rate estimate**. Resource-stopped attempts are not treated as graded
+coding failures; latency across the backend restart is not pooled.
+[Original partial block and distinct continuation](docs/benchmarks.md#fresh-final-evaluation-interrupted-by-resource-protection).
 
 After the frozen experiment, CPU-verified fixes classify output truncation as a
 budget failure and recognize a conservative, immediately assigned target result

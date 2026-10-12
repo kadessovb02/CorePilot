@@ -472,6 +472,40 @@ attempts requires memory recovery, a separately linked continuation plan, the
 same pinned fixtures/runtime/budgets, and explicit disclosure of a backend
 restart and its new resource baseline. An aborted task is not silently retried.
 
+### Continuation of the two originally unstarted attempts
+
+After operator-confirmed memory recovery and verified owned-process exit, the
+[continuation plan](../benchmarks/results/2026-10-12-v4-final-continuation-plan.json)
+links the original final plan/report hashes and selects **only** their two
+unstarted integer-sign attempts, in their original regions → files order. The
+[final continuation report](../benchmarks/results/2026-10-12-v4-final-continuation-report.json)
+retains both failures: regions 46.417 seconds / three HTTP requests; files
+67.861 seconds / five requests. Both were independently graded, with no
+resource abort, truncation or timeout. Their initial changes violated
+compatibility; repair restored the original implementation, which the host
+refused to complete. External behavior and authored candidate tests each
+reported three actual assertion failures per arm.
+
+All **four unique attempts** from the original final plan are now accounted
+for: files has one usable success and one graded failure; regions has one
+graded failure and one resource-stopped, ungraded attempt. No aborted task was
+retried, and no new case was selected from outcomes. This tiny, interrupted
+final set does not establish reliable completion rates or generalization.
+The [distinct continuation audit](../benchmarks/results/2026-10-12-v4-final-continuation-audit.json)
+verifies exact parent linkage, immutable source/suite pins, original order, eight
+POST/usage responses, 70 paired tool results, genuine failures and preserved
+alternative provenance. Original reports and their audit remain unchanged.
+
+The continuation restarted the same cached stock model with a fresh resource
+baseline shared by both arms, no warm-up inference, and lazy weight loading
+in the first arm. The earlier 5-GiB precharge prediction was dropped after
+normal memory pressure was confirmed; the actual reserve of 1.5 GiB, swap-growth
+limit of 2 GiB and owned physical-footprint limit of 3.8 GiB remained enforced
+through loading and inference. Observed minimum available estimates were
+1.957 GiB and 2.086 GiB. Restart/startup effects prevent pooling latency with
+pre-restart trials. Both attempts still used the original frozen runtime, not
+the later CPU attribution fixes.
+
 ## Post-freeze fixes and verified action preparation
 
 The development evidence identified two corrections after the measured runtime

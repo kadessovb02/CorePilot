@@ -1,0 +1,564 @@
+{
+  "schema": 1,
+  "kind": "independent_saved_resource_continuation_audit",
+  "date": "2026-10-13",
+  "method": "Read-only saved task checkpoints, command receipts, byte hashes, AST equivalence, alternative journal and returned HTTP logs. No model/test/grade/HTTP/process execution.",
+  "plan_sha256": "18303d79bb37c49b3af0218e4eba77f0d39987e38f9e4aa45649d9d618392f62",
+  "report_sha256": "ba17829bbb38de169d82705ad6c4a9e1ec87e396760638e75b651275598ad6eb",
+  "wrapper_sha256": "208c38bdc93921e896fe5f4f9fffe405e96809025b5d95101f129128758b9fa6",
+  "parent_plan_sha256": "e1848cd5adf54f66174e39a26b13d7e9adf616a8099331fe1772ccd336d4625e",
+  "parent_report_sha256": "2e65da30645e60a11c8cb6131e25087b7243133290debabcec6bee57b2ac0cac",
+  "parent_linkage_verified": true,
+  "report_binds_exact_plan": true,
+  "wrapper_hash_matches_plan": true,
+  "only_original_unstarted_attempts_in_original_order": true,
+  "no_previously_started_prefix_retry": true,
+  "order": [
+    {
+      "id": "final-integer-sign",
+      "arm": "regions"
+    },
+    {
+      "id": "final-integer-sign",
+      "arm": "files"
+    }
+  ],
+  "actual_order_matches_plan": true,
+  "source_commits": {
+    "files": "6e7be998c62962f1d0bbe7261ed2e8ea43d2ff8b",
+    "regions": "276090d0af3e01c42bd165e03ff9040e6b9d0fb2"
+  },
+  "suite_sha256": "f71ba5ab17d843ae345970037ba6fd379f1a144e60848a2a3e582794b35ae841",
+  "case_suite_sha256": {
+    "final-integer-sign": "998a3451ce39bbc28f65e8ff18b8a30f0694f71f2ce08e2788a871642fa6db75"
+  },
+  "case_prompt_sha256": {
+    "final-integer-sign": "51e7c33770327d1a014cc3687bb8416f5ac5b392d1f4f41da48f0add4e200f6f"
+  },
+  "same_runtime_model_and_budget_contract_as_parent": true,
+  "runtime_pins_unchanged": {
+    "files": true,
+    "regions": true
+  },
+  "source_and_suite_unchanged": true,
+  "summary": {
+    "files": {
+      "graded": 1,
+      "finalized": 1,
+      "completed": 0,
+      "oracle_passed": 0,
+      "usable_passed": 0,
+      "http_attempts": 5
+    },
+    "regions": {
+      "graded": 1,
+      "finalized": 1,
+      "completed": 0,
+      "oracle_passed": 0,
+      "usable_passed": 0,
+      "http_attempts": 3
+    },
+    "paired": {
+      "count": 1,
+      "both_usable": 0,
+      "files_only_usable": 0,
+      "regions_only_usable": 0,
+      "both_failed": 1,
+      "seconds_both_usable": []
+    }
+  },
+  "status": "all_fixed_attempts_finalized",
+  "planned": 2,
+  "started": 2,
+  "graded": 2,
+  "unstarted": [],
+  "started_without_record": [],
+  "stop_reasons": [],
+  "records": [
+    {
+      "id": "final-integer-sign",
+      "arm": "regions",
+      "runtime_commit": "276090d0af3e01c42bd165e03ff9040e6b9d0fb2",
+      "task_status": "interrupted",
+      "completed": false,
+      "oracle_passed": false,
+      "usable_passed": false,
+      "seconds": 46.417,
+      "fullcycle_end_to_end_seconds": 46.917,
+      "external_grade_seconds": 0.436,
+      "http_attempts": 3,
+      "usage_responses": 3,
+      "http_errors": 0,
+      "logical_calls": 3,
+      "calls_by_stage": {
+        "edit": 2,
+        "tests": 1
+      },
+      "prompt_tokens": 10341,
+      "completion_tokens": 393,
+      "length_limited_responses": 0,
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "graded": true,
+      "failure_classification": "implementation_compatibility_failure_then_repair_to_pristine_no_change",
+      "oracle_failure_codes": [
+        "external_behavior_failure",
+        "external_behavior_failure",
+        "external_behavior_failure",
+        "authored_candidate_failure",
+        "authored_candidate_failure",
+        "authored_candidate_failure",
+        "implementation_unchanged",
+        "authored_candidate_check_failed"
+      ],
+      "external": {
+        "available": true,
+        "tests_run": 26,
+        "failure_count": 6,
+        "error_count": 1,
+        "passed": false,
+        "differential_regression_proven": false,
+        "external": {
+          "tests_run": 10,
+          "failure_count": 3,
+          "assertion_failure_count": 3,
+          "nonassertion_failure_count": 0,
+          "error_count": 0,
+          "skipped": 0,
+          "expected_failures": 0,
+          "unexpected_successes": 0,
+          "target_calls": 10,
+          "passed": false
+        },
+        "compatibility": {
+          "tests_run": 4,
+          "failure_count": 0,
+          "assertion_failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "error_count": 0,
+          "skipped": 0,
+          "expected_failures": 0,
+          "unexpected_successes": 0,
+          "target_calls": 4,
+          "passed": true
+        },
+        "authored_candidate": {
+          "tests_run": 12,
+          "failure_count": 3,
+          "assertion_failure_count": 3,
+          "nonassertion_failure_count": 0,
+          "error_count": 0,
+          "skipped": 0,
+          "expected_failures": 0,
+          "unexpected_successes": 0,
+          "target_calls": 12,
+          "passed": false
+        },
+        "authored_pristine_baseline": {
+          "tests_run": 12,
+          "failure_count": 3,
+          "assertion_failure_count": 3,
+          "nonassertion_failure_count": 0,
+          "error_count": 0,
+          "skipped": 0,
+          "expected_failures": 0,
+          "unexpected_successes": 0,
+          "target_calls": 12,
+          "passed": false
+        },
+        "integrity_errors_count": 1,
+        "style_errors_count": 0,
+        "required_reads_missing_count": 0,
+        "differential_actual_assertion_failure_to_pass": false
+      },
+      "current_source_fingerprint": "241b8f9303da1e7f58f77b5302367e9620c9488dfb409ed045b44436d0846c76",
+      "original_snapshot_fingerprint": "3949121c88f51c73b7207d7b9f42c8ca9acfc9f03f0f32525a9ccc2fdfad572d",
+      "initial_manifest_matches_source_snapshot": true,
+      "actual_authored_test_sha256": [
+        "9c44484f8a85471f7ffb8ba793d0c98f5bd00e38ebc38ede4d0d6d2b7adaf538"
+      ],
+      "authored_test_hashes_match_actual_bytes": true,
+      "verified_manifest_matches_current": false,
+      "positive_current_checks_review_authored_and_completion_gate_proven": null,
+      "recorded_checks": [
+        {
+          "category": "behavior",
+          "argv_sha256": "a2660a741daf506b1035539a70d91b5a4a2b8e830442171ce5f911ed909a4f79",
+          "exit_code": 0,
+          "timed_out": false,
+          "operation": 18,
+          "source_fingerprint": "7e3aaf5ad9e8099ea37a74b8416efbac195812952383d39bfabb1ae04ca131bf",
+          "bound_to_current_candidate_or_pristine_plus_same_test": false
+        },
+        {
+          "category": "compatibility",
+          "argv_sha256": "4e8ae3ca360218ea0fb7db497bc59342efe7dca409c79c5412417cedbe3ec7a4",
+          "exit_code": 1,
+          "timed_out": false,
+          "operation": 19,
+          "source_fingerprint": "7e3aaf5ad9e8099ea37a74b8416efbac195812952383d39bfabb1ae04ca131bf",
+          "bound_to_current_candidate_or_pristine_plus_same_test": false
+        },
+        {
+          "category": "integration",
+          "argv_sha256": "710609add84d420e85cd5ab4d71f832cc178ec25a4fbd4d3ccee99390ebdc8ec",
+          "exit_code": 1,
+          "timed_out": false,
+          "operation": 20,
+          "source_fingerprint": "7e3aaf5ad9e8099ea37a74b8416efbac195812952383d39bfabb1ae04ca131bf",
+          "bound_to_current_candidate_or_pristine_plus_same_test": false
+        },
+        {
+          "category": "regression_candidate",
+          "argv_sha256": "dbc807a1a64d0e4abad2a7e5ab6404f47e48ba60adc13ff6fa5a5e1045b9401a",
+          "exit_code": 1,
+          "timed_out": false,
+          "operation": 21,
+          "source_fingerprint": "7e3aaf5ad9e8099ea37a74b8416efbac195812952383d39bfabb1ae04ca131bf",
+          "bound_to_current_candidate_or_pristine_plus_same_test": false
+        },
+        {
+          "category": "regression_baseline",
+          "argv_sha256": "dbc807a1a64d0e4abad2a7e5ab6404f47e48ba60adc13ff6fa5a5e1045b9401a",
+          "exit_code": 1,
+          "timed_out": false,
+          "operation": 22,
+          "source_fingerprint": "241b8f9303da1e7f58f77b5302367e9620c9488dfb409ed045b44436d0846c76",
+          "bound_to_current_candidate_or_pristine_plus_same_test": true
+        }
+      ],
+      "own_regression": {
+        "available": true,
+        "passed": false,
+        "reason_codes": [
+          "baseline_not_target_assertion",
+          "candidate_not_passed"
+        ],
+        "baseline": {
+          "tests_run": 12,
+          "failure_count": 3,
+          "error_count": 0,
+          "skipped_count": 0,
+          "exit_code": 1,
+          "authored_test_sha256": "9c44484f8a85471f7ffb8ba793d0c98f5bd00e38ebc38ede4d0d6d2b7adaf538",
+          "source_fingerprint": "241b8f9303da1e7f58f77b5302367e9620c9488dfb409ed045b44436d0846c76"
+        },
+        "candidate": {
+          "tests_run": 12,
+          "failure_count": 1,
+          "error_count": 0,
+          "skipped_count": 0,
+          "exit_code": 1,
+          "authored_test_sha256": "9c44484f8a85471f7ffb8ba793d0c98f5bd00e38ebc38ede4d0d6d2b7adaf538",
+          "source_fingerprint": "7e3aaf5ad9e8099ea37a74b8416efbac195812952383d39bfabb1ae04ca131bf"
+        },
+        "same_test_sha_actual_authored_bytes": true,
+        "baseline_failure_types_are_actual_assertion_with_line": true
+      },
+      "raw_tool_pairing": {
+        "paired_calls": 35,
+        "host_calls": 35,
+        "native_stage_submissions": 0,
+        "unpaired_calls_or_replies": 0,
+        "malformed_tool_payloads": 0,
+        "pending_calls": 0
+      },
+      "received_model_messages": 3,
+      "checkpoint_step": 3,
+      "all_model_and_task_caps_within_declaration": true,
+      "original_applied": false,
+      "format_normalization": {
+        "events": 2,
+        "raw_message_document_normalized_sha_and_ast_verified": 2,
+        "all_verified": true
+      },
+      "region_edits": {
+        "count": 2,
+        "exact_region_context_replacement_receipt_verified": 2,
+        "all_outside_bytes_signatures_scope_verified": true,
+        "final_reconstructed_region_files_match_actual_bytes": true
+      },
+      "alternative_attempts": [
+        {
+          "id": 1,
+          "component": "implementation",
+          "status": "running",
+          "accepted": false,
+          "base_source_fingerprint": "7e3aaf5ad9e8099ea37a74b8416efbac195812952383d39bfabb1ae04ca131bf",
+          "rejection_reason_codes": [],
+          "preserved_components": 0
+        }
+      ],
+      "common_base_fingerprint_count": 1,
+      "preserved_component_count": 0,
+      "preserved_components_match_actual_content": true,
+      "unchanged_proposal_repeat_guard_triggered": false,
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "requested_implementation_paths_count": 1,
+      "requested_implementation_equals_original_bytes": true,
+      "terminal_meaningful_change_gate_rejected": true,
+      "initial_failed_check_categories": [
+        "compatibility",
+        "integration",
+        "regression_candidate",
+        "regression_baseline"
+      ],
+      "old_failed_checks_retained_as_feedback_not_current_positive_evidence": true,
+      "no_approved_review": true,
+      "final_quality_passed": false,
+      "final_quality_snapshot_is_current": false,
+      "current_manifest_fingerprint": "241b8f9303da1e7f58f77b5302367e9620c9488dfb409ed045b44436d0846c76",
+      "actual_applied_to_original": false,
+      "initial_region_changed_then_repair_restored_original_sha": true,
+      "alternative_journal": {
+        "present": true,
+        "attempts": 1,
+        "accepted": 0,
+        "base_sha_matches_actual_frozen_copy": true,
+        "base_manifest_matches_actual_frozen_copy": true,
+        "same_common_base_each_attempt": true,
+        "no_verified_component_overlay_discarded": true,
+        "loading_for_audit_replayed_no_commands": true,
+        "stopped_unaccepted_branch_intent_preserved": true
+      },
+      "own_actual_differential_failed": {
+        "baseline_tests_run": 12,
+        "baseline_actual_assertion_failures": 3,
+        "baseline_error_count": 0,
+        "candidate_tests_run": 12,
+        "candidate_failure_count": 1,
+        "candidate_error_count": 0,
+        "same_authored_test_sha": true,
+        "admission_reason_codes": [
+          "baseline_not_target_assertion",
+          "candidate_not_passed"
+        ]
+      }
+    },
+    {
+      "id": "final-integer-sign",
+      "arm": "files",
+      "runtime_commit": "6e7be998c62962f1d0bbe7261ed2e8ea43d2ff8b",
+      "task_status": "interrupted",
+      "completed": false,
+      "oracle_passed": false,
+      "usable_passed": false,
+      "seconds": 67.861,
+      "fullcycle_end_to_end_seconds": 68.338,
+      "external_grade_seconds": 0.42,
+      "http_attempts": 5,
+      "usage_responses": 5,
+      "http_errors": 0,
+      "logical_calls": 5,
+      "calls_by_stage": {
+        "edit": 2,
+        "select": 1,
+        "tests": 2
+      },
+      "prompt_tokens": 10922,
+      "completion_tokens": 1026,
+      "length_limited_responses": 0,
+      "timeout": false,
+      "safety_abort": false,
+      "safety_reasons": [],
+      "graded": true,
+      "failure_classification": "implementation_compatibility_failure_then_repair_to_pristine_no_change",
+      "oracle_failure_codes": [
+        "external_behavior_failure",
+        "external_behavior_failure",
+        "external_behavior_failure",
+        "authored_candidate_failure",
+        "authored_candidate_failure",
+        "authored_candidate_failure",
+        "implementation_unchanged",
+        "authored_candidate_check_failed"
+      ],
+      "external": {
+        "available": true,
+        "tests_run": 30,
+        "failure_count": 6,
+        "error_count": 1,
+        "passed": false,
+        "differential_regression_proven": false,
+        "external": {
+          "tests_run": 10,
+          "failure_count": 3,
+          "assertion_failure_count": 3,
+          "nonassertion_failure_count": 0,
+          "error_count": 0,
+          "skipped": 0,
+          "expected_failures": 0,
+          "unexpected_successes": 0,
+          "target_calls": 10,
+          "passed": false
+        },
+        "compatibility": {
+          "tests_run": 4,
+          "failure_count": 0,
+          "assertion_failure_count": 0,
+          "nonassertion_failure_count": 0,
+          "error_count": 0,
+          "skipped": 0,
+          "expected_failures": 0,
+          "unexpected_successes": 0,
+          "target_calls": 4,
+          "passed": true
+        },
+        "authored_candidate": {
+          "tests_run": 16,
+          "failure_count": 3,
+          "assertion_failure_count": 3,
+          "nonassertion_failure_count": 0,
+          "error_count": 0,
+          "skipped": 0,
+          "expected_failures": 0,
+          "unexpected_successes": 0,
+          "target_calls": 16,
+          "passed": false
+        },
+        "authored_pristine_baseline": {
+          "tests_run": 16,
+          "failure_count": 3,
+          "assertion_failure_count": 3,
+          "nonassertion_failure_count": 0,
+          "error_count": 0,
+          "skipped": 0,
+          "expected_failures": 0,
+          "unexpected_successes": 0,
+          "target_calls": 16,
+          "passed": false
+        },
+        "integrity_errors_count": 1,
+        "style_errors_count": 0,
+        "required_reads_missing_count": 0,
+        "differential_actual_assertion_failure_to_pass": false
+      },
+      "current_source_fingerprint": "7a878466ba8b47008e7d15e3313f38d2c1bf22d2b73f715281bd4d5ad20bdf4d",
+      "original_snapshot_fingerprint": "3949121c88f51c73b7207d7b9f42c8ca9acfc9f03f0f32525a9ccc2fdfad572d",
+      "initial_manifest_matches_source_snapshot": true,
+      "actual_authored_test_sha256": [
+        "81601de2b34fe48c016c04fb527c6b3e95493092859ec85a9af6a0fb8e7466b5"
+      ],
+      "authored_test_hashes_match_actual_bytes": true,
+      "verified_manifest_matches_current": false,
+      "positive_current_checks_review_authored_and_completion_gate_proven": null,
+      "recorded_checks": [
+        {
+          "category": "integration",
+          "argv_sha256": "710609add84d420e85cd5ab4d71f832cc178ec25a4fbd4d3ccee99390ebdc8ec",
+          "exit_code": 1,
+          "timed_out": false,
+          "operation": 20,
+          "source_fingerprint": "44f9f26373b5aeaa476c253621cb96b5346fb78ff19aba271b2f351459984bd6",
+          "bound_to_current_candidate_or_pristine_plus_same_test": false
+        }
+      ],
+      "own_regression": {
+        "available": false,
+        "passed": null,
+        "reason_codes": []
+      },
+      "raw_tool_pairing": {
+        "paired_calls": 35,
+        "host_calls": 34,
+        "native_stage_submissions": 1,
+        "unpaired_calls_or_replies": 0,
+        "malformed_tool_payloads": 0,
+        "pending_calls": 0
+      },
+      "received_model_messages": 5,
+      "checkpoint_step": 5,
+      "all_model_and_task_caps_within_declaration": true,
+      "original_applied": false,
+      "format_normalization": {
+        "events": 1,
+        "raw_message_document_normalized_sha_and_ast_verified": 1,
+        "all_verified": true
+      },
+      "region_edits": {
+        "count": 0,
+        "exact_region_context_replacement_receipt_verified": 0,
+        "all_outside_bytes_signatures_scope_verified": true,
+        "final_reconstructed_region_files_match_actual_bytes": true
+      },
+      "alternative_attempts": [],
+      "common_base_fingerprint_count": 0,
+      "preserved_component_count": 0,
+      "preserved_components_match_actual_content": true,
+      "unchanged_proposal_repeat_guard_triggered": false,
+      "timeout_seconds": 180,
+      "max_calls": 8,
+      "requested_implementation_paths_count": 1,
+      "requested_implementation_equals_original_bytes": true,
+      "terminal_meaningful_change_gate_rejected": true,
+      "initial_failed_check_categories": [
+        "integration"
+      ],
+      "old_failed_checks_retained_as_feedback_not_current_positive_evidence": true,
+      "no_approved_review": true,
+      "final_quality_passed": false,
+      "final_quality_snapshot_is_current": null,
+      "current_manifest_fingerprint": "7a878466ba8b47008e7d15e3313f38d2c1bf22d2b73f715281bd4d5ad20bdf4d",
+      "actual_applied_to_original": false
+    }
+  ],
+  "transport": {
+    "http_attempts": 8,
+    "received_usage_responses": 8,
+    "received_neural_messages": 8,
+    "server_logged_returned_posts": 8,
+    "server_response_status_counts": {
+      "200": 8
+    },
+    "post_attempt_usage_and_checkpoint_counts_equal": true,
+    "paired_tool_calls": 70,
+    "pending_tool_calls": 0,
+    "unpaired_tools": 0
+  },
+  "baseline": {
+    "fresh_shared_baseline_after_backend_restart": true,
+    "same_fresh_baseline_each_arm": true,
+    "same_baseline_as_parent": false,
+    "first_regions_request_includes_lazy_cold_load": true,
+    "warmup_requests": 0,
+    "predictive_startup_precharge_removed": true,
+    "startup_admitted_on_actual_declared_reserve": true,
+    "startup_available_estimate_gib": 3.6720428466796875,
+    "actual_runtime_thresholds_unchanged": true,
+    "thresholds": {
+      "min_available_gib": 1.5,
+      "max_own_rss_gib": 3.8,
+      "max_physical_footprint_gib": 3.8,
+      "max_swap_growth_mib": 2048,
+      "min_performance_limit": 100.0,
+      "allow_memory_warning": true
+    },
+    "latency_pooled_with_parent": false
+  },
+  "ownership": {
+    "prior_backend_idle_confirmed_by_owned_process_exit": true,
+    "new_model_launches": 1,
+    "preview_ui_paused": true,
+    "preview_ui_resumed": true,
+    "preview_checkpoints_unchanged": true,
+    "model_left_running_after_experiment": true
+  },
+  "findings": [],
+  "limitations": [
+    "This is a linked resource continuation, not a fresh independent rerun or an opportunity to replace the original partial report.",
+    "Both measured attempts failed genuine implementation/compatibility and repair gates; no fully successful task, review approval or speed benefit is demonstrated.",
+    "The first region draft passed visible behavior checks but failed compatibility; external grading of final repaired snapshots also finds behavior failures.",
+    "Both repair drafts restore original implementation bytes. The host correctly interrupts because no requested implementation change remains.",
+    "Failed command receipts are bound to the earlier rejected candidate, not the final reverted source; they remain feedback and never become current passing evidence.",
+    "The unaccepted region alternative remains journaled; there was no verified implementation component to discard.",
+    "A fresh resource baseline and lazy cold load distinguish this block from the pre-restart parent phase; latency is not pooled.",
+    "The two post-freeze CPU fixes are not part of these measured runtime commits.",
+    "Small synthetic results do not establish broad repository quality or Codex parity."
+  ],
+  "publication": {
+    "raw_responses_outputs_paths_pids_and_private_material_included": false,
+    "hidden_reference_answers_read_for_hints": false
+  }
+}
