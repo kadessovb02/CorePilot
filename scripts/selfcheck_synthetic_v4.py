@@ -13,6 +13,7 @@ import tempfile
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from corepilot.benchmark import grade, load_cases, fingerprint
+from corepilot.controlled_contract import explicit_edit_scope, validate_selection
 
 
 def reference(suite, workspace):
@@ -47,6 +48,10 @@ async def main():
         state = Path(temporary)
         for index, entry in enumerate(manifest['development'] + manifest['heldout']):
             suite = suite_root / entry['suite']; case = load_cases(suite)[0]
+            scope = explicit_edit_scope(case['prompt'])
+            assert scope == set(case['allowed_changes']), (entry['id'], scope)
+            selected = validate_selection(suite / 'repository', {'read_paths': case['required_reads'], 'edit_paths': [case['target_file']], 'new_test_paths': [case['new_test_file']]}, test_roots=['tests'], allowed_edit_paths=[case['target_file']], request=case['prompt'])
+            assert selected['edit_paths'] == [case['target_file']] and selected['new_test_paths'] == [case['new_test_file']]
             baseline = state / f'baseline-{index}'; shutil.copytree(suite / 'repository', baseline)
             before, raw_before = await evaluate(suite, baseline, state, f'grade-baseline-{index}')
             assert not before['passed'] and raw_before['external']['failure_count'] + raw_before['external']['error_count'] > 0
@@ -85,12 +90,13 @@ async def main():
                 negative_count += 1
             rows.append({'id': entry['id'], 'split': 'development' if index < 4 else 'heldout',
                          'baseline_behavior_rejected': True, 'baseline_compatibility_passed': True,
+                         'runtime_explicit_scope_passed': True, 'runtime_validate_selection_passed': True,
                          'reference_oracle_passed': True, 'differential_assertion_failure_proven': True,
                          'candidate_target_calls': raw_after['authored_candidate']['target_calls'],
                          'baseline_target_calls': raw_after['authored_pristine_baseline']['target_calls'],
                          'reference_unittest_executions': raw_after['tests_run'], 'negative_fixtures_rejected': negative_count})
     report = {'schema': 1, 'kind': 'synthetic_v4_cpu_oracle_admission', 'passed': True,
-              'development_cases': 4, 'heldout_cases': len(manifest['heldout']), 'rows': rows,
+              'development_cases': 4, 'heldout_cases': len(manifest['heldout']), 'original_exposed_heldout_cases': len(manifest.get('original_heldout', [])), 'rows': rows,
               'rejected_negative_fixtures': sum(r['negative_fixtures_rejected'] for r in rows), 'model_calls': 0,
               'observed_agent_reads': 0, 'synthetic_read_receipts': True,
               'fixture_sha256': {entry['suite']: fingerprint(suite_root / entry['suite'] / 'repository') for entry in manifest['development'] + manifest['heldout']},

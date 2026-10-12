@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "kind": "pre_inference_synthetic_v4_design",
-  "old_runtime_commit": "52c333c8aeb5874495acbbc4776983da69df123f",
+  "kind": "pre_inference_scope_corrected_synthetic_v4_design",
+  "old_runtime_commit": "6e7be998c62962f1d0bbe7261ed2e8ea43d2ff8b",
   "new_runtime_commit": "Must be pinned in an immutable execution plan after CPU readiness, before first inference.",
   "development_attempts": 8,
   "development_order": [
@@ -58,5 +58,11 @@
   "requires_exclusive_model_requester": true,
   "requires_independent_sandboxed_oracle": true,
   "requires_authored_candidate_pass_and_pristine_assertion_failure": true,
-  "model_calls_at_authorship": 0
+  "model_calls_at_authorship": 0,
+  "old_runtime_base_commit": "52c333c8aeb5874495acbbc4776983da69df123f",
+  "new_runtime_code_commit": "c244435aef5808e9decaeebf5fcab6a3f394cbe5",
+  "initial_exposed_version_commit": "f70233989242e885cb4c1133957c9b1df8d54a39",
+  "same_scope_only_fix_both_arms": true,
+  "fresh_final_authored_before_corrected_development_results": true,
+  "original_heldout_preserved": true
 }

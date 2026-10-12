@@ -21,6 +21,8 @@ def load(path, name):
 def test_exact_predeclared_task_counts_visible_commands_and_reference_isolation():
     manifest = json.loads((SUITE / 'suite.json').read_text())
     assert len(manifest['development']) == 4 and len(manifest['heldout']) == 2
+    assert len(manifest['original_heldout']) == 2
+    assert not ({item['id'] for item in manifest['original_heldout']} & {item['id'] for item in manifest['heldout']})
     for entry in manifest['development'] + manifest['heldout']:
         suite = SUITE / entry['suite']; case = json.loads((suite / 'cases.json').read_text())[0]
         repo = suite / 'repository'
@@ -165,3 +167,16 @@ def test_framework_and_named_target_rebindings_are_rejected(assignment):
     oracle = load(SUITE/'development/edit-negative-index/oracle.py', 'v4_static_rebind')
     content = 'import unittest\nfrom fixturekit.indexing import resolve_index\n\n\nclass T(unittest.TestCase):\n    def test_value(self):\n        '+assignment+'\n        self.assertEqual(resolve_index(-1, 4), 3)\n'
     assert not oracle.regression_structure(content, 'fixturekit.indexing', 'resolve_index')
+
+
+def test_active_fixture_requests_pass_real_scope_parser_and_selection_before_inference():
+    from corepilot.controlled_contract import explicit_edit_scope, validate_selection, ContractError
+    manifest = json.loads((SUITE / 'suite.json').read_text())
+    for entry in manifest['development'] + manifest['heldout']:
+        suite = SUITE / entry['suite']; case = json.loads((suite / 'cases.json').read_text())[0]
+        assert explicit_edit_scope(case['prompt']) == set(case['allowed_changes'])
+        selected = {'read_paths': case['required_reads'], 'edit_paths': [case['target_file']], 'new_test_paths': [case['new_test_file']]}
+        result = validate_selection(suite / 'repository', selected, test_roots=['tests'], request=case['prompt'])
+        assert result['edit_paths'] == [case['target_file']] and result['new_test_paths'] == [case['new_test_file']]
+        with pytest.raises(ContractError):
+            validate_selection(suite / 'repository', dict(selected, new_test_paths=['tests/test_outside.py']), test_roots=['tests'], request=case['prompt'])

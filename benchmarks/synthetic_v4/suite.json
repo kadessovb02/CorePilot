@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "kind": "synthetic_v4_pre_inference_fixed_tasks",
+  "kind": "synthetic_v4_scope_corrected_development_and_fresh_final_tasks",
   "development": [
     {
       "id": "edit-negative-index",
@@ -21,12 +21,12 @@
   ],
   "heldout": [
     {
-      "id": "final-strict-order",
-      "suite": "heldout/final-strict-order"
+      "id": "final-prefix-anchor",
+      "suite": "heldout/final-prefix-anchor"
     },
     {
-      "id": "final-ceiling-blocks",
-      "suite": "heldout/final-ceiling-blocks"
+      "id": "final-integer-sign",
+      "suite": "heldout/final-integer-sign"
     }
   ],
   "model_calls": 0,
@@ -34,6 +34,19 @@
     "Exactly four fixed development edits; all eight arm attempts retained.",
     "Final tasks authored before any development inference; no development outcomes used.",
     "Each case has a separate pristine fixture and visible behavior/compatibility expectations.",
-    "References and independent oracles stay outside repository until generation has ended."
+    "References and independent oracles stay outside repository until generation has ended.",
+    "Original heldout tasks are exposed and preserved unchanged under original_heldout; do not present them as fresh final evidence.",
+    "Two replacement final tasks authored before corrected development inference; no corrected development outcome used.",
+    "Initial source and all original reports remain archived; four development requests/fixtures unchanged."
+  ],
+  "original_heldout": [
+    {
+      "id": "final-strict-order",
+      "suite": "heldout/final-strict-order"
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "suite": "heldout/final-ceiling-blocks"
+    }
   ]
 }

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "final-prefix-anchor",
+    "category": "edit",
+    "read_only": false,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "fixturekit/prefixes.py",
+      "tests/test_requirements.py",
+      "tests/test_compatibility.py"
+    ],
+    "allowed_changes": [
+      "fixturekit/prefixes.py",
+      "tests/test_prefix_anchor.py"
+    ],
+    "target_file": "fixturekit/prefixes.py",
+    "function_identifier": "remove_prefix",
+    "new_test_file": "tests/test_prefix_anchor.py",
+    "prompt": "Fix function remove_prefix in fixturekit/prefixes.py. Remove prefix exactly once only when it starts at position zero; an occurrence later in the string must remain untouched. Preserve exact remaining text, repeated leading prefixes, empty prefix/text, Unicode and TypeError for nonstring arguments. Read AGENTS.md, contracts.md, fixturekit/prefixes.py, tests/test_requirements.py, tests/test_compatibility.py first. Change only the body of remove_prefix in fixturekit/prefixes.py and add tests/test_prefix_anchor.py; preserve its signature, all other source text and existing tests. Add meaningful unittest assertions in tests/test_prefix_anchor.py that fail on the original bug and pass after the fix. Run python -m unittest discover -s tests -v. Finish with the real check result and a short description.",
+    "oracle": "external_behavior_compatibility_scope_style_and_differential_regression",
+    "max_calls": 8,
+    "timeout_seconds": 180,
+    "behavior_checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_requirements.py",
+        "-v"
+      ]
+    ],
+    "compatibility_checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_compatibility.py",
+        "-v"
+      ]
+    ],
+    "checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ]
+    ]
+  }
+]

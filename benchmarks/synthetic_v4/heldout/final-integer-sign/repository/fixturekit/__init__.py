@@ -1,0 +1,1 @@
+"""Small synthetic offline utilities."""
