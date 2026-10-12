@@ -191,13 +191,15 @@ def effective_case_calls(max_calls, case, override):
 
 async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, max_calls, max_tokens, context_chars,
                    request_pause_seconds=3, protocol="json", case_timeout_override=None, controlled_checks=None,
-                   controlled_artifact_protocol="stage"):
+                   controlled_artifact_protocol="stage", controlled_max_repairs=1):
     if mode not in {"single", "specialists", "controlled"}:
         raise ValueError("Unknown benchmark workflow")
     if protocol not in ("json", "native"):
         raise ValueError("Benchmark protocol must be explicitly json or native")
     if controlled_artifact_protocol not in ("stage", "documents"):
         raise ValueError("Controlled artifact protocol must be stage or documents")
+    if isinstance(controlled_max_repairs, bool) or not isinstance(controlled_max_repairs, int) or not 0 <= controlled_max_repairs <= 2:
+        raise ValueError("controlled_max_repairs must be an integer from 0 to 2")
     timeout = effective_case_timeout(timeout, case, case_timeout_override)
     root = settings.root / "runs" / (case["id"] + "-" + mode)
     if root.exists():
@@ -209,7 +211,8 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
                                             role: {"url": settings.model_url, "name": settings.model_name,
                                                    "protocol": protocol, "max_tokens": max_tokens, "context_chars": context_chars}
                                             for role in ("planner", "coder", "reviewer")}},
-                         controlled={"enabled": mode == "controlled", "artifact_protocol": controlled_artifact_protocol, "profiles": {"benchmark": {
+                         controlled={"enabled": mode == "controlled", "artifact_protocol": controlled_artifact_protocol,
+                             "max_repairs": controlled_max_repairs, "profiles": {"benchmark": {
                              "checks": controlled_checks or [], "test_roots": ["tests"]}}} if mode == "controlled" else {},
                          resource_guard={"enabled": False, "max_task_seconds": timeout,
                              "min_available_gib": monitor.thresholds.min_available_gib,
@@ -295,6 +298,7 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
     record["resources"] = resources["summary"]
     if mode == "controlled":
         record["controlled_artifact_protocol"] = controlled_artifact_protocol
+        record["controlled_max_repairs"] = controlled_max_repairs
         stages = [event.get("data", {}).get("phase") for event in events if event["type"] == "model"]
         record["calls_by_stage"] = {phase: stages.count(phase) for phase in sorted(set(stages)) if isinstance(phase, str)}
     return record
@@ -343,7 +347,7 @@ async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None
                   timeout=150, max_calls=24, max_tokens=768, context_chars=14000, metadata=None, progress=None,
                   request_pause_seconds=3, protocol="json", case_timeout_override=None, case_call_override=None,
                   modes=("single", "specialists"), controlled_checks=None, case_ids=None, initial_baseline=None,
-                  controlled_artifact_protocol="stage"):
+                  controlled_artifact_protocol="stage", controlled_max_repairs=1):
     if (not isinstance(modes, (list, tuple)) or not 1 <= len(modes) <= 3 or len(set(modes)) != len(modes)
             or any(mode not in {"single", "specialists", "controlled"} for mode in modes)):
         raise ValueError("Benchmark modes must be distinct supported workflows")
@@ -353,6 +357,8 @@ async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None
         raise ValueError("Benchmark protocol must be explicitly json or native")
     if controlled_artifact_protocol not in ("stage", "documents"):
         raise ValueError("Controlled artifact protocol must be stage or documents")
+    if isinstance(controlled_max_repairs, bool) or not isinstance(controlled_max_repairs, int) or not 0 <= controlled_max_repairs <= 2:
+        raise ValueError("controlled_max_repairs must be an integer from 0 to 2")
     if (not math.isfinite(rest_seconds) or rest_seconds < 10 or timeout <= 0 or not 1 <= max_calls <= 100 or not 32 <= max_tokens <= 2048
             or not 4000 <= context_chars <= 24000 or limit < 0 or not math.isfinite(timeout)
             or not math.isfinite(request_pause_seconds) or not 0 <= request_pause_seconds <= 60):
@@ -400,6 +406,7 @@ async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None
     if "controlled" in modes:
         report["settings"]["controlled_checks"] = controlled_checks
         report["settings"]["controlled_artifact_protocol"] = controlled_artifact_protocol
+        report["settings"]["controlled_max_repairs"] = controlled_max_repairs
 
     def save():
         report["summary"] = aggregate(report["records"])
@@ -423,7 +430,8 @@ async def compare(settings: Settings, suite: Path, output: Path, *, monitor=None
                                     max_calls=effective_case_calls(max_calls, case, case_call_override), max_tokens=max_tokens, context_chars=context_chars,
                                     request_pause_seconds=request_pause_seconds, protocol=protocol, case_timeout_override=case_timeout_override,
                                     **({"controlled_checks": controlled_checks,
-                                        "controlled_artifact_protocol": controlled_artifact_protocol} if "controlled" in modes else {}))
+                                        "controlled_artifact_protocol": controlled_artifact_protocol,
+                                        "controlled_max_repairs": controlled_max_repairs} if "controlled" in modes else {}))
             report["records"].append(record); save()
             if progress:
                 progress({"event": "finished", "id": case["id"], "mode": mode, "seconds": record["seconds"],

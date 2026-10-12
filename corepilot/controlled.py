@@ -10,6 +10,7 @@ import json
 import math
 import re
 import uuid
+from copy import deepcopy
 from pathlib import Path
 
 from .controlled_contract import (ContractError, MAX_RESPONSE_CHARS, parse_stage, prepare_patches,
@@ -189,6 +190,37 @@ def _document_content(message, path):
     return content, False
 
 
+def _check_metadata(check):
+    return {key: deepcopy(check[key]) for key in
+            ("argv", "exit_code", "timed_out", "operation", "source_fingerprint") if key in check}
+
+
+def _feedback_context(feedback):
+    """Render bounded evidence without changing the original check receipts."""
+    selected = feedback[-2:]
+    failed = [(round_index, check_index) for round_index, item in enumerate(selected)
+              for check_index, check in enumerate(item.get("checks", []))
+              if check.get("exit_code") != 0 or check.get("timed_out")]
+    latest = failed[-1] if failed else None
+    rendered = []
+    for round_index, item in enumerate(selected):
+        if "checks" not in item:
+            rendered.append(deepcopy(item))
+            continue
+        checks = []
+        for check_index, check in enumerate(item["checks"]):
+            row = _check_metadata(check)
+            if latest == (round_index, check_index):
+                output = check.get("output", "")
+                output = output if isinstance(output, str) else ""
+                clipped = len(output) > 1400
+                row.update(output=(output[:400] + "\n[check output clipped]\n" + output[-1000:] if clipped else output),
+                           output_original_chars=len(output), output_clipped=clipped)
+            checks.append(row)
+        rendered.append({"checks": checks})
+    return rendered
+
+
 class Controller:
     def __init__(self, engine, task, tools):
         self.engine, self.task, self.tools = engine, task, tools
@@ -288,6 +320,9 @@ class Controller:
                 rules = rules.replace("Propose only the current stage's schema;", "Return only the selected file's contents;").replace(
                     "an edit stage may submit patches:[]; never fabricate identical old/new replacements.",
                     "return its exact current contents; the host decides whether an unchanged document is admissible.")
+                if document_path.endswith(".py"):
+                    rules += (" Use LF line endings and a final newline; do not generate trailing whitespace. "
+                              "Generated blank lines must be empty, including in docstrings. Preserve existing literal data.")
             adapter_hint = (("For the JSON adapter, put the complete file text inside the final string. " if document_path
                             else "For the JSON adapter, put the serialized stage object inside the final string. ")
                             if self.engine.settings.protocol == "json" else "")
@@ -358,6 +393,16 @@ class Controller:
                     if normalized:
                         self.event("verification", "Normalized whole-answer document fence", {
                             "phase": stage, "format_normalization": "markdown_document_fence", "path": document_path})
+                    if document_path.endswith(".py"):
+                        from .document_format import format_python_document
+                        raw_content = content
+                        content, metadata = format_python_document(content)
+                        if metadata is not None:
+                            self.event("verification", "Normalized Python document formatting", {
+                                **metadata, "phase": stage, "path": document_path,
+                                "raw_sha256": hashlib.sha256(raw_content.encode()).hexdigest(),
+                                "raw_message_sha256": hashlib.sha256(message["content"].encode()).hexdigest(),
+                                "normalized_sha256": hashlib.sha256(content.encode()).hexdigest()})
                     result = {"content": content, "summary": "Host received a file document."}
                 elif message.get("_corepilot_stage_submission") == stage:
                     if len(calls) != 1 or message.get("content"):
@@ -401,13 +446,15 @@ class Controller:
 
     def context(self, **extra):
         return {"selection": self.state.get("selection"), "round": self.state["round"],
-            "feedback": self.state.get("feedback", [])[-2:],
-            "authored_tests": {path: self.contents.get(path, "") for path in self.state.get("authored_tests", {})},
+            "feedback": _feedback_context(self.state.get("feedback", [])),
+            "authored_tests": {path: {"sha256": sha, "content_in_actual_reads": path in self.contents}
+                               for path, sha in self.state.get("authored_tests", {}).items()},
             **({"historical_memory_untrusted": self.task.get("memory_context", [])}
                if self.task.get("memory") and self.task.get("memory_context") else {}),
             **({"imported_history_untrusted": self.task["import_context"]}
                if self.task.get("import_context") else {}),
-            **extra}
+            **{key: ([_check_metadata(check) for check in value] if key == "checks" else value)
+               for key, value in extra.items()}}
 
     async def selection(self):
         self.phase("select")
@@ -580,7 +627,7 @@ class Controller:
             self.fresh(expected, "A configured read-only check changed source")
             record = {"argv": argv, "exit_code": result.get("exit_code"), "timed_out": result.get("timed_out", False),
                 "operation": self.task["tool_operations"], "source_fingerprint": _fingerprint(expected),
-                "output": result.get("output", result.get("error", ""))[:3000]}
+                "output": result.get("output", result.get("error", ""))}
             checks.append(record)
             self.task.setdefault("checks", []).append(record)
             self.task["last_check_step"] = self.task["tool_operations"]

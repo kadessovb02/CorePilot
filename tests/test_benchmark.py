@@ -1101,7 +1101,8 @@ def test_native_stage_posts_and_auto_fallback_are_metered_without_workspace_tool
 
 
 @pytest.mark.parametrize("artifact_protocol", ["stage", "documents"])
-def test_controlled_artifact_protocol_reaches_effective_settings_and_record(tmp_path, suite, monkeypatch, artifact_protocol):
+@pytest.mark.parametrize("repairs", [0, 1, 2])
+def test_controlled_artifact_protocol_reaches_effective_settings_and_record(tmp_path, suite, monkeypatch, artifact_protocol, repairs):
     _, engines = fake_runtime(monkeypatch, suite)
     async def grade(*args):
         return {"passed": True, "failures": []}
@@ -1109,9 +1110,11 @@ def test_controlled_artifact_protocol_reaches_effective_settings_and_record(tmp_
     record = asyncio.run(benchmark.run_case(Settings(root=tmp_path / "state"), suite,
         benchmark.load_cases(suite)[0], "controlled", Monitor(), safe(), timeout=1, max_calls=8,
         max_tokens=768, context_chars=14000, controlled_checks=[["python", "-m", "unittest"]],
-        controlled_artifact_protocol=artifact_protocol))
+        controlled_artifact_protocol=artifact_protocol, controlled_max_repairs=repairs))
     assert engines[0].settings.controlled["artifact_protocol"] == artifact_protocol
+    assert engines[0].settings.controlled["max_repairs"] == repairs
     assert record["controlled_artifact_protocol"] == artifact_protocol
+    assert record["controlled_max_repairs"] == repairs
 
 
 def test_controlled_documents_comparison_and_cli_record_explicit_mode(tmp_path, suite, monkeypatch, no_rest):
@@ -1137,3 +1140,46 @@ def test_invalid_controlled_artifact_protocol_stops_before_sampling(tmp_path, su
         asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, tmp_path / "report.json",
             monitor=monitor, controlled_artifact_protocol="repair-json"))
     assert monitor.sample_count == 0
+
+
+def test_controlled_repair_limit_forwards_and_records_without_extra_call_time_budget(tmp_path, suite, monkeypatch, no_rest):
+    calls = []
+    async def run(settings, selected, case, mode, monitor, baseline, **caps):
+        calls.append(caps)
+        return result(case["id"], mode)
+    monkeypatch.setattr(benchmark, "run_case", run)
+    report = asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, tmp_path / "report.json",
+        monitor=Monitor(), modes=["controlled"], controlled_checks=[["python", "-m", "unittest"]],
+        controlled_max_repairs=2, max_calls=8, max_tokens=2048, context_chars=22000, timeout=180,
+        case_timeout_override=180))
+    assert report["settings"]["controlled_max_repairs"] == 2
+    assert all((v["controlled_max_repairs"], v["max_calls"], v["max_tokens"], v["context_chars"], v["timeout"]) ==
+               (2, 8, 2048, 22000, 180) for v in calls)
+    main, invocations = benchmark_cli(monkeypatch, ["--state", tmp_path / "cli-state", "--output", tmp_path / "cli.json",
+        "--mode", "controlled", "--check-json", '["python","-m","unittest"]', "--controlled-max-repairs", "2"])
+    assert main() == 0 and invocations[0][3]["controlled_max_repairs"] == 2
+
+
+@pytest.mark.parametrize("repairs", [-1, 3, None, True, 1.5, "2"])
+def test_invalid_controlled_repair_limit_rejected_before_models_and_sampling(tmp_path, suite, repairs):
+    monitor = Monitor()
+    with pytest.raises(ValueError, match="controlled_max_repairs"):
+        asyncio.run(benchmark.compare(Settings(root=tmp_path / "state"), suite, tmp_path / "report.json",
+            monitor=monitor, controlled_max_repairs=repairs))
+    with pytest.raises(ValueError, match="controlled_max_repairs"):
+        asyncio.run(benchmark.run_case(Settings(root=tmp_path / "state"), suite,
+            benchmark.load_cases(suite)[0], "controlled", monitor, safe(), timeout=180,
+            max_calls=8, max_tokens=2048, context_chars=22000, controlled_max_repairs=repairs))
+    assert monitor.sample_count == 0
+
+
+@pytest.mark.parametrize("value", ["-1", "3", "two"])
+def test_cli_invalid_controlled_repair_limit_does_not_construct_runtime(tmp_path, monkeypatch, value):
+    main, calls = benchmark_cli(monkeypatch, ["--state", tmp_path / "state", "--output", tmp_path / "report.json",
+        "--controlled-max-repairs", value])
+    def forbidden(*args, **kwargs):
+        pytest.fail("Invalid repair bound reached runtime construction")
+    monkeypatch.setitem(main.__globals__, "Settings", forbidden)
+    with pytest.raises(SystemExit) as error:
+        main()
+    assert error.value.code == 2 and not calls
