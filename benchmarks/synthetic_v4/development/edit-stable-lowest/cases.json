@@ -1,0 +1,62 @@
+[
+  {
+    "id": "edit-stable-lowest",
+    "category": "edit",
+    "read_only": false,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "fixturekit/ranking.py",
+      "tests/test_requirements.py",
+      "tests/test_compatibility.py"
+    ],
+    "allowed_changes": [
+      "fixturekit/ranking.py",
+      "tests/test_stable_lowest.py"
+    ],
+    "target_file": "fixturekit/ranking.py",
+    "function_identifier": "select_lowest",
+    "new_test_file": "tests/test_stable_lowest.py",
+    "prompt": "Fix function select_lowest in fixturekit/ranking.py. Return the first record attaining the minimum integer score, by original object identity; tied later records must not replace it. Preserve one-pass iterable/generator handling, input immutability, KeyError for absent score, TypeError for noninteger/bool scores, and ValueError for empty input. Read AGENTS.md, contracts.md, fixturekit/ranking.py, tests/test_requirements.py, tests/test_compatibility.py first. Change only the body of select_lowest in fixturekit/ranking.py and add tests/test_stable_lowest.py; preserve its signature, all other source text and existing tests. Add meaningful unittest assertions in tests/test_stable_lowest.py that fail on the original bug and pass after the fix. Run python -m unittest discover -s tests -v. Finish with the real check result and a short description.",
+    "oracle": "external_behavior_compatibility_scope_style_and_differential_regression",
+    "max_calls": 8,
+    "timeout_seconds": 180,
+    "behavior_checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_requirements.py",
+        "-v"
+      ]
+    ],
+    "compatibility_checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_compatibility.py",
+        "-v"
+      ]
+    ],
+    "checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ]
+    ]
+  }
+]

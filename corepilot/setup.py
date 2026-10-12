@@ -52,6 +52,7 @@ def onboarding(*, home: Path, config_path: Path, repo: Path, name=None, model_ur
                history_provider=None, history_path=None, prepare_history=False, index=True, verify=False, port=8765, client=None):
     from .cli import read_config,write_config
     from .indexing import index_project
+    from .project_context import ensure_project_context
     home=Path(home).expanduser().resolve();repo=Path(repo).expanduser().resolve()
     if not repo.is_dir():raise ValueError("Repository directory does not exist")
     if not 1<=port<=65535:raise ValueError("Invalid interface port")
@@ -106,6 +107,15 @@ def onboarding(*, home: Path, config_path: Path, repo: Path, name=None, model_ur
             "models_found":discovered,"model":{key:model.get(key) for key in ("url","name","protocol")},"sandbox_available":bool(shutil.which("sandbox-exec")),
             "interface_url":f"http://127.0.0.1:{port}","history_registered":bool(history_path),"next_steps":[]}
     report["orchestration"] = {"enabled": specialists["enabled"], "roles": role_status}
+    configured_checks = config.get("controlled", {}).get("profiles", {}).get(project, {})
+    context = ensure_project_context(repo, home / "runtime/project-context" / (project + ".json"),
+                                     observed_checks=configured_checks)
+    package = context["package"]
+    report["project_context"] = {"version": package["version"], "artifact": context["artifact_path"],
+        "artifact_sha256": context["artifact_sha256"], "source_fingerprint": package["source_fingerprint"],
+        "refreshed": context["refreshed"], "files_inspected": package["stats"]["files_inspected"],
+        "incomplete": package["incomplete"], "check_candidates": package["check_candidates"],
+        "notice": "Static hints only; inferred commands need verification and are not check authorization."}
     if prepare_history:
         from .dataset import prepare
         # A repeat setup does not silently overwrite a reviewed training corpus.

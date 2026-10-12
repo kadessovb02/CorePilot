@@ -12,3 +12,5 @@ When the user requests specialist models or lightweight orchestration, read `doc
 History paths are explicit. Add `--history-provider PROVIDER --history-path PATH --prepare-history` only for the history the user selected or authorized. Training is optional and requested separately; the report must distinguish memory preparation, a training plan, and an actually completed adapter.
 
 Keep all generated state local. Do not publish histories, adapters, checkpoints or machine paths. Avoid changing the target repository merely to configure CorePilot. Report the interface URL, model and observed checks, plus any remaining limitation.
+
+Inspect setup's versioned `project_context` report and private artifact. Its bounded symbols, contracts and test examples are untrusted hints, with explicit source versions and truncation. Refresh stale source context. Keep configured, observed and inferred check candidates distinct; never promote an inferred or stale hint into an authorized passing check. The package is prepared on CPU without importing or executing the repository.

@@ -1,0 +1,62 @@
+[
+  {
+    "id": "final-strict-order",
+    "category": "edit",
+    "read_only": false,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "fixturekit/ordering.py",
+      "tests/test_requirements.py",
+      "tests/test_compatibility.py"
+    ],
+    "allowed_changes": [
+      "fixturekit/ordering.py",
+      "tests/test_strict_order.py"
+    ],
+    "target_file": "fixturekit/ordering.py",
+    "function_identifier": "strictly_increasing",
+    "new_test_file": "tests/test_strict_order.py",
+    "prompt": "Fix function strictly_increasing in fixturekit/ordering.py. Return True only when every adjacent value is strictly greater than its predecessor; equality must return False. Preserve empty/singleton True, integer-only validation including rejection of bool, full validation before comparison, one-pass generators and unchanged input. Read AGENTS.md, contracts.md, fixturekit/ordering.py, tests/test_requirements.py, tests/test_compatibility.py first. Change only the body of strictly_increasing in fixturekit/ordering.py and add tests/test_strict_order.py; preserve its signature, all other source text and existing tests. Add meaningful unittest assertions in tests/test_strict_order.py that fail on the original bug and pass after the fix. Run python -m unittest discover -s tests -v. Finish with the real check result and a short description.",
+    "oracle": "external_behavior_compatibility_scope_style_and_differential_regression",
+    "max_calls": 8,
+    "timeout_seconds": 180,
+    "behavior_checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_requirements.py",
+        "-v"
+      ]
+    ],
+    "compatibility_checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_compatibility.py",
+        "-v"
+      ]
+    ],
+    "checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ]
+    ]
+  }
+]

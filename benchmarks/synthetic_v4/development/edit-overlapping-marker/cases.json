@@ -1,0 +1,62 @@
+[
+  {
+    "id": "edit-overlapping-marker",
+    "category": "edit",
+    "read_only": false,
+    "required_reads": [
+      "AGENTS.md",
+      "contracts.md",
+      "fixturekit/patterns.py",
+      "tests/test_requirements.py",
+      "tests/test_compatibility.py"
+    ],
+    "allowed_changes": [
+      "fixturekit/patterns.py",
+      "tests/test_overlapping_marker.py"
+    ],
+    "target_file": "fixturekit/patterns.py",
+    "function_identifier": "count_overlapping",
+    "new_test_file": "tests/test_overlapping_marker.py",
+    "prompt": "Fix function count_overlapping in fixturekit/patterns.py. Count every starting position where marker occurs, including overlapping matches. Matching is exact and case-sensitive. Preserve zero for empty/no-match text, Unicode strings, TypeError for nonstrings, and ValueError for an empty marker. Read AGENTS.md, contracts.md, fixturekit/patterns.py, tests/test_requirements.py, tests/test_compatibility.py first. Change only the body of count_overlapping in fixturekit/patterns.py and add tests/test_overlapping_marker.py; preserve its signature, all other source text and existing tests. Add meaningful unittest assertions in tests/test_overlapping_marker.py that fail on the original bug and pass after the fix. Run python -m unittest discover -s tests -v. Finish with the real check result and a short description.",
+    "oracle": "external_behavior_compatibility_scope_style_and_differential_regression",
+    "max_calls": 8,
+    "timeout_seconds": 180,
+    "behavior_checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_requirements.py",
+        "-v"
+      ]
+    ],
+    "compatibility_checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-p",
+        "test_compatibility.py",
+        "-v"
+      ]
+    ],
+    "checks": [
+      [
+        "python",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tests",
+        "-v"
+      ]
+    ]
+  }
+]

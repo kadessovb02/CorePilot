@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "kind": "synthetic_v4_pre_inference_fixed_tasks",
+  "development": [
+    {
+      "id": "edit-negative-index",
+      "suite": "development/edit-negative-index"
+    },
+    {
+      "id": "edit-assignment-separator",
+      "suite": "development/edit-assignment-separator"
+    },
+    {
+      "id": "edit-overlapping-marker",
+      "suite": "development/edit-overlapping-marker"
+    },
+    {
+      "id": "edit-stable-lowest",
+      "suite": "development/edit-stable-lowest"
+    }
+  ],
+  "heldout": [
+    {
+      "id": "final-strict-order",
+      "suite": "heldout/final-strict-order"
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "suite": "heldout/final-ceiling-blocks"
+    }
+  ],
+  "model_calls": 0,
+  "notes": [
+    "Exactly four fixed development edits; all eight arm attempts retained.",
+    "Final tasks authored before any development inference; no development outcomes used.",
+    "Each case has a separate pristine fixture and visible behavior/compatibility expectations.",
+    "References and independent oracles stay outside repository until generation has ended."
+  ]
+}

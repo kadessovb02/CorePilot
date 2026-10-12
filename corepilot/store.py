@@ -125,7 +125,18 @@ def public_task(task: dict, after: int = 0, compact: bool = False) -> dict:
         result["orchestration"] = public_orchestration(task["orchestration"])
     if isinstance(task.get("controlled"), dict):
         state = task["controlled"]
-        result["controlled"] = {key: state[key] for key in ("enabled", "phase", "round") if key in state}
+        result["controlled"] = {key: state[key] for key in ("enabled", "phase", "round", "execution_mode") if key in state}
+        if isinstance(state.get('execution'), dict):
+            execution = state['execution']
+            quality = execution.get('quality', {})
+            result['controlled']['quality'] = {key: {'passed': quality[key].get('passed') is True}
+                for key in ('behavior', 'compatibility', 'integration', 'scope', 'style', 'regression')
+                if isinstance(quality.get(key), dict)}
+            result['controlled']['alternatives'] = [{'id': row.get('id'), 'component': row.get('component'),
+                'status': row.get('status'), 'accepted': row.get('accepted') is True,
+                'rejection_reason_codes': [code for code in row.get('rejection_reason_codes', [])
+                                          if isinstance(code, str) and len(code) <= 100]}
+                for row in execution.get('alternatives', [])[:2] if isinstance(row, dict)]
         if isinstance(state.get("summaries"), dict):
             result["controlled"]["summaries"] = {key: value[:2000] for key, value in state["summaries"].items()
                                                    if key in {"edit", "tests", "review", "inspect"} and isinstance(value, str)}

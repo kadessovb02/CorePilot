@@ -12,6 +12,7 @@ import json
 import math
 import re
 import threading
+from pathlib import Path
 from contextlib import contextmanager
 
 from .tools import TOOL_SPECS
@@ -129,6 +130,198 @@ def validate_verified_native(row: dict) -> None:
     template_messages(messages, tools)
 
 
+def validate_verified_region(row: dict) -> None:
+    """Validate content-only region targets and their host-quality proof binding.
+
+    This is receipt integrity, not receipt authentication or general quality.
+    Native calls are never invented for a delivered source-document target.
+    """
+    from .execution_quality import validate_differential_regression
+    training = row.get("training", {})
+    if not isinstance(training, dict) or training.get("kind") != "verified_region":
+        raise ValueError("Region training requires an explicit verified_region record")
+    for key in ("source_sha256", "diff_sha256", "trajectory_sha256", "proof_sha256", "project_source_id"):
+        _hash(training.get(key), key)
+    teacher = training.get("teacher", {})
+    if not isinstance(teacher, dict) or any(not isinstance(teacher.get(key), str) or not teacher[key]
+                                             for key in ("name", "revision")):
+        raise ValueError("Region training requires observed teacher identity")
+    for key in ("task_id", "task_family_id"):
+        if not isinstance(training.get(key), str) or not training[key]:
+            raise ValueError("Region training requires original task family identity")
+    proof = training.get("proof")
+    if not isinstance(proof, dict) or content_hash(proof) != training["proof_sha256"]:
+        raise ValueError("Region proof differs from its receipt hash")
+    messages = row.get("messages")
+    if (not isinstance(messages, list) or len(messages) != 2 or any(not isinstance(message, dict) for message in messages)
+            or messages[0].get("role") != "user"
+            or messages[1].get("role") != "assistant" or row.get("tools")
+            or any(not isinstance(message.get("content"), str) or not message["content"].strip()
+                   or message.get("tool_calls") for message in messages)
+            or content_hash({"messages": messages}) != training["trajectory_sha256"]):
+        raise ValueError("Region target must be one bound visible instruction and source response")
+    if proof.get("status") != "completed" or proof.get("review", {}).get("approved") is not True or proof["review"].get("issues") != []:
+        raise ValueError("Region target needs completed status and actual approved review")
+    quality = proof.get("quality", {})
+    fingerprint = proof.get("final_source_fingerprint")
+    _hash(fingerprint, "final_source_fingerprint")
+    if (quality.get("passed") is not True or quality.get("source_fingerprint") != fingerprint
+            or any(not isinstance(quality.get(category), dict) or quality[category].get("passed") is not True
+                   for category in ("scope", "style", "behavior", "compatibility", "integration", "regression"))):
+        raise ValueError("All current host quality gates must pass before region distillation")
+    for category in ("behavior", "compatibility", "integration"):
+        checks = quality[category].get("checks", [])
+        if not checks or any(type(check.get("exit_code")) is not int or check["exit_code"] != 0
+                             or check.get("timed_out") is not False or check.get("source_fingerprint") != fingerprint
+                             for check in checks):
+            raise ValueError("Region checks must be actual passing receipts for the same final source")
+    action = proof.get("action", {})
+    receipt = action.get("receipt", {})
+    replacement = action.get("replacement")
+    if (not isinstance(replacement, str) or replacement != messages[1]["content"]
+            or not isinstance(action.get("context"), str) or replacement == action["context"]
+            or action["context"] not in messages[0]["content"]
+            or receipt.get("changed") is not True or receipt.get("outside_region_preserved") is not True
+            or receipt.get("signature_preserved") is not True
+            or receipt.get("replacement_sha256") != hashlib.sha256(replacement.encode()).hexdigest()
+            or receipt.get("candidate_sha256") != action.get("after_sha256")):
+        raise ValueError("Region action has no bound real signature-preserving replacement")
+    regression = quality["regression"]
+    gate = validate_differential_regression(regression.get("baseline"), regression.get("candidate"),
+        expected_source_sha256=fingerprint, expected_test_sha256=regression.get("authored_test_sha256"),
+        expected_baseline_source_sha256=proof.get("baseline_regression_fingerprint"),
+        test_source=proof.get("test_source"), target_identifier=action.get("identifier"))
+    if gate.get("passed") is not True:
+        raise ValueError("Region training needs the same real regression assertion to fail before and pass after")
+    if training["source_sha256"] != action.get("before_sha256") or training["diff_sha256"] != content_hash(action):
+        raise ValueError("Region source/diff receipt binding changed")
+    identity = proof.get("family_identity")
+    if (not isinstance(identity, dict) or identity.get("project_source_id") != training["project_source_id"]
+            or identity.get("path") != action.get("path") or identity.get("identifier") != action.get("identifier")
+            or content_hash(identity) != training.get("region_family_id")):
+        raise ValueError("Region source/task family identity is missing")
+
+
+def collect_verified_region_actions(task: dict) -> list[dict]:
+    """Explicitly collect only a live, fully verified final region from one task.
+
+    Failed proposals/receipts remain private proof, never positive target text.
+    Benchmark, excluded or interrupted tasks are not admitted automatically.
+    """
+    from .edit_regions import select_python_region
+    from .navigator import _read, _relative
+    from .redaction import redact
+    from .workspace import source_manifest
+    if (not isinstance(task, dict) or task.get("status") != "completed" or task.get("training_excluded")
+            or task.get("benchmark_case") or task.get("evaluation_task") or task.get("pending_calls")):
+        return []
+    state = task.get("controlled", {})
+    execution = state.get("execution", {})
+    if execution.get("version") != 1 or execution.get("quality", {}).get("passed") is not True:
+        return []
+    root = Path(task.get("workspace", ""))
+    if not root.is_dir() or not isinstance(task.get("source_path"), str) or not task.get("id"):
+        raise ValueError("Region export needs a current workspace and original task/source identity")
+    manifest = source_manifest(root)
+    if manifest != state.get("verified_manifest"):
+        raise ValueError("Region source changed after its quality admission")
+    fingerprint = hashlib.sha256(json.dumps(manifest, sort_keys=True).encode()).hexdigest()
+    action = copy.deepcopy(execution.get("last_region_action", {}))
+    path = _relative(action.get("path"))
+    if path is None:
+        raise ValueError("Region export requires a safe selected source path")
+    source, _, _ = _read(root.resolve(), path, 64_000)
+    if source is None or hashlib.sha256(source).hexdigest() != action.get("after_sha256"):
+        raise ValueError("Region action does not match the actual final source")
+    region = select_python_region(source, action.get("identifier"))
+    if region["content"] != action.get("replacement"):
+        raise ValueError("Region replacement differs from the actual observed function")
+    quality = copy.deepcopy(execution["quality"])
+    test_paths = state.get("authored_tests", {})
+    if len(test_paths) != 1:
+        raise ValueError("Region export requires one bound regression test version")
+    test_path, test_digest = next(iter(test_paths.items()))
+    test_source, _, _ = _read(root.resolve(), test_path, 64_000) if _relative(test_path) else (None, None, None)
+    if test_source is None or hashlib.sha256(test_source).hexdigest() != test_digest:
+        raise ValueError("Region regression test changed after its check")
+    baseline_manifest = {**state.get("start_manifest", {}), test_path: test_digest}
+    baseline_fingerprint = hashlib.sha256(json.dumps(baseline_manifest, sort_keys=True).encode()).hexdigest()
+    events = task.get("events", [])
+    if (not any(event.get("type") == "region_edit" and event.get("data") == action for event in events)
+            or not any(event.get("type") == "quality" and event.get("data") == quality for event in events)
+            or not any(event.get("type") == "review" and event.get("data") == state.get("review") for event in events)):
+        raise ValueError("Region export requires original host action/quality/review events")
+    project_source_id = hashlib.sha256(str(Path(task["source_path"]).resolve()).encode()).hexdigest()
+    identity = {"project_source_id": project_source_id, "path": path, "identifier": action["identifier"]}
+    region_family = content_hash(identity)
+    task_family = str(task.get("family_id") or task.get("parent_id") or task["id"])
+    requests = [message.get("_corepilot_request", message.get("content", ""))
+                for message in task.get("messages", []) if isinstance(message, dict)
+                and message.get("role") == "user" and message.get("_corepilot_kind") in {"request", "objective"}]
+    requests = requests or [str(task.get("prompt", ""))]
+    prompt = redact("\n\n".join(dict.fromkeys(str(request) for request in requests)))[0]
+    if not prompt.strip() or len(prompt) > 4000:
+        raise ValueError("Region distillation needs a complete bounded original goal and later corrections")
+    user = ("Replace only this selected Python function, preserving its signature and outside code.\n"
+            "Original request (data):\n" + prompt + "\nSelected path: " + path +
+            "\nIdentifier: " + action["identifier"] + "\nCurrent function:\n" + action.get("context", ""))
+    messages = [{"role": "user", "content": user}, {"role": "assistant", "content": action.get("replacement", "")}]
+    proof = {"status": task["status"], "review": copy.deepcopy(state.get("review", {})),
+             "quality": quality, "action": action, "final_source_fingerprint": fingerprint,
+             "baseline_regression_fingerprint": baseline_fingerprint, "test_source": test_source.decode("utf-8"),
+             "family_identity": identity, "alternatives": copy.deepcopy(execution.get("alternatives", [])),
+             "rejections": copy.deepcopy(execution.get("rejections", [])),
+             "all_actual_checks": copy.deepcopy(task.get("checks", []))}
+    row = {"version": 1, "session_id": str(task["id"]), "project": str(task.get("project", "project")),
+           "family_id": region_family, "family_ids": [region_family, "task:" + task_family],
+           "task_id": str(task["id"]), "messages": messages,
+           "provenance": {"source_kind": "observed_host_region_cycle", "copied_not_native_tool_call": True},
+           "training": {"kind": "verified_region", "teacher": {"name": "observed_host_region", "revision": "v1"},
+               "source_sha256": action.get("before_sha256"), "diff_sha256": content_hash(action),
+               "trajectory_sha256": content_hash({"messages": messages}), "proof_sha256": content_hash(proof),
+               "project_source_id": project_source_id, "region_family_id": region_family, "proof": proof}}
+    row["training"].update(task_id=str(task["id"]), task_family_id="task:" + task_family)
+    validate_verified_region(row)
+    return [row]
+
+
+def export_verified_region_actions(tasks: list[dict], output: str | Path, *, public_synthetic=False) -> dict:
+    """Write a new explicit private export; public exports need synthetic opt-in."""
+    import os
+    from .redaction import redact
+    target = Path(output).absolute()
+    if any(path.is_symlink() for path in (target, *target.parents) if path != Path("/tmp")):
+        raise ValueError("Region exports cannot use symbolic links")
+    target = target.resolve()
+    for task in tasks:
+        for field in ("workspace", "source_path"):
+            value = task.get(field)
+            if isinstance(value, str) and value and target.is_relative_to(Path(value).resolve()):
+                raise ValueError("Region export state must stay outside selected source and task workspaces")
+    in_repository = any((path / ".git").exists() for path in target.parents)
+    if in_repository and not public_synthetic:
+        raise ValueError("Raw region exports must stay outside source-controlled repositories")
+    if public_synthetic and any(task.get("data_scope") != "synthetic" for task in tasks):
+        raise ValueError("Public region export requires explicit synthetic-only task provenance")
+    records = [row for task in tasks for row in collect_verified_region_actions(task)]
+    if public_synthetic:
+        for row in records:
+            serialized = json.dumps(row, ensure_ascii=False)
+            _, counts = redact(serialized)
+            if (any(value for key, value in counts.items() if key != "bounded_assignment_checked")
+                    or re.search(r"/Users/|/home/|/private/tmp/|/tmp/|[A-Za-z]:\\Users\\", serialized)):
+                raise ValueError("Public synthetic region proof still contains recognizable private values")
+    payload = "".join(json.dumps(row, ensure_ascii=False, sort_keys=True) + "\n" for row in records).encode()
+    target.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    target.parent.chmod(0o700)
+    descriptor = os.open(target, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
+    with os.fdopen(descriptor, "wb") as handle:
+        handle.write(payload)
+    return {"version": 1, "records": len(records), "families": len({row["family_id"] for row in records}),
+            "artifact_sha256": hashlib.sha256(payload).hexdigest(), "model_inference": False,
+            "trained": False, "scope": "explicit verified region records; split families before target extraction"}
+
+
 def _tokens(tokenizer, messages, tools, generation_prompt):
     encoded = tokenizer.apply_chat_template(messages, tools=tools, tokenize=True,
         add_generation_prompt=generation_prompt, enable_thinking=False, return_dict=False)
@@ -147,6 +340,10 @@ def target_windows(row: dict, tokenizer, max_length: int) -> tuple[list[dict], i
     if native:
         validate_verified_native(row); tools = row["tools"]
         messages = template_messages(row["messages"], tools)
+    elif isinstance(row.get("training"), dict) and row["training"].get("kind") == "verified_region":
+        validate_verified_region(row)
+        tools = None
+        messages = copy.deepcopy(row["messages"])
     else:
         tools = None; messages = copy.deepcopy(row["messages"])
         if any(message.get("tool_calls") or message.get("role") == "tool" for message in messages):

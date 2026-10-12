@@ -38,6 +38,14 @@ corepilot train --data /path/to/prepared-data \
 
 Sessions, forks, explicit shared families and repeated prompts are split before target-window extraction. Native training validates prepared train/validation/test hashes, exact example assignments and family separation. Retrieval excludes validation/test families. Never put evaluation cases or their answers into this input corpus; once an evaluation set has been used to tune a system, use a fresh independent holdout for a new quality claim.
 
+## Verified function replacements
+
+`corepilot.native_sft.collect_verified_region_actions(task)` can collect a short, content-only example from an explicitly selected completed bounded task. Its user message contains the original request, later corrections and observed function; its assistant target contains only the accepted replacement. It does not invent native tool calls. The separate proof retains failed alternatives, rejection codes and actual check receipts.
+
+Admission requires an approved review, unchanged current source and authored test hashes, signature and outside-region preservation, and passing scope, style, behavior, compatibility, integration and differential-regression gates. The same contributing authored assertion must fail on the original source and pass on the candidate. Receipt hashes establish consistency, not observer authenticity or complete requirements coverage. Interrupted, marked evaluation and explicitly excluded tasks are not collected.
+
+Export to a new private path outside source/workspaces with `export_verified_region_actions(tasks, output)`. Public export requires explicit synthetic provenance and rejects recognizable private values. Prepare the resulting canonical records with `--mode region_verified`; source/function and original task families stay together before target-window extraction. Use the same CPU tokenizer preflight below. A successful fake-tokenizer unit test does not establish that a real model's complete target fits its token budget. No training or quality gain is implied by collection or preparation.
+
 ## CPU preflight before any weights load
 
 Install the pinned `.[mlx]` training extra in a separate Apple Silicon training environment. The recipe uses Soup 0.75.2, MLX-LM 0.32.0, MLX 0.32.3, Transformers 5.19.0 and Hugging Face Hub 1.33.0. It is separate from an already running model-server environment.

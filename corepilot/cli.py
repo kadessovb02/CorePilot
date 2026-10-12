@@ -83,6 +83,9 @@ def parser():
     configure.add_argument("--read-path", action="append", default=[])
     configure.add_argument("--edit-path", action="append", default=[])
     configure.add_argument("--max-repairs", type=int, default=1)
+    configure.add_argument("--execution-mode", choices=("files", "regions"), default="files")
+    configure.add_argument("--behavior-check-json", action="append", default=[])
+    configure.add_argument("--compatibility-check-json", action="append", default=[])
     csub.add_parser("disable"); csub.add_parser("show")
     history = sub.add_parser("history", help="Register explicit history paths for the UI")
     hs = history.add_subparsers(dest="action", required=True)
@@ -96,7 +99,7 @@ def parser():
     prepare.add_argument("--output", type=Path); prepare.add_argument("--seed", type=int, default=42)
     prepare.add_argument("--valid-fraction", type=float, default=.1); prepare.add_argument("--test-fraction", type=float, default=.1)
     prepare.add_argument("--overwrite", action="store_true", help="Explicitly replace an existing prepared corpus")
-    prepare.add_argument("--mode", choices=["knowledge", "native_verified"], default="knowledge", help="Archives are knowledge-only; native actions need explicit verified canonical receipts")
+    prepare.add_argument("--mode", choices=["knowledge", "native_verified", "region_verified"], default="knowledge", help="Archives are knowledge-only; action datasets require explicit independently verified receipts")
     index = sub.add_parser("index", help="Index the current source of a configured project")
     index.add_argument("--project", required=True)
     index.add_argument("--output", type=Path)
@@ -190,8 +193,12 @@ def main(argv=None):
                 state.setdefault("profiles", {})[args.project] = {
                     "checks": [json.loads(value) for value in args.check_json],
                     "test_roots": args.test_root or ["tests"], "read_paths": args.read_path,
-                    "allowed_edit_paths": args.edit_path}
-                state.update(enabled=True, max_repairs=args.max_repairs)
+                    "allowed_edit_paths": args.edit_path,
+                    "behavior_checks": [json.loads(value) for value in args.behavior_check_json],
+                    "compatibility_checks": [json.loads(value) for value in args.compatibility_check_json]}
+                state.update(enabled=True, max_repairs=args.max_repairs, execution_mode=args.execution_mode)
+                if args.execution_mode == "regions":
+                    state["artifact_protocol"] = "documents"
                 config.setdefault("orchestration", {})["enabled"] = False
                 config["resource_guard"] = resource_guard_config({**config.get("resource_guard", {}), "enabled": True})
             elif args.action == "disable":

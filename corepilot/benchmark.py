@@ -191,7 +191,8 @@ def effective_case_calls(max_calls, case, override):
 
 async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, max_calls, max_tokens, context_chars,
                    request_pause_seconds=3, protocol="json", case_timeout_override=None, controlled_checks=None,
-                   controlled_artifact_protocol="stage", controlled_max_repairs=1):
+                   controlled_artifact_protocol="stage", controlled_max_repairs=1,
+                   controlled_execution_mode="files", controlled_profile=None):
     if mode not in {"single", "specialists", "controlled"}:
         raise ValueError("Unknown benchmark workflow")
     if protocol not in ("json", "native"):
@@ -200,6 +201,10 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
         raise ValueError("Controlled artifact protocol must be stage or documents")
     if isinstance(controlled_max_repairs, bool) or not isinstance(controlled_max_repairs, int) or not 0 <= controlled_max_repairs <= 2:
         raise ValueError("controlled_max_repairs must be an integer from 0 to 2")
+    if controlled_execution_mode not in ("files", "regions"):
+        raise ValueError("controlled_execution_mode must be files or regions")
+    if controlled_profile is not None and not isinstance(controlled_profile, dict):
+        raise ValueError("controlled_profile must be an operator-owned profile object")
     timeout = effective_case_timeout(timeout, case, case_timeout_override)
     root = settings.root / "runs" / (case["id"] + "-" + mode)
     if root.exists():
@@ -212,8 +217,10 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
                                                    "protocol": protocol, "max_tokens": max_tokens, "context_chars": context_chars}
                                             for role in ("planner", "coder", "reviewer")}},
                          controlled={"enabled": mode == "controlled", "artifact_protocol": controlled_artifact_protocol,
+                             "execution_mode": controlled_execution_mode,
                              "max_repairs": controlled_max_repairs, "profiles": {"benchmark": {
-                             "checks": controlled_checks or [], "test_roots": ["tests"]}}} if mode == "controlled" else {},
+                             "checks": controlled_checks or [], "test_roots": ["tests"],
+                             **(controlled_profile or {})}}} if mode == "controlled" else {},
                          resource_guard={"enabled": False, "max_task_seconds": timeout,
                              "min_available_gib": monitor.thresholds.min_available_gib,
                              "max_swap_growth_mib": monitor.thresholds.max_swap_growth_mib,
@@ -299,6 +306,7 @@ async def run_case(settings, suite, case, mode, monitor, baseline, *, timeout, m
     if mode == "controlled":
         record["controlled_artifact_protocol"] = controlled_artifact_protocol
         record["controlled_max_repairs"] = controlled_max_repairs
+        record["controlled_execution_mode"] = controlled_execution_mode
         stages = [event.get("data", {}).get("phase") for event in events if event["type"] == "model"]
         record["calls_by_stage"] = {phase: stages.count(phase) for phase in sorted(set(stages)) if isinstance(phase, str)}
     return record

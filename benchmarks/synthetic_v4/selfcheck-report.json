@@ -1,0 +1,99 @@
+{
+  "schema": 1,
+  "kind": "synthetic_v4_cpu_oracle_admission",
+  "passed": true,
+  "development_cases": 4,
+  "heldout_cases": 2,
+  "rows": [
+    {
+      "id": "edit-negative-index",
+      "split": "development",
+      "baseline_behavior_rejected": true,
+      "baseline_compatibility_passed": true,
+      "reference_oracle_passed": true,
+      "differential_assertion_failure_proven": true,
+      "candidate_target_calls": 1,
+      "baseline_target_calls": 1,
+      "reference_unittest_executions": 15,
+      "negative_fixtures_rejected": 12
+    },
+    {
+      "id": "edit-assignment-separator",
+      "split": "development",
+      "baseline_behavior_rejected": true,
+      "baseline_compatibility_passed": true,
+      "reference_oracle_passed": true,
+      "differential_assertion_failure_proven": true,
+      "candidate_target_calls": 1,
+      "baseline_target_calls": 1,
+      "reference_unittest_executions": 14,
+      "negative_fixtures_rejected": 12
+    },
+    {
+      "id": "edit-overlapping-marker",
+      "split": "development",
+      "baseline_behavior_rejected": true,
+      "baseline_compatibility_passed": true,
+      "reference_oracle_passed": true,
+      "differential_assertion_failure_proven": true,
+      "candidate_target_calls": 1,
+      "baseline_target_calls": 1,
+      "reference_unittest_executions": 14,
+      "negative_fixtures_rejected": 12
+    },
+    {
+      "id": "edit-stable-lowest",
+      "split": "development",
+      "baseline_behavior_rejected": true,
+      "baseline_compatibility_passed": true,
+      "reference_oracle_passed": true,
+      "differential_assertion_failure_proven": true,
+      "candidate_target_calls": 1,
+      "baseline_target_calls": 1,
+      "reference_unittest_executions": 14,
+      "negative_fixtures_rejected": 12
+    },
+    {
+      "id": "final-strict-order",
+      "split": "heldout",
+      "baseline_behavior_rejected": true,
+      "baseline_compatibility_passed": true,
+      "reference_oracle_passed": true,
+      "differential_assertion_failure_proven": true,
+      "candidate_target_calls": 1,
+      "baseline_target_calls": 1,
+      "reference_unittest_executions": 14,
+      "negative_fixtures_rejected": 12
+    },
+    {
+      "id": "final-ceiling-blocks",
+      "split": "heldout",
+      "baseline_behavior_rejected": true,
+      "baseline_compatibility_passed": true,
+      "reference_oracle_passed": true,
+      "differential_assertion_failure_proven": true,
+      "candidate_target_calls": 1,
+      "baseline_target_calls": 1,
+      "reference_unittest_executions": 14,
+      "negative_fixtures_rejected": 12
+    }
+  ],
+  "rejected_negative_fixtures": 72,
+  "model_calls": 0,
+  "observed_agent_reads": 0,
+  "synthetic_read_receipts": true,
+  "fixture_sha256": {
+    "development/edit-negative-index": "e630509f0679a622b997c457d2a1eddc65e13e261e220d1570c33152f8334b30",
+    "development/edit-assignment-separator": "5fa64fff27d1b35a75c1ef4d032b50894d0724413fc89816cf55ca2ce46c1d3d",
+    "development/edit-overlapping-marker": "7f4fcfb8949aa976455efee88b119a56f23fcaf0e862817ba7f28ceff358a71b",
+    "development/edit-stable-lowest": "677da1d2081652ebe5bb6c62a60a98b3c95515c4dd334b4b242a51dc03b0f85f",
+    "heldout/final-strict-order": "11a18de80396fb5370b70ccaad3201673c1ffaa20457b67d328c7c1d2a9efc7c",
+    "heldout/final-ceiling-blocks": "082247334bf66ec31531b9e68afcbbe38d877970f0d216a30b4b8f57fd3ccb75"
+  },
+  "limitations": [
+    "Reference admission and synthetic receipts are not real agent task results.",
+    "Unittest execution counts include repeated methods and are not unique independent tasks.",
+    "AST restrictions and process isolation are bounded quality checks, not a proof against hostile Python.",
+    "The macOS OS sandbox remains required for every candidate and regression execution."
+  ]
+}

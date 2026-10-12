@@ -32,6 +32,9 @@ def test_setup_ready_and_idempotent_source_memory(tmp_path, monkeypatch):
     assert not result["history_registered"]
     assert (home/"setup-report.json").exists()
     assert result["next_steps"][-1]["argv"][-1]=="8765"
+    assert result["project_context"]["version"] == 1
+    assert not repeated["project_context"]["refreshed"]
+    assert Path(result["project_context"]["artifact"]).is_relative_to(home)
 
 
 def test_missing_server_reports_concrete_next_step(tmp_path):

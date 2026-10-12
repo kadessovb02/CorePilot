@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import math
 import re
 import uuid
 from pathlib import Path
@@ -220,7 +221,8 @@ class AgentEngine:
             task["orchestration"] = workflow.new_state(self.settings.orchestration)
         if controlled_mode:
             task["controlled"] = {"version": 1, "enabled": True, "phase": "select", "round": 0,
-                                  "retry_counts": {}, "summaries": {}, "feedback": []}
+                                  "retry_counts": {}, "summaries": {}, "feedback": [],
+                                  "execution_mode": self.settings.controlled.get("execution_mode", "files")}
         if parent:
             for key in IMPORT_FIELDS:
                 if key in parent:
@@ -269,6 +271,11 @@ class AgentEngine:
         self.read_streaks.pop(task_id, None)
         if task.get("workspace") and any(other["id"] != task_id and other.get("workspace") == task["workspace"] and other["status"] in {"running", "queued"} for other in self.tasks.values()):
             raise ValueError("Another task is using this workspace")
+        bounded = task.get("controlled", {}).get("execution_mode") == "regions"
+        if bounded and task["step"] >= task["max_steps"]:
+            raise ValueError("The bounded task exhausted its shared call budget; start a new task")
+        if bounded and prompt:
+            raise ValueError("A changed objective needs a new bounded task; unchanged resume retains its frozen scope and budgets")
         if prompt:
             for call in task["pending_calls"]:
                 task["messages"].append({"role": "tool", "tool_call_id": call["id"], "content": '{"error":"Pending tool skipped due to user steering; inspect current state before retrying"}'})
@@ -290,12 +297,14 @@ class AgentEngine:
         task["length_retries"] = 0
         if task.get("controlled", {}).get("enabled"):
             state = task["controlled"]
-            state.update(phase="select", round=0, retry_counts={})
-            state.pop("selection", None)
+            if not bounded:
+                state.update(phase="select", round=0, retry_counts={})
+                state.pop("selection", None)
         if workflow.current_role(task):
             task["orchestration"]["phase_steps"] = 0
         task["status"] = "queued"
-        task["max_steps"] = max(task["max_steps"], task["step"] + self.settings.max_steps)
+        if not bounded:
+            task["max_steps"] = max(task["max_steps"], task["step"] + self.settings.max_steps)
         self.store.event(task, "status", "Task resumed from its checkpoint", {"status": "queued"})
         self.jobs[task_id] = asyncio.create_task(self.run(task))
         return public_task(task)
@@ -658,7 +667,20 @@ class AgentEngine:
             return
         try:
             async with self.resource_lock:
-                await self.resource_gate.run(lambda: self._run_unchecked(task))
+                previous_limit = self.resource_gate.max_task_seconds
+                bounded = task.get('controlled', {}).get('execution_mode') == 'regions'
+                if bounded:
+                    used = task.get('controlled', {}).get('execution', {}).get('elapsed_seconds', 0)
+                    if isinstance(used, bool) or not isinstance(used, (int, float)) or not math.isfinite(used) or used < 0:
+                        raise ValueError('Invalid saved bounded time budget')
+                    remaining = previous_limit - used
+                    if remaining <= 0:
+                        raise ResourceBlocked(['resource_task_timeout'])
+                    self.resource_gate.max_task_seconds = remaining
+                try:
+                    await self.resource_gate.run(lambda: self._run_unchecked(task))
+                finally:
+                    self.resource_gate.max_task_seconds = previous_limit
         except ResourceBlocked as exc:
             task["status"] = "interrupted"
             task["error"] = str(exc)

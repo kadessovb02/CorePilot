@@ -266,8 +266,11 @@ def _canonical(records: list[dict], project: str, path: Path) -> list[dict]:
         elif record.get("role"):
             row["messages"].append(record)
     for row in grouped.values():
-        native = isinstance(row.get("training"), dict) and row["training"].get("kind") == "verified_native"
-        row["messages"] = _native_visible_messages(row["messages"]) if native else sanitize_messages(row["messages"])
+        kind = row.get("training", {}).get("kind") if isinstance(row.get("training"), dict) else None
+        if kind == "verified_region":
+            row["family_ids"].extend(str(row["training"].get(key, "")) for key in
+                                     ("region_family_id", "task_family_id") if row["training"].get(key))
+        row["messages"] = _native_visible_messages(row["messages"]) if kind in {"verified_native", "verified_region"} else sanitize_messages(row["messages"])
     return list(grouped.values())
 
 

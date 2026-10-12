@@ -16,11 +16,14 @@ MODEL_ROLES = ("planner", "coder", "reviewer")
 def controlled_config(value: dict, projects: dict) -> dict:
     """Operator-owned check commands; a model may never extend this profile."""
     from .workspace import safe_path
-    if not isinstance(value, dict) or set(value) - {"enabled", "max_repairs", "profiles", "artifact_protocol"}:
+    if not isinstance(value, dict) or set(value) - {"enabled", "max_repairs", "profiles", "artifact_protocol", "execution_mode"}:
         raise ValueError("controlled contains unsupported settings")
     enabled = value.get("enabled", False)
     repairs = value.get("max_repairs", 1)
     artifact_protocol = value.get("artifact_protocol", "stage")
+    execution_mode = value.get("execution_mode", "files")
+    if not isinstance(execution_mode, str) or execution_mode not in {"files", "regions"}:
+        raise ValueError("controlled.execution_mode must be files or regions")
     if not isinstance(artifact_protocol, str) or artifact_protocol not in {"stage", "documents"}:
         raise ValueError("controlled.artifact_protocol must be stage or documents")
     if not isinstance(enabled, bool) or isinstance(repairs, bool) or not isinstance(repairs, int) or not 0 <= repairs <= 2:
@@ -30,7 +33,7 @@ def controlled_config(value: dict, projects: dict) -> dict:
         raise ValueError("controlled.profiles must name registered projects")
     normalized = {}
     for project, profile in profiles.items():
-        if not isinstance(profile, dict) or set(profile) - {"checks", "test_roots", "read_paths", "allowed_edit_paths"}:
+        if not isinstance(profile, dict) or set(profile) - {"checks", "test_roots", "read_paths", "allowed_edit_paths", "behavior_checks", "compatibility_checks", "expectations"}:
             raise ValueError("controlled project profile contains unsupported fields")
         checks = profile.get("checks", [])
         if (not isinstance(checks, list) or len(checks) > 5 or any(
@@ -39,6 +42,18 @@ def controlled_config(value: dict, projects: dict) -> dict:
                 for argv in checks)):
             raise ValueError("controlled checks must contain at most five nonempty argv arrays")
         result = {"checks": checks}
+        for category in ("behavior_checks", "compatibility_checks"):
+            commands = profile.get(category, [])
+            if (not isinstance(commands, list) or len(commands) > 5 or any(
+                    not isinstance(argv, list) or not argv or len(argv) > 64 or any(
+                        not isinstance(arg, str) or not arg or len(arg) > 4000 or "\x00" in arg for arg in argv)
+                    for argv in commands)):
+                raise ValueError(category + " must contain at most five nonempty argv arrays")
+            if commands:
+                result[category] = commands
+        if "expectations" in profile:
+            from .execution_quality import validate_expectations
+            result["expectations"] = validate_expectations(profile["expectations"])
         for field, default in (("test_roots", ["tests"]), ("read_paths", []), ("allowed_edit_paths", [])):
             paths = profile.get(field, default)
             if not isinstance(paths, list) or len(paths) > 100 or any(not isinstance(path, str) or not path or path == "." for path in paths):
@@ -49,7 +64,8 @@ def controlled_config(value: dict, projects: dict) -> dict:
                 safe_path(projects[project], path)
             result[field] = list(dict.fromkeys(paths))
         normalized[project] = result
-    return {"enabled": enabled, "max_repairs": repairs, "artifact_protocol": artifact_protocol, "profiles": normalized}
+    return {"enabled": enabled, "max_repairs": repairs, "artifact_protocol": artifact_protocol,
+            "execution_mode": execution_mode, "profiles": normalized}
 
 
 def resource_guard_config(value: dict) -> dict:

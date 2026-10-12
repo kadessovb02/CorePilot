@@ -306,7 +306,13 @@ class Controller:
         self.state["read_manifest"], self.state["read_ranges"] = expected, self.ranges
         self.engine.store.save(self.task)
 
-    async def ask(self, stage, context, *, validate=None, document_path=None):
+    def model_observations(self):
+        return _host_observations(self.evidence)
+
+    def rejected(self, stage, message, error):
+        """Workflow-specific diagnostics; the default transport remains unchanged."""
+
+    async def ask(self, stage, context, *, validate=None, document_path=None, region=None):
         """Two attempts per stage invocation; every request charges the budget."""
         reason = ""
         previous, diagnostics = None, None
@@ -337,7 +343,20 @@ class Controller:
                     ". Return its entire intended contents, preserving public APIs and unrelated behavior. "
                     "If this already-modified implementation is correct, return its exact current contents."
                     if document_path else "\nStage schema (replace placeholders): " + SCHEMAS[stage]))
-            stage_context = {**context, "host_observations_untrusted": _host_observations(self.evidence)}
+            if region is not None:
+                instruction = ("You repair one host-selected Python function. Return only its complete replacement, "
+                    "including the unchanged signature, decorators and original indentation. No path, JSON, patch "
+                    "or prose. An optional whole-answer Python fence is accepted. The host checks source hashes "
+                    "and preserves every byte outside this function. Do not change public interfaces or existing "
+                    "style. Keep existing docstrings and literal data. Exclude module imports and every other "
+                    "function or class.\n" + rules.replace("selected file's contents", "selected function's contents") + "\n" + adapter_hint)
+            if stage == 'tests' and context.get('bounded_regression_contract'):
+                instruction += ("\nThe host checks this regression on both original and corrected source. "
+                    "Use compact direct self.assertEqual(target(literal inputs), literal expected value) methods "
+                    "for the actual requested bug, with values justified by the supplied requirements. "
+                    "Keep each regression assertion on its own physical line. Avoid mocks, target rebinding, "
+                    "framework overrides and unconditional failures. Existing compatibility tests remain protected.")
+            stage_context = {**context, "host_observations_untrusted": self.model_observations()}
             if previous is not None:
                 stage_context["previous_rejected_submission_untrusted"] = previous
             if diagnostics is not None:
@@ -347,6 +366,7 @@ class Controller:
                  json.dumps(stage_context, ensure_ascii=False), "_corepilot_kind": "context"},
                 *[{"role": "user", "content": value, "_corepilot_kind": "request"} for value in _requests(self.task)],
                 {"role": "user", "content": (
+                    "Return only the selected function replacement now." if region is not None else
                     "Return the complete file text for " + document_path + " now." if document_path else
                     "Submit the complete " + stage + " object using only submit_" + stage + " now."
                     if native_stage else "Return the complete " + stage + " object now.") +
@@ -440,6 +460,7 @@ class Controller:
                 previous = _rejected_submission(message)
                 diagnostics = exc.diagnostics
                 pair(reason, syntax_diagnostics=diagnostics)
+                self.rejected(stage, message, exc)
             self.event("verification", "Controlled response rejected", {"phase": stage, "retry": attempt + 1,
                 **({"syntax_diagnostics_untrusted": diagnostics} if diagnostics is not None else {})})
         raise ControlledBlocked("Controlled " + stage + " response remained invalid: " + reason)
@@ -701,7 +722,11 @@ class Controller:
 
 async def run_controlled(engine, task, tools):
     try:
-        await Controller(engine, task, tools).run()
-    except (ControlledBlocked, ContractError) as exc:
+        if task.get('controlled', {}).get('execution_mode', 'files') == "regions" and task.get("wants_edits") and not task.get("read_only"):
+            from .bounded import BoundedController
+            await BoundedController(engine, task, tools).run()
+        else:
+            await Controller(engine, task, tools).run()
+    except (ControlledBlocked, ContractError, ValueError) as exc:
         task.update(status="interrupted", error=str(exc)[:2000])
         engine.store.event(task, "status", task["error"], {"status": "interrupted", "phase": task["controlled"]["phase"]})

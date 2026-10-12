@@ -26,6 +26,10 @@ A stock model uses the published weights without a project adapter. The [4B](loc
 
 For an isolated state location use `corepilot --home /path/to/state --config /path/to/state/config.json setup --repo /path/to/repository --verify`, and keep both explicit paths when serving. An existing `COREPILOT_CONFIG` can otherwise select a different configuration despite `--home`. Reports contain exact follow-up argv, including an overridden configuration path.
 
+Setup also writes a versioned CPU project-context package under the selected state directory's `runtime/project-context`. It contains bounded actual file hashes, Python symbols/imports, untrusted guidance/contracts, related test paths and sample test text. Repeating setup refreshes it when the inspected source changes. The package may cover only part of a large repository; its bounds and truncation are explicit. It does not import repository code, execute test discovery or modify the repository.
+
+Check candidates distinguish configured commands, observed numeric receipts and static framework inference. An inferred command still needs verification; a stale or unexecuted receipt is not a passing check. These hints never authorize a runtime check or establish semantic adequacy. The host must read current source and use its operator-approved checks before completing a task.
+
 ## Optional history and training
 
 If the user requests small specialist models, follow [orchestration.md](orchestration.md): register explicit planner/coder/reviewer endpoints, enable the workflow and run setup verification in that mode. Use existing suitable local models or start ones that fit the machine. Configure a local Laya-compatible router only when requested/available. Do not infer weight specialization from role labels or describe HTTP reachability as task-quality proof.

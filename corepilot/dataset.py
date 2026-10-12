@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Iterable
 
 from .history import PROVIDERS, digest, input_files, load_sessions, sanitize_messages
-from .native_sft import content_hash, validate_verified_native
+from .native_sft import content_hash, validate_verified_native, validate_verified_region
 
 
 class Families:
@@ -129,9 +129,9 @@ def prepare(input_paths: Iterable[str | Path], provider: str, project: str, outp
             mode: str = "knowledge") -> dict:
     """Prepare local JSONL artifacts; no model, uploads or implicit sources."""
     paths = list(input_paths)
-    if mode not in {"knowledge", "native_verified"}:
-        raise ValueError("Training mode must be knowledge or native_verified")
-    if mode == "native_verified" and provider != "canonical":
+    if mode not in {"knowledge", "native_verified", "region_verified"}:
+        raise ValueError("Training mode must be knowledge, native_verified or region_verified")
+    if mode in {"native_verified", "region_verified"} and provider != "canonical":
         raise ValueError("Native verification requires canonical trajectories; provider archives remain knowledge-only")
     if not paths:
         raise ValueError("At least one explicit input path is required")
@@ -151,8 +151,9 @@ def prepare(input_paths: Iterable[str | Path], provider: str, project: str, outp
     if not overwrite and any((target / name).exists() for name in names):
         raise ValueError("Dataset output already exists; choose a new directory or explicitly allow overwrite")
     sessions = load_sessions(files, provider, project, repo)
-    if mode == "native_verified":
-        for session in sessions: validate_verified_native(session)
+    if mode in {"native_verified", "region_verified"}:
+        validator = validate_verified_region if mode == "region_verified" else validate_verified_native
+        for session in sessions: validator(session)
         examples, incomplete = sessions, 0
     else:
         examples, incomplete = _examples(sessions)
@@ -166,6 +167,7 @@ def prepare(input_paths: Iterable[str | Path], provider: str, project: str, outp
         split = assignments[row["family_id"]]
         example = {"messages": row["messages"]}
         if mode == "native_verified": example.update(tools=row["tools"], training=row["training"])
+        elif mode == "region_verified": example["training"] = row["training"]
         partitions[split].append(example)
         split_manifest.append({"example_id": row["example_id"], "session_id": row["session_id"], "provider": row["provider"],
                                "project": project, "family_id": row["family_id"], "split": split, "provenance": row["provenance"],
@@ -213,7 +215,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--valid-fraction", type=float, default=.1)
     parser.add_argument("--test-fraction", type=float, default=.1)
     parser.add_argument("--overwrite", action="store_true")
-    parser.add_argument("--mode", choices=["knowledge", "native_verified"], default="knowledge")
+    parser.add_argument("--mode", choices=["knowledge", "native_verified", "region_verified"], default="knowledge")
     args = parser.parse_args(argv)
     try:
         manifest = prepare(args.input, args.provider, args.project, args.output, args.repo, seed=args.seed,

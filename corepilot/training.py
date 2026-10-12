@@ -10,7 +10,7 @@ from collections import Counter
 from importlib.metadata import version
 from pathlib import Path
 
-from .native_sft import content_hash, lora_plan, soup_target_windows, target_windows, validate_verified_native
+from .native_sft import content_hash, lora_plan, soup_target_windows, target_windows, validate_verified_native, validate_verified_region
 
 
 def rows(path: Path) -> list[dict]:
@@ -28,6 +28,9 @@ def rows(path: Path) -> list[dict]:
         if native:
             validate_verified_native(row)
             result.append({"messages": messages, "tools": row["tools"], "training": row["training"]})
+        elif isinstance(row.get("training"), dict) and row["training"].get("kind") == "verified_region":
+            validate_verified_region(row)
+            result.append({"messages": messages, "training": row["training"]})
         else:
             if any(m.get("tool_calls") or m["role"] == "tool" for m in messages):
                 raise ValueError("Unverified/native external tool trajectories cannot be trained; use verified canonical data or knowledge-only preparation")
@@ -39,14 +42,16 @@ def rows(path: Path) -> list[dict]:
 
 def validate_split_manifest(data: Path, partitions: dict[str, list[dict]]) -> None:
     """Native training cannot bypass the prepared artifact/family holdout boundary."""
-    native = any(row.get("training", {}).get("kind") == "verified_native" for records in partitions.values() for row in records)
+    kinds = {row.get("training", {}).get("kind") for records in partitions.values() for row in records}
+    native = bool(kinds & {"verified_native", "verified_region"})
     path = data / "manifest.json"
     if not path.exists():
         if native: raise ValueError("Native training requires a prepared split manifest")
         return
     manifest = json.loads(path.read_text())
-    if native and manifest.get("training_mode") != "native_verified":
-        raise ValueError("Native dataset must be explicitly prepared in native_verified mode")
+    expected_mode = "region_verified" if "verified_region" in kinds else "native_verified"
+    if native and (len(kinds & {"verified_native", "verified_region"}) > 1 or manifest.get("training_mode") != expected_mode):
+        raise ValueError("Verified dataset must be explicitly prepared in its matching mode")
     hashes = manifest.get("artifact_sha256", {})
     for name in ("train.jsonl", "valid.jsonl", "test.jsonl", "split_manifest.jsonl"):
         if native and name not in hashes: raise ValueError("Native dataset artifact hashes are missing")
@@ -70,6 +75,15 @@ def validate_split_manifest(data: Path, partitions: dict[str, list[dict]]) -> No
     for split, records in partitions.items():
         if (native or assigned[split]) and Counter(content_hash(row) for row in records) != assigned[split]:
             raise ValueError("Examples differ from their family split assignments")
+    region_families = {}
+    for split, records in partitions.items():
+        for row in records:
+            if row.get("training", {}).get("kind") == "verified_region":
+                for key in ("region_family_id", "task_family_id"):
+                    family = key + ":" + row["training"][key]
+                    if family in region_families and region_families[family] != split:
+                        raise ValueError("Related verified region/task families cross holdout boundaries")
+                    region_families[family] = split
 
 
 def preflight_windows(partitions, tokenizer, max_length):
@@ -114,6 +128,7 @@ def train(*, data: Path, model: str, output: Path, max_length=2048, rank=8, laye
                "valid_sha256": hashlib.sha256((data / "valid.jsonl").read_bytes()).hexdigest(),
                "training_on": "one causal visible assistant target per window; preceding context is masked",
                "native_trajectories": sum(row.get("training", {}).get("kind") == "verified_native" for row in train_rows),
+               "verified_region_actions": sum(row.get("training", {}).get("kind") == "verified_region" for row in train_rows),
                "evaluation_note": "Receipt integrity is not observer trust; loss is not autonomous task success. Evaluate fresh held-out tasks separately."}
     if dry_run:
         write_receipt(output, receipt)
@@ -133,6 +148,7 @@ def train(*, data: Path, model: str, output: Path, max_length=2048, rank=8, laye
     receipt.update(training_rows=len(train_rows), validation_rows=len(valid_rows), training_windows=len(selected),
                    validation_windows=len(validation), too_long_targets_excluded=excluded,
                    native_trajectories=sum(row.get("training", {}).get("kind") == "verified_native" for row in train_rows),
+                   verified_region_actions=sum(row.get("training", {}).get("kind") == "verified_region" for row in train_rows),
                    chat_template_sha256=content_hash(tokenizer.chat_template), enable_thinking=False,
                    cpu_preflight_passed=True)
     if preflight_only:

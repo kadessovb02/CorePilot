@@ -1,0 +1,62 @@
+{
+  "schema": 1,
+  "kind": "pre_inference_synthetic_v4_design",
+  "old_runtime_commit": "52c333c8aeb5874495acbbc4776983da69df123f",
+  "new_runtime_commit": "Must be pinned in an immutable execution plan after CPU readiness, before first inference.",
+  "development_attempts": 8,
+  "development_order": [
+    {
+      "id": "edit-negative-index",
+      "arm": "files"
+    },
+    {
+      "id": "edit-negative-index",
+      "arm": "regions"
+    },
+    {
+      "id": "edit-assignment-separator",
+      "arm": "regions"
+    },
+    {
+      "id": "edit-assignment-separator",
+      "arm": "files"
+    },
+    {
+      "id": "edit-overlapping-marker",
+      "arm": "files"
+    },
+    {
+      "id": "edit-overlapping-marker",
+      "arm": "regions"
+    },
+    {
+      "id": "edit-stable-lowest",
+      "arm": "regions"
+    },
+    {
+      "id": "edit-stable-lowest",
+      "arm": "files"
+    }
+  ],
+  "heldout_authored_before_development_results": true,
+  "heldout_cases": 2,
+  "max_calls": 8,
+  "max_tokens": 2048,
+  "context_chars": 22000,
+  "task_seconds": 180,
+  "request_pause_seconds": 3,
+  "between_task_rest_seconds": 20,
+  "controlled_max_repairs": 2,
+  "protocol": "native",
+  "artifact_protocol": "documents",
+  "memory": false,
+  "adapter": null,
+  "same_original_fixture_per_arm": true,
+  "same_resource_baseline_all_attempts": true,
+  "resource_baseline_excludes_existing_server_startup": true,
+  "success_target_stop": false,
+  "requires_exclusive_model_requester": true,
+  "requires_independent_sandboxed_oracle": true,
+  "requires_authored_candidate_pass_and_pristine_assertion_failure": true,
+  "model_calls_at_authorship": 0
+}
