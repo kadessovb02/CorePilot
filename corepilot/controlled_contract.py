@@ -179,40 +179,32 @@ def parse_stage(stage: str, content: str | dict) -> dict:
     _fail("Unknown controlled stage")
 
 
-_ONLY = re.compile(
-    r"\b(?:(?:change|edit|modify|touch)\s+only|only\s+(?:change|edit|modify|touch)"
-    r"|(?:измени|изменяй|меняй|правь|исправь|редактируй)\s+только"
-    r"|только\s+(?:измени|изменяй|меняй|правь|исправь|редактируй))\b", re.IGNORECASE)
 _FILE_TOKEN = re.compile(r"[^\s,;\x60\"'()<>:]+")
 
 
 def explicit_edit_scope(request: str) -> set[str] | None:
     """Literal path lists or explicit body/file clauses; newest scope wins."""
-    from .scope import function_scope_clause
-    markers = list(_ONLY.finditer(request))
-    scopes = []
-    for marker in markers[-1:]:
-        if re.search(r"(?:not|don't|не)\s*$", request[:marker.start()], re.IGNORECASE):
-            _fail("Ambiguous negated scope: state the permitted relative file paths directly")
-        tail = request[marker.end():]
-        end = re.search(r"[;\n!?]|\.(?=\s|$)", tail)
-        clause = tail[:end.start()] if end else tail
-        body = function_scope_clause(clause)
-        if body is not None:
-            scopes.append({relative_path(path) for path in body['paths']})
+    from .scope import function_scope_clause, explicit_scope_clause, ScopeError
+    try:
+        clause = explicit_scope_clause(request)
+    except ScopeError as exc:
+        _fail(str(exc))
+    if clause is None:
+        return None
+    body = function_scope_clause(clause)
+    if body is not None:
+        return {relative_path(path) for path in body['paths']}
+    found = []
+    for token in _FILE_TOKEN.findall(clause):
+        if token.casefold() in {"and", "or", "и", "или", "the", "files", "file", "файл", "файлы"}:
             continue
-        found = []
-        for token in _FILE_TOKEN.findall(clause):
-            if token.casefold() in {"and", "or", "и", "или", "the", "files", "file", "файл", "файлы"}:
-                continue
-            token = token.rstrip(".")
-            if not ("." in PurePosixPath(token).name or "/" in token or token in {"Makefile", "Dockerfile"}):
-                _fail("Ambiguous 'change only' scope: list literal relative file paths in that clause, including any permitted new test files")
-            found.append(relative_path(token))
-        if not found:
-            _fail("The 'change only' clause needs explicit relative file paths")
-        scopes.append(set(found))
-    return scopes[-1] if scopes else None
+        token = token.rstrip(".")
+        if not ("." in PurePosixPath(token).name or "/" in token or token in {"Makefile", "Dockerfile"}):
+            _fail("Ambiguous 'change only' scope: list literal relative file paths in that clause, including any permitted new test files")
+        found.append(relative_path(token))
+    if not found:
+        _fail("The 'change only' clause needs explicit relative file paths")
+    return set(found)
 
 
 def _test_roots(values: Sequence[str]) -> list[str]:

@@ -12,6 +12,13 @@ symbols, oversized files, dynamic test attribution and unconfigured checks stop
 with an inspectable checkpoint. It does not establish correctness for arbitrary
 natural-language requirements or general repository work.
 
+An explicit `Change only the body of Worker.process in package/module.py`
+clause selects the exact current symbol; mentions of helpers to preserve do not
+add editable targets. The latest scope applies. Negated scope directives stop
+for clarification. After replacing a function-body clause with a file-only
+clause, state a fresh function-body clause before resuming region execution;
+an older symbol mention cannot authorize the new task scope.
+
 ## Configure with your setup agent
 
 For a small model, the setup agent can prepare a protected unittest scaffold in

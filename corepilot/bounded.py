@@ -13,10 +13,11 @@ import time
 from .alternatives import AlternativeStore, manifest_fingerprint
 from .check_runner import regression_argv, structured_unittest
 from .controlled import Controller, ControlledBlocked, _host_observations, _requests
-from .controlled_contract import ContractError, prepare_tests, validate_selection
+from .controlled_contract import ContractError, explicit_edit_scope, prepare_tests, relative_path, validate_selection
 from .edit_regions import select_python_region, replace_python_region, validate_python_style, RegionError
 from .execution_quality import validate_differential_regression
 from .regression_scaffold import apply_regression_scaffold, select_regression_scaffold
+from .scope import explicit_function_scope, superseded_function_scope
 from .tools import WorkspaceTools
 from .workspace import BoundaryError, safe_path, snapshot, source_manifest
 
@@ -42,6 +43,29 @@ def select_target(root: Path, request: str, profile: dict) -> dict:
     allowed = set(profile.get('allowed_edit_paths') or manifest)
     files = sorted(path for path in manifest if path in allowed and path.endswith('.py')
                    and not any(path == item or path.startswith(item + '/') for item in profile['test_roots']))
+    # Use the same already-admitted literal scope as file permissions. A
+    # preserved helper's incidental name must not authorize a second target.
+    try:
+        requested_paths = explicit_edit_scope(request)
+        explicit = explicit_function_scope(request)
+        superseded = superseded_function_scope(request)
+    except ContractError as exc:
+        raise ControlledBlocked('Explicit source scope rejected: ' + str(exc)) from exc
+    if requested_paths is not None:
+        files = [path for path in files if path in requested_paths]
+    if superseded:
+        raise ControlledBlocked('Earlier function-body authorization was superseded; state a fresh explicit function-body scope')
+    if explicit is not None:
+        path = relative_path(explicit['source_path'])
+        if path not in files:
+            raise ControlledBlocked('Explicit function target is unavailable or outside configured editable source paths')
+        source = safe_path(root, path, False).read_bytes()
+        if len(source) > 64_000:
+            raise ControlledBlocked('Explicit function target source exceeds the region size limit')
+        try:
+            return {**select_python_region(source, explicit['identifier']), 'path': path}
+        except RegionError as exc:
+            raise ControlledBlocked('Explicit function target does not identify one current source symbol: ' + str(exc)) from exc
     if named & set(files):
         files = sorted(named & set(files))
     if len(files) > 80:
