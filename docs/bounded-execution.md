@@ -14,6 +14,24 @@ natural-language requirements or general repository work.
 
 ## Configure with your setup agent
 
+For a small model, the setup agent can prepare a protected unittest scaffold in
+the isolated project copy. It contains approved imports/setup and one synchronous
+`TestCase.test_*` method whose body is only `pass`. Its filename should be outside
+the configured test-discovery pattern. Register its exact current file hash with
+`--regression-scaffold-json '{"path":"tests/regression_template.py","identifier":"Regression.test_bug","sha256":"CURRENT_FILE_SHA256"}'`.
+The model returns only that method; the host creates the selected new test file
+with the scaffold's unchanged imports/class/setup. The template is never edited.
+Changed hashes, signatures, neighboring methods, framework hooks and vacuous
+tests cannot bypass the existing differential behavior gate. The scaffold is
+optional and requires `regions` with document responses; its hash is retained in
+the checkpoint's check contract.
+
+Optional retrieved history uses the remaining serialized request budget. The
+host removes low-ranked documents before clipping an excerpt, records the input
+and packed hashes/counts, and retains the complete retrieved records in the
+checkpoint. Current requests/corrections and required source/check evidence are
+preserved. Mandatory context that exceeds the budget still stops before inference.
+
 Ask your terminal-capable coding agent to inspect the repository, run
 `corepilot setup --repo /path/to/repository`, and review its versioned context
 package. That package contains bounded symbols/imports, guidance/contracts,

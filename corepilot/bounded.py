@@ -13,9 +13,10 @@ import time
 from .alternatives import AlternativeStore, manifest_fingerprint
 from .check_runner import regression_argv, structured_unittest
 from .controlled import Controller, ControlledBlocked, _host_observations, _requests
-from .controlled_contract import ContractError, validate_selection
+from .controlled_contract import ContractError, prepare_tests, validate_selection
 from .edit_regions import select_python_region, replace_python_region, validate_python_style, RegionError
 from .execution_quality import validate_differential_regression
+from .regression_scaffold import apply_regression_scaffold, select_regression_scaffold
 from .tools import WorkspaceTools
 from .workspace import BoundaryError, safe_path, snapshot, source_manifest
 
@@ -240,7 +241,10 @@ class BoundedController(Controller):
         await self.refresh_context()
 
     async def tests(self):
-        await super().tests()
+        if self.profile.get('regression_scaffold') is None:
+            await super().tests()
+        else:
+            await self.scaffold_tests()
         path = self.state['selection']['new_test_paths'][0]
         signature = _sha(json.dumps({'component': 'tests', 'source': source_manifest(self.root),
             'test': self.state['authored_tests'][path]}, sort_keys=True).encode())
@@ -248,6 +252,47 @@ class BoundedController(Controller):
             raise ControlledBlocked('Identical test attempt already failed; checkpoint retained')
         self.execution['current_proposal_signature'] = signature
         self.execution.setdefault('component_signatures', {})['tests'] = signature
+
+    async def scaffold_tests(self):
+        self.phase('tests')
+        await self.read([*self.contents, *self.state.get('authored_tests', {})])
+        scaffold = select_regression_scaffold(self.root, self.profile, self.state['selection'])
+        destination = scaffold['destination']
+        target = self.execution['target']
+        implementation = select_python_region(safe_path(self.root, target['path'], False).read_bytes(),
+                                              target['identifier'])
+        self.fresh(self.state['read_manifest'], 'Implementation changed while preparing scaffold test context')
+        def validate(result):
+            self.fresh(self.state['read_manifest'], 'Source became stale before scaffold test application')
+            current = select_regression_scaffold(self.root, self.profile, self.state['selection'])
+            if current['source'] != scaffold['source']:
+                raise ContractError('Approved regression scaffold changed before replacement')
+            candidate, receipt = apply_regression_scaffold(scaffold, result['content'])
+            prepared = prepare_tests(self.root, [{'path': destination, 'content': candidate.decode('utf-8')}],
+                selected_paths=[destination], test_roots=self.profile['test_roots'],
+                authored_test_paths=tuple(self.state.get('authored_tests', {})),
+                authored_sha256=self.state.get('authored_tests', {}))
+            return prepared, receipt
+        _, (prepared, receipt) = await self.ask('tests', self.context(
+            current_implementation_untrusted={'path': target['path'], 'identifier': target['identifier'],
+                'sha256': implementation['file_sha256'], 'region_sha256': implementation['region_sha256'],
+                'content': implementation['content']},
+            fixed_output_path=destination, regression_scaffold_untrusted={
+                'path': scaffold['path'], 'sha256': scaffold['sha256'], 'identifier': scaffold['identifier'],
+                'template': scaffold['content'], 'current_region': scaffold['region']['content']}),
+            validate=validate, document_path=destination, region=scaffold['region'])
+        self.fresh(self.state['read_manifest'], 'Source became stale before scaffold test application')
+        content = prepared[destination]
+        changed = self.contents.get(destination) != content
+        result, _ = await self.host('write_file', {'path': destination, 'content': content})
+        if 'error' in result:
+            raise ControlledBlocked('Prevalidated scaffold regression test could not be written')
+        self.state['authored_tests'][destination] = _sha(content.encode('utf-8'))
+        if changed:
+            self.task['last_edit_step'] = self.task['tool_operations']
+        self.state['summaries']['tests'] = 'Host supplied a new test file from the approved scaffold.'
+        self.event('regression_scaffold', 'Validated placeholder-method replacement in a new test file', receipt)
+        self.engine.store.save(self.task)
 
     async def execute_check(self, argv, *, category, tools=None, expected=None):
         selected_tools = tools or self.tools
@@ -440,6 +485,8 @@ class BoundedController(Controller):
             raise ControlledBlocked('Region execution requires read-only sandboxed checks')
         check_contract = {key: deepcopy(self.profile.get(key, [])) for key in
                           ('checks', 'behavior_checks', 'compatibility_checks', 'test_roots', 'allowed_edit_paths', 'read_paths', 'expectations')}
+        if 'regression_scaffold' in self.profile:
+            check_contract['regression_scaffold'] = deepcopy(self.profile['regression_scaffold'])
         budget_contract = {'max_calls': self.task['max_steps'], 'max_tokens': self.engine.settings.max_tokens,
             'context_chars': self.engine.settings.context_chars,
             'task_seconds': self.engine.settings.resource_guard['max_task_seconds'],

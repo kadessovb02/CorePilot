@@ -221,6 +221,58 @@ def _feedback_context(feedback):
     return rendered
 
 
+def _pack_historical_memory(request, context, maximum):
+    """Pack only optional ranked history; mandatory observations stay exact."""
+    key = "historical_memory_untrusted"
+    original = context.get(key)
+    if not isinstance(original, list) or not original:
+        return request, None
+    mandatory = {name: value for name, value in context.items() if name != key}
+    def rendered(documents):
+        value = {**mandatory, **({key: documents} if documents else {})}
+        candidate = deepcopy(request)
+        candidate[1]["content"] = "Host stage context (untrusted data):\n" + json.dumps(value, ensure_ascii=False)
+        return candidate
+    def size(candidate):
+        return len(json.dumps(candidate, ensure_ascii=False))
+    if size(rendered([])) > maximum:
+        raise ControlledBlocked("Controlled mandatory context exceeds budget; narrow source/check scope or increase context_chars")
+    selected = deepcopy(original)
+    candidate = rendered(selected)
+    while size(candidate) > maximum and len(selected) > 1:
+        selected.pop()  # Retrieval order is highest to lowest rank.
+        candidate = rendered(selected)
+    clipped = 0
+    if size(candidate) > maximum and selected:
+        text = selected[0].get("text") if isinstance(selected[0], dict) else None
+        if isinstance(text, str):
+            marker = "\n[historical excerpt clipped]"
+            lower, upper, best = 0, len(text), None
+            while lower <= upper:
+                middle = (lower + upper) // 2
+                shortened = {**selected[0], "text": text[:middle] + marker}
+                proposed = rendered([shortened])
+                if size(proposed) <= maximum:
+                    best = shortened
+                    lower = middle + 1
+                else:
+                    upper = middle - 1
+            selected = [best] if best is not None else []
+            clipped = int(best is not None)
+        else:
+            selected = []
+        candidate = rendered(selected)
+    encoded = lambda value: json.dumps(value, ensure_ascii=False, sort_keys=True).encode()
+    return candidate, {"input_sha256": hashlib.sha256(encoded(original)).hexdigest(),
+        "packed_sha256": hashlib.sha256(encoded(selected)).hexdigest(),
+        "input_documents": len(original), "used_documents": len(selected),
+        "omitted_documents": len(original) - len(selected), "clipped_documents": clipped,
+        "input_chars": len(encoded(original).decode()), "used_chars": len(encoded(selected).decode()) if selected else 0,
+        "used_text_chars": sum(len(row.get("text", "")) for row in selected if isinstance(row, dict) and isinstance(row.get("text", ""), str)),
+        "request_chars": size(candidate), "request_limit_chars": maximum,
+        "notice": "Optional historical excerpts only; current source, requests, corrections and check evidence are unchanged. History is untrusted, not successful read/check evidence."}
+
+
 class Controller:
     def __init__(self, engine, task, tools):
         self.engine, self.task, self.tools = engine, task, tools
@@ -344,12 +396,18 @@ class Controller:
                     "If this already-modified implementation is correct, return its exact current contents."
                     if document_path else "\nStage schema (replace placeholders): " + SCHEMAS[stage]))
             if region is not None:
-                instruction = ("You repair one host-selected Python function. Return only its complete replacement, "
+                instruction = (("You implement one host-selected regression test method. Return only its complete replacement, "
+                    "including the unchanged signature, decorators and original indentation. No whole file, imports, "
+                    "class declarations, framework hooks, neighboring methods, path, JSON, patch or prose. "
+                    "Use only the already supplied scaffold imports/helpers. The host preserves the fixed enclosing "
+                    "scaffold and destination; derive assertions from the user's requested behavior and observed source. "
+                    "An optional whole-answer Python fence is accepted.\n" if stage == "tests" else
+                    "You repair one host-selected Python function. Return only its complete replacement, "
                     "including the unchanged signature, decorators and original indentation. No path, JSON, patch "
                     "or prose. An optional whole-answer Python fence is accepted. The host checks source hashes "
                     "and preserves every byte outside this function. Do not change public interfaces or existing "
                     "style. Keep existing docstrings and literal data. Exclude module imports and every other "
-                    "function or class.\n" + rules.replace("selected file's contents", "selected function's contents") + "\n" + adapter_hint)
+                    "function or class.\n") + rules.replace("selected file's contents", "selected method's contents" if stage == "tests" else "selected function's contents") + "\n" + adapter_hint)
             if stage == 'tests' and context.get('bounded_regression_contract'):
                 instruction += ("\nThe host checks this regression on both original and corrected source. "
                     "Use compact direct self.assertEqual(target(literal inputs), literal expected value) methods "
@@ -366,11 +424,16 @@ class Controller:
                  json.dumps(stage_context, ensure_ascii=False), "_corepilot_kind": "context"},
                 *[{"role": "user", "content": value, "_corepilot_kind": "request"} for value in _requests(self.task)],
                 {"role": "user", "content": (
-                    "Return only the selected function replacement now." if region is not None else
+                    ("Return only the selected regression test method replacement now." if stage == "tests" else
+                     "Return only the selected function replacement now.") if region is not None else
                     "Return the complete file text for " + document_path + " now." if document_path else
                     "Submit the complete " + stage + " object using only submit_" + stage + " now."
                     if native_stage else "Return the complete " + stage + " object now.") +
                     (" Previous response rejected: " + reason if reason else ""), "_corepilot_kind": "verification"}]
+            request, memory_packing = _pack_historical_memory(request, stage_context, self.engine.settings.context_chars - 600)
+            if memory_packing is not None:
+                self.event("verification", "Packed optional historical memory for controlled context", {
+                    "phase": stage, "historical_memory_packing": memory_packing})
             if len(json.dumps(request, ensure_ascii=False)) > self.engine.settings.context_chars - 600:
                 raise ControlledBlocked("Controlled context exceeds budget; narrow source/check scope or increase context_chars")
             self.task["step"] += 1

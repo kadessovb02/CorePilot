@@ -117,6 +117,25 @@ def test_index_generic_source_and_redact(tmp_path):
     assert len(target.read_text().splitlines())==1
 
 
+def test_workflow_cli_registers_explicit_hash_bound_scaffold(tmp_path, monkeypatch):
+    import hashlib
+    monkeypatch.delenv("COREPILOT_CONFIG", raising=False)
+    home, repo = tmp_path / "state", tmp_path / "repo"
+    repo.mkdir(); (repo / "tests").mkdir()
+    path = repo / "tests/regression_template.py"
+    path.write_text("import unittest\n\nclass Regression(unittest.TestCase):\n    def test_bug(self):\n        pass\n")
+    invoke(home, "project", "add", "demo", str(repo))
+    scaffold = {"path": "tests/regression_template.py", "identifier": "Regression.test_bug",
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest()}
+    invoke(home, "workflow", "configure", "--project", "demo", "--execution-mode", "regions",
+           "--check-json", '["python","-m","unittest","discover","-s","tests"]',
+           "--regression-scaffold-json", json.dumps(scaffold))
+    actual = json.loads((home / "config.json").read_text())["controlled"]
+    assert actual["artifact_protocol"] == "documents"
+    assert actual["profiles"]["demo"]["regression_scaffold"] == scaffold
+    assert scaffold["path"] in actual["profiles"]["demo"]["read_paths"]
+
+
 def test_observable_evaluation_does_not_accept_unread_file_claim():
     case={"id":"synthetic-case","required_reads":["main.py"],"require_successful_check":True,"expect_changes":False}
     task={"id":"synthetic-task","status":"completed","answer":"I read main.py and tests passed","events":[],"checks":[]}

@@ -33,7 +33,7 @@ def controlled_config(value: dict, projects: dict) -> dict:
         raise ValueError("controlled.profiles must name registered projects")
     normalized = {}
     for project, profile in profiles.items():
-        if not isinstance(profile, dict) or set(profile) - {"checks", "test_roots", "read_paths", "allowed_edit_paths", "behavior_checks", "compatibility_checks", "expectations"}:
+        if not isinstance(profile, dict) or set(profile) - {"checks", "test_roots", "read_paths", "allowed_edit_paths", "behavior_checks", "compatibility_checks", "expectations", "regression_scaffold"}:
             raise ValueError("controlled project profile contains unsupported fields")
         checks = profile.get("checks", [])
         if (not isinstance(checks, list) or len(checks) > 5 or any(
@@ -63,6 +63,12 @@ def controlled_config(value: dict, projects: dict) -> dict:
                     raise ValueError("controlled paths must use normalized relative forward slashes")
                 safe_path(projects[project], path)
             result[field] = list(dict.fromkeys(paths))
+        if "regression_scaffold" in profile:
+            if execution_mode != "regions" or artifact_protocol != "documents":
+                raise ValueError("regression_scaffold requires regions execution and documents artifacts")
+            from .regression_scaffold import validate_scaffold_config
+            result["regression_scaffold"] = validate_scaffold_config(
+                projects[project], profile["regression_scaffold"], result["read_paths"])
         normalized[project] = result
     return {"enabled": enabled, "max_repairs": repairs, "artifact_protocol": artifact_protocol,
             "execution_mode": execution_mode, "profiles": normalized}

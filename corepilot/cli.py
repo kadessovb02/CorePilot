@@ -87,6 +87,7 @@ def parser():
     configure.add_argument("--execution-mode", choices=("files", "regions"), default="files")
     configure.add_argument("--behavior-check-json", action="append", default=[])
     configure.add_argument("--compatibility-check-json", action="append", default=[])
+    configure.add_argument("--regression-scaffold-json", help="Approved existing unittest placeholder: JSON path, identifier and sha256; regions/documents only")
     csub.add_parser("disable"); csub.add_parser("show")
     history = sub.add_parser("history", help="Register explicit history paths for the UI")
     hs = history.add_subparsers(dest="action", required=True)
@@ -233,6 +234,12 @@ def main(argv=None):
                     "allowed_edit_paths": args.edit_path,
                     "behavior_checks": [json.loads(value) for value in args.behavior_check_json],
                     "compatibility_checks": [json.loads(value) for value in args.compatibility_check_json]}
+                if args.regression_scaffold_json:
+                    scaffold = json.loads(args.regression_scaffold_json)
+                    state["profiles"][args.project]["regression_scaffold"] = scaffold
+                    if isinstance(scaffold, dict) and isinstance(scaffold.get("path"), str):
+                        state["profiles"][args.project]["read_paths"] = list(dict.fromkeys(
+                            [*args.read_path, scaffold["path"]]))
                 state.update(enabled=True, max_repairs=args.max_repairs, execution_mode=args.execution_mode)
                 if args.execution_mode == "regions":
                     state["artifact_protocol"] = "documents"
