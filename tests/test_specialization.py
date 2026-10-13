@@ -137,7 +137,7 @@ def test_quality_retains_all_arms_ungraded_and_resources_without_claiming_gain(p
     stopped = {"graded": False, "resource_aborted": True, **dict.fromkeys(gates), "seconds": 4, "calls": 1}
     proof = write(tmp_path / "quality.json", {"kind": "heldout_evaluation", "binding_sha256": frozen["binding_sha256"],
         "adapter_sha256": state["states"]["saved_artifacts"]["sha256"], "observer_sha256": "c" * 64,
-        "training_excluded": True, "results": [{"id": "case", "base": passed, "base_memory": passed, "adapter": stopped}]})
+        "training_excluded": True, "results": [{"id": "independent-check", "base": passed, "base_memory": passed, "adapter": stopped}]})
     state = record_evidence(path, "quality", proof)
     assert state["states"]["quality"]["arms"]["adapter"] == {"attempted": 1, "graded": 0, "resource_aborted": 1, "usable": 0, "seconds": 4, "calls": 1}
     assert state["states"]["quality"]["arms"]["base_memory"]["usable"] == 1
@@ -152,7 +152,7 @@ def test_partial_quality_gates_cannot_count_as_usable(profile, tmp_path, missing
     outcome = {"graded": True, "resource_aborted": False, **dict.fromkeys(("completed", "behavior_passed", "compatibility_passed", "scope_passed", "style_passed", "regression_passed", "reads_passed"), True)}
     proof = write(tmp_path / "quality.json", {"kind": "heldout_evaluation", "binding_sha256": frozen["binding_sha256"],
         "adapter_sha256": state["states"]["saved_artifacts"]["sha256"], "observer_sha256": "c" * 64, "training_excluded": True,
-        "results": [{"id": "case", "base": outcome.copy(), "adapter": outcome.copy()}]})
+        "results": [{"id": "independent-check", "base": outcome.copy(), "adapter": outcome.copy()}]})
     payload = json.loads(proof.read_text())
     del payload["results"][0]["adapter"][missing]
     write(proof, payload)
@@ -216,3 +216,60 @@ def test_generated_state_and_holdout_cannot_be_inside_selected_source(profile, t
     args[inside] = Path(args["repo"]) / "inside"
     with pytest.raises(ValueError, match="outside selected source"):
         create_profile(tmp_path / "second.json", project="demo", **args, config_path=frozen["paths"]["config"])
+
+
+def new_holdout_profile(profile, tmp_path, contents):
+    from pathlib import Path
+    _, frozen = profile
+    Path(frozen["paths"]["holdout"]).write_text(contents)
+    path = tmp_path / "next-freeze.json"
+    payload = create_profile(path, project="demo", **{key: frozen["paths"][key] for key in ("repo", "data", "model", "adapter", "holdout", "home")}, config_path=frozen["paths"]["config"])
+    return path, payload
+
+
+def quality_record(profile, tmp_path, rows):
+    path, frozen = profile
+    state = trained(profile, tmp_path)
+    proof = write(tmp_path / "quality.json", {"kind": "heldout_evaluation", "binding_sha256": frozen["binding_sha256"],
+        "adapter_sha256": state["states"]["saved_artifacts"]["sha256"], "observer_sha256": "c" * 64,
+        "training_excluded": True, "results": rows})
+    return path, proof
+
+
+def gates():
+    return {"graded": True, "resource_aborted": False, **dict.fromkeys(("completed", "behavior_passed", "compatibility_passed", "scope_passed", "style_passed", "regression_passed", "reads_passed"), True)}
+
+
+@pytest.mark.parametrize("jsonl", [False, True])
+def test_partial_quality_has_declared_denominator_and_preserves_split(profile, tmp_path, jsonl):
+    declared = [{"id": "dev-check", "split": "development"}, {"id": "final-check", "split": "final"}]
+    contents = "\n".join(json.dumps(row) for row in declared) if jsonl else json.dumps(declared)
+    profile = new_holdout_profile(profile, tmp_path, contents)
+    row = {"id": "dev-check", "split": "development", "base": gates(), "adapter": gates()}
+    path, proof = quality_record(profile, tmp_path, [row])
+    quality = record_evidence(path, "quality", proof)["states"]["quality"]
+    assert quality["cases"] == 1 and quality["planned_cases"] == 2
+    assert quality["unrecorded_ids"] == ["final-check"] and not quality["full_coverage"]
+    assert quality["case_splits"] == {"dev-check": "development"}
+    payload = json.loads(proof.read_text())
+    payload["results"].append({"id": "final-check", "split": "final", "base": gates(), "adapter": gates()})
+    write(proof, payload)
+    quality = record_evidence(path, "quality", proof)["states"]["quality"]
+    assert quality["full_coverage"] and quality["unrecorded_ids"] == []
+    assert quality["case_splits"]["final-check"] == "final"
+
+
+@pytest.mark.parametrize("reported", [{"id": "unrelated", "split": "final"}, {"id": "final-check", "split": "development"}])
+def test_unknown_case_or_wrong_split_cannot_bind_to_declared_holdout(profile, tmp_path, reported):
+    profile = new_holdout_profile(profile, tmp_path, json.dumps([{"id": "final-check", "split": "final"}]))
+    path, proof = quality_record(profile, tmp_path, [{**reported, "base": gates(), "adapter": gates()}])
+    with pytest.raises(ValueError, match="frozen holdout"):
+        record_evidence(path, "quality", proof)
+
+
+def test_unknown_holdout_format_never_infers_full_coverage(profile, tmp_path):
+    profile = new_holdout_profile(profile, tmp_path, "opaque operator case inventory")
+    path, proof = quality_record(profile, tmp_path, [{"id": "operator-case", "base": gates(), "adapter": gates()}])
+    quality = record_evidence(path, "quality", proof)["states"]["quality"]
+    assert quality["planned_cases"] is None and quality["unrecorded_ids"] is None
+    assert not quality["coverage_available"] and not quality["full_coverage"]

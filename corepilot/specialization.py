@@ -160,6 +160,35 @@ def _saved(adapter):
     return {"sha256": _hash(hashes), "manifest": hashes, "tensor_count": inspected["saved_tensors"], "trust": "actual_inspected"}
 
 
+def _holdout(path):
+    """Identify declared cases without treating an unknown format as coverage."""
+    observed = {"sha256": _sha(path), "case_ids": None, "case_splits": None}
+    try:
+        path = _path(path)
+        if path.stat().st_size > 16_000_000:
+            return observed
+        raw = path.read_text()
+        try:
+            rows = json.loads(raw)
+            if isinstance(rows, dict):
+                rows = [rows]
+        except ValueError:
+            rows = [json.loads(line) for line in raw.splitlines() if line.strip()]
+        if not isinstance(rows, list) or not rows:
+            return observed
+        splits = {}
+        for row in rows:
+            if not isinstance(row, dict) or not isinstance(row.get("id"), str) or not row["id"] or row["id"] in splits:
+                return observed
+            if row.get("split") is not None and (not isinstance(row["split"], str) or not row["split"]):
+                return observed
+            splits[row["id"]] = row.get("split")
+        observed.update(case_ids=sorted(splits), case_splits=splits)
+    except (OSError, ValueError, TypeError):
+        pass
+    return observed
+
+
 def create_profile(profile_path, *, project, repo, data, model, adapter, holdout, home, config_path, commands=None, commands_reviewed=False):
     """Freeze an explicit single-project prepared corpus and reviewed command plan."""
     if not isinstance(project, str) or not re.fullmatch(r"[A-Za-z0-9_.-]{1,100}", project):
@@ -175,7 +204,7 @@ def create_profile(profile_path, *, project, repo, data, model, adapter, holdout
     for name in ("repo", "data", "model", "adapter"):
         if path.is_relative_to(Path(paths[name])):
             raise ValueError("Keep the private profile outside source, corpus, model and adapter directories")
-    pins = {"source": _inventory(repo), "corpus": _corpus(data, project), "model": _inventory(model), "holdout": {"sha256": _sha(holdout)}}
+    pins = {"source": _inventory(repo), "corpus": _corpus(data, project), "model": _inventory(model), "holdout": _holdout(holdout)}
     prefix = ["corepilot", "--home", paths["home"], "--config", paths["config"]]
     train = prefix + ["train", "--data", paths["data"], "--model", paths["model"], "--output", paths["adapter"]]
     argv = commands if commands is not None else {"plan": train + ["--dry-run"], "preflight": train + ["--preflight-only"], "train": train, "evaluate": prefix + ["evaluate", "--cases", paths["holdout"], "--no-memory"], "serve": prefix + ["serve"]}
@@ -214,10 +243,12 @@ def refresh_status(profile_path):
     """Reinspect pinned explicit files; do not mutate profiles or contact endpoints."""
     profile = _load(profile_path)
     pins, paths = profile["pins"], profile["paths"]
-    states, current = {}, True
-    for stage, inspect in {"source": lambda: _inventory(paths["repo"]), "corpus": lambda: _corpus(paths["data"], profile["project"]), "model": lambda: _inventory(paths["model"]), "holdout": lambda: {"sha256": _sha(paths["holdout"])} }.items():
+    states, current, holdout = {}, True, None
+    for stage, inspect in {"source": lambda: _inventory(paths["repo"]), "corpus": lambda: _corpus(paths["data"], profile["project"]), "model": lambda: _inventory(paths["model"]), "holdout": lambda: _holdout(paths["holdout"])}.items():
         try:
             observed = inspect()
+            if stage == "holdout":
+                holdout = observed
             matches = observed["sha256"] == pins[stage]["sha256"]
             states[stage] = {"status": "inspected" if matches else "changed", "trust": "actual_inspected", "sha256": observed["sha256"]}
             current &= matches
@@ -266,6 +297,12 @@ def refresh_status(profile_path):
                         if not isinstance(row, dict) or not isinstance(row.get("id"), str) or not row["id"] or row["id"] in ids:
                             raise ValueError("Evaluation cases must be paired and unique")
                         ids.add(row["id"])
+                        known = (holdout or {}).get("case_ids")
+                        declared_split = ((holdout or {}).get("case_splits") or {}).get(row["id"])
+                        if known is not None and row["id"] not in known:
+                            raise ValueError("Evaluation case is absent from the frozen holdout")
+                        if declared_split is not None and row.get("split") != declared_split:
+                            raise ValueError("Evaluation split differs from the frozen holdout")
                         for arm in arms:
                             outcome = row.get(arm)
                             if not isinstance(outcome, dict) or type(outcome.get("graded")) is not bool or type(outcome.get("resource_aborted")) is not bool:
@@ -278,6 +315,12 @@ def refresh_status(profile_path):
                                 if key in outcome and (type(outcome[key]) not in (int, float) or not 0 <= outcome[key] < float("inf") or (key == "calls" and type(outcome[key]) is not int)):
                                     raise ValueError("Invalid recorded latency/calls")
                     states[stage]["cases"] = len(results)
+                    known = (holdout or {}).get("case_ids")
+                    states[stage].update(planned_cases=len(known) if known is not None else None,
+                        unrecorded_ids=sorted(set(known) - ids) if known is not None else None,
+                        full_coverage=known is not None and set(known) == ids,
+                        coverage_available=known is not None,
+                        case_splits={row["id"]: row.get("split") for row in results})
                     states[stage]["arms"] = {arm: {"attempted": len(results), "graded": sum(row[arm]["graded"] for row in results),
                         "resource_aborted": sum(row[arm]["resource_aborted"] for row in results),
                         "usable": sum(row[arm]["graded"] and all(row[arm][key] for key in ("completed", "behavior_passed", "compatibility_passed", "scope_passed", "style_passed", "regression_passed", "reads_passed")) for row in results),
@@ -287,7 +330,7 @@ def refresh_status(profile_path):
         except (OSError, ValueError, TypeError, KeyError) as exc:
             states[stage].update(status="invalid", reason=str(exc)[:250])
     return {"project": profile["project"], "binding_sha256": profile["binding_sha256"], "inputs_current": bool(current), "states": states,
-            "commands_reviewed": profile["commands_reviewed"], "notice": "Operator-recorded receipts are not authenticated server/observer proof. Recorded quality covers only the specified cases; no general quality or improvement claim."}
+            "commands_reviewed": profile["commands_reviewed"], "notice": "Operator-recorded receipts are not authenticated server/observer proof. Coverage counts declared case IDs with records, not successful/graded attempts. Recorded quality covers only the specified cases; no general quality or improvement claim."}
 
 
 def record_evidence(profile_path, stage, receipt_path):
