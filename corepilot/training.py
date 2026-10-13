@@ -5,6 +5,7 @@ import json
 import os
 import platform
 import random
+import struct
 import time
 from collections import Counter
 from importlib.metadata import version
@@ -106,6 +107,65 @@ def write_receipt(output: Path, receipt: dict):
     os.replace(temporary, path)
 
 
+def inspect_adapter_artifacts(output: Path, *, trainable_parameters=None) -> dict:
+    """Inspect saved LoRA tensors on CPU; this does not load or evaluate a model."""
+    output = Path(output)
+    weights, config = output / "adapters.safetensors", output / "adapter_config.json"
+    if any(path.is_symlink() or not path.is_file() for path in (weights, config)):
+        raise ValueError("Training must save regular adapter weights and configuration")
+    with weights.open("rb") as stream:
+        raw_size = stream.read(8)
+        if len(raw_size) != 8:
+            raise ValueError("Adapter tensor header is missing")
+        size = struct.unpack("<Q", raw_size)[0]
+        if not 2 <= size <= 1048576:
+            raise ValueError("Adapter tensor header is outside its bounds")
+        try:
+            header = json.loads(stream.read(size))
+        except (ValueError, UnicodeError) as exc:
+            raise ValueError("Adapter tensor header is invalid") from exc
+    if not isinstance(header, dict):
+        raise ValueError("Adapter tensor header must be an object")
+    tensors, parameters, spans = [], 0, []
+    widths = {"F16": 2, "BF16": 2, "F32": 4}
+    payload_size = weights.stat().st_size - 8 - size
+    for name, value in header.items():
+        if name == "__metadata__":
+            continue
+        if not isinstance(name, str) or not name.endswith((".lora_a", ".lora_b")) or not isinstance(value, dict):
+            raise ValueError("Saved weights must contain only LoRA tensors")
+        shape, offsets, dtype = value.get("shape"), value.get("data_offsets"), value.get("dtype")
+        if (not isinstance(shape, list) or len(shape) != 2
+                or any(type(n) is not int or n < 1 for n in shape)
+                or not isinstance(offsets, list) or len(offsets) != 2
+                or any(type(n) is not int for n in offsets) or dtype not in widths):
+            raise ValueError("Adapter tensor shape, dtype or offsets are invalid")
+        count = shape[0] * shape[1]
+        start, end = offsets
+        if not 0 <= start < end <= payload_size or end-start != count*widths[dtype]:
+            raise ValueError("Adapter tensor bytes differ from their declared shape")
+        parameters += count
+        tensors.append(name)
+        spans.append((start, end))
+    spans.sort()
+    if not tensors or spans[0][0] != 0 or spans[-1][1] != payload_size or any(a[1] != b[0] for a, b in zip(spans, spans[1:])):
+        raise ValueError("Adapter tensors must cover a complete nonoverlapping payload")
+    paired = {name.rsplit(".", 1)[0] for name in tensors}
+    if any(prefix+suffix not in tensors for prefix in paired for suffix in (".lora_a", ".lora_b")):
+        raise ValueError("Saved LoRA tensors require both matrices")
+    if trainable_parameters is not None and parameters != trainable_parameters:
+        raise ValueError("Saved adapter parameter count differs from the trained parameters")
+    settings = json.loads(config.read_text())
+    if (not isinstance(settings, dict) or settings.get("fine_tune_type") != "lora"
+            or type(settings.get("num_layers")) is not int or settings["num_layers"] < 1
+            or not isinstance(settings.get("lora_parameters"), dict)):
+        raise ValueError("Saved adapter configuration is not a loadable LoRA declaration")
+    return {"artifact_sha256": {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
+                                for path in (weights, config)},
+            "saved_tensors": len(tensors), "saved_parameters": parameters,
+            "adapter_load_verified": False, "quality_evaluated": False}
+
+
 def train(*, data: Path, model: str, output: Path, max_length=2048, rank=8, layers=8, epochs=1, samples=0, dry_run=False, preflight_only=False) -> dict:
     data = Path(data).expanduser().resolve(); output = Path(output).expanduser().resolve()
     if any(type(value) is not int for value in (max_length, rank, layers, epochs, samples)) or min(max_length, rank, layers, epochs) < 1 or samples < 0:
@@ -190,13 +250,19 @@ def train(*, data: Path, model: str, output: Path, max_length=2048, rank=8, laye
     started = time.monotonic(); receipt.update(status="running", pid=os.getpid(), started_at=time.time()); write_receipt(output, receipt)
     try:
         trainer.setup({"train": selected, "val": validation})
+        receipt["model_weights_loaded"] = True
         # Soup's existing per-token batching/loss/callbacks accept this dataset
         # protocol. Scope the adapter to this single CLI run and always restore.
         with soup_target_windows(mlx_masking): result = trainer.train()
         adapter_file = output / "adapter_config.json"
         adapter_config = json.loads(adapter_file.read_text()); adapter_config["num_layers"] = receipt["lora_depth_span"]
         adapter_file.write_text(json.dumps(adapter_config, indent=2)+"\n")
-        receipt.update(status="complete", result=result, peak_memory_gb=mx.get_peak_memory()/1e9)
+        steps = result.get("total_steps")
+        if type(steps) is not int or steps < 1:
+            raise ValueError("Training completion requires actual optimizer steps")
+        artifacts = inspect_adapter_artifacts(output, trainable_parameters=receipt["trainable_parameters"])
+        receipt.update(status="complete", trained=True, optimizer_steps=steps, result=result,
+                       peak_memory_gb=mx.get_peak_memory()/1e9, **artifacts)
     except BaseException as exc:
         receipt.update(status="failed", error=f"{type(exc).__name__}: {exc}")
         raise

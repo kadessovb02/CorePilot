@@ -12,6 +12,31 @@ def read(path):
     return [json.loads(line) for line in path.read_text().splitlines() if line]
 
 
+@pytest.mark.parametrize("newline", ["\n", "\r\n"])
+def test_canonical_function_documents_keep_indentation_and_final_newline(tmp_path, newline):
+    target = newline.join(["    def restore(self, value):", "        return value", ""])
+    source = tmp_path / "explicit.jsonl"
+    source.write_text("".join(json.dumps({"session_id": str(i), "messages": [
+        {"role": "user", "content": "Restore independent selected function " + str(i)},
+        {"role": "assistant", "content": target}]}) + "\n" for i in range(6)))
+    output = tmp_path / "prepared"
+    prepare([source], "canonical", "demo", output)
+    rows = [row for split in ("train", "valid", "test") for row in read(output / (split + ".jsonl"))]
+    assert len(rows) == 6
+    assert all(row["messages"][-1]["content"] == target for row in rows)
+
+
+def test_whitespace_preservation_never_restores_redacted_secrets_or_hidden_roles():
+    from corepilot.history import sanitize_messages
+    rows = sanitize_messages([
+        {"role": "assistant", "content": '    API_TOKEN="synthetic-private-value"\n'},
+        {"role": "assistant", "channel": "analysis", "content": "private reasoning"}],
+        preserve_whitespace=True)
+    assert len(rows) == 1
+    assert "synthetic-private-value" not in rows[0]["content"]
+    assert "private reasoning" not in rows[0]["content"]
+
+
 def fixtures(path):
     rows = []
     for index in range(30):

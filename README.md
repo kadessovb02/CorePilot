@@ -4,6 +4,8 @@
 
 CorePilot is a provider-neutral toolkit for collecting explicitly selected histories, preparing a portable training corpus, retrieving project memory, and running a coding agent through a local web interface. Bring your own repository and your own tool-capable model.
 
+The intended unit of specialization is **one repository**: current source stays in versioned project memory, while reviewed history can teach its conventions and accepted actions to a small model. The open-source toolkit is reusable; project corpora and adapters stay local. Commercial-agent parity has not been established.
+
 The project is an **alpha research tool**. Inference quality depends on the model. Training loss, retrieval scores, and successful tool calls are separate measurements; none guarantees that an agent understands a project correctly.
 
 ## What it does
@@ -88,6 +90,8 @@ corepilot train --model /path/to/mlx-model --max-length 2048 --rank 8 --layers 8
 A dry run validates the split files and writes a plan without loading a model or importing the trainer. The built-in recipe targets models with `self_attn.q_proj` and `self_attn.v_proj`. It skips examples that exceed the token limit rather than silently truncating the supervised response. Other architectures or hardware can consume the exported dataset through a separate trainer.
 
 For independently verified tool trajectories, use [native tool training](docs/native-training.md): split related sessions before extracting assistant targets, preserve tool-call/reply pairs, and run tokenizer/mask preflight before loading weights. Historical answers alone are unverified inputs; no adapter improvement is claimed by a successful preflight.
+
+For a complete single-project cycle, follow the [specialization procedure](docs/agent-setup.md#one-project-one-specialization-cycle). `corepilot specialize create` freezes explicit source, corpus, model and separate evaluation inputs. `specialize record` binds actual preflight, training, reload and observer receipts; `specialize status` checks their current hashes without running commands. Preparation, saved weights, actual adapter loading and measured task quality remain separate states. Compare base, base with project memory, and adapter with the same memory on new tasks and retain every failure.
 
 Serve the resulting adapter with your model server, then point CorePilot at that server. CorePilot configures inference; it does not automatically launch or download a model. Model and dataset licenses apply separately from this project's Apache-2.0 license. [Soup](https://github.com/MakazhanAlpamys/Soup) is an optional dependency, not vendored source.
 

@@ -67,9 +67,14 @@ def experiment_reports(root: Path) -> dict:
     for name in ("category_counts", "project_counts", "memory_kinds"):
         if isinstance(corpus.get(name), dict):
             corpus_summary[name] = {key: value for key, value in corpus[name].items() if isinstance(value, (int, float))}
-    receipt = read_json(root / "adapters" / "project-v1" / "training_receipt.json")
-    training = scalar_metrics(receipt, ("training_rows", "validation_rows", "available_rows", "layers", "rank", "epochs", "max_length", "elapsed_seconds", "peak_memory_gb"))
-    training["status"] = receipt.get("status") if receipt.get("status") in {"planned", "running", "complete", "failed"} else "unavailable"
+    default_receipt = root / "adapters" / "default" / "training_receipt.json"
+    receipt = read_json(default_receipt if default_receipt.exists() or default_receipt.is_symlink()
+                        else root / "adapters" / "project-v1" / "training_receipt.json")
+    training = scalar_metrics(receipt, ("training_rows", "validation_rows", "available_rows", "layers", "rank", "epochs", "max_length", "elapsed_seconds", "peak_memory_gb", "optimizer_steps", "model_weights_loaded", "trained", "cpu_preflight_passed"))
+    training["status"] = receipt.get("status") if receipt.get("status") in {"planned", "preflight_passed", "running", "complete", "failed"} else "unavailable"
+    training["readiness_scope"] = ("CPU tokenizer/target preflight only; no model weights loaded or optimizer steps."
+                                    if training["status"] == "preflight_passed"
+                                    else "Training receipt only; adapter reload and held-out quality are separate observations.")
     if isinstance(receipt.get("started_at"), (int, float)):
         training["started_at"] = receipt["started_at"]
         if training["status"] == "running":

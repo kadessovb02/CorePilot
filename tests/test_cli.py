@@ -36,6 +36,24 @@ def test_model_rejects_remote_and_preserves_config(tmp_path, monkeypatch):
     assert (home/"config.json").read_bytes()==before
 
 
+def test_model_update_retains_same_model_adapter_and_budgets_but_clears_on_new_model(tmp_path, monkeypatch):
+    monkeypatch.delenv("COREPILOT_CONFIG", raising=False)
+    home = tmp_path / "state"
+    invoke(home, "init", "--no-demo")
+    adapter = tmp_path / "adapter"
+    invoke(home, "model", "set", "--url", "http://127.0.0.1:1234/v1", "--name", "base",
+           "--adapter", str(adapter))
+    path = home / "config.json"
+    config = json.loads(path.read_text())
+    config["model"].update(max_tokens=512, context_chars=6000)
+    path.write_text(json.dumps(config))
+    invoke(home, "model", "set", "--url", "http://127.0.0.1:1234/v1/", "--name", "base")
+    actual = json.loads(path.read_text())["model"]
+    assert actual["adapter"] == str(adapter) and actual["max_tokens"] == 512 and actual["context_chars"] == 6000
+    invoke(home, "model", "set", "--url", "http://127.0.0.1:1234/v1", "--name", "other")
+    assert "adapter" not in json.loads(path.read_text())["model"]
+
+
 def test_prepare_train_dry_run_without_optional_dependencies(tmp_path, monkeypatch):
     monkeypatch.delenv("COREPILOT_CONFIG", raising=False)
     home=tmp_path/"state";invoke(home,"init")
@@ -55,6 +73,34 @@ def test_training_rejects_overlap(tmp_path):
     (data/"train.jsonl").write_text(row);(data/"valid.jsonl").write_text(row)
     with pytest.raises(ValueError,match="Duplicate"):
         train(data=data,model="synthetic-model",output=tmp_path/"adapter",dry_run=True)
+
+
+def test_specialization_cli_freezes_explicit_inputs_and_reports_pending_training(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv("COREPILOT_CONFIG", raising=False)
+    home = tmp_path / "state"
+    repo, model = tmp_path / "repo", tmp_path / "model"
+    repo.mkdir(); model.mkdir()
+    (repo / "calculator.py").write_text("def square(number):\n    return number * number\n")
+    (model / "config.json").write_text('{"model_type":"synthetic"}')
+    example = Path(__file__).parents[1] / "examples/history.canonical.jsonl"
+    corpus = tmp_path / "corpus"
+    invoke(home, "prepare", "--provider", "canonical", "--project", "demo", "--input", str(example),
+           "--output", str(corpus))
+    holdout = tmp_path / "fresh.jsonl"
+    holdout.write_text('{"id":"new-case","prompt":"Validate a negative number"}\n')
+    profile = home / "specialization.json"
+    invoke(home, "specialize", "create", "--profile", str(profile), "--project", "demo", "--repo", str(repo),
+           "--data", str(corpus), "--model", str(model), "--adapter", str(home / "adapters/default"), "--holdout", str(holdout))
+    frozen = json.loads(profile.read_text())
+    assert not frozen["commands_reviewed"]
+    assert frozen["evidence"] == {}
+    assert not (home / "adapters/default").exists()
+    capsys.readouterr()
+    invoke(home, "specialize", "status", "--profile", str(profile))
+    observed = json.loads(capsys.readouterr().out)
+    assert observed["inputs_current"]
+    assert observed["states"]["training"]["status"] == "pending"
+    assert observed["states"]["quality"]["status"] == "pending"
 
 
 def test_index_generic_source_and_redact(tmp_path):

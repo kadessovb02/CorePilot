@@ -49,7 +49,7 @@ def _examples(sessions: list[dict]) -> tuple[list[dict], int]:
         if not endings:
             discarded += 1
             continue
-        messages = sanitize_messages(messages[:endings[-1] + 1])
+        messages = sanitize_messages(messages[:endings[-1] + 1], preserve_whitespace=session.get("provider") == "canonical")
         if not any(message["role"] == "user" for message in messages):
             discarded += 1
             continue

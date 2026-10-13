@@ -209,7 +209,7 @@
     const training = state.training;
     $("training-status").hidden = !training || training.status === "unavailable";
     if (!training || training.status === "unavailable") return;
-    const labels = { planned: "Training configured", running: "Adapter training in progress", complete: "Training complete", completed: "Training complete", failed: "Training failed" };
+    const labels = { planned: "Training configured", preflight_passed: "CPU preflight passed · not trained", running: "Adapter training in progress", complete: "Training complete", completed: "Training complete", failed: "Training failed" };
     const header = el("div", `training-status-header ${training.status || ""}`);
     header.append(el("span", "status-dot " + (training.status === "failed" ? "error" : ["complete", "completed"].includes(training.status) ? "ready" : "")), el("span", "", labels[training.status] || "Adapter training"));
     const nodes = [header];

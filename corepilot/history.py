@@ -91,7 +91,7 @@ def _call(call: dict) -> dict | None:
     return {"id": identifier, "type": "function", "function": {"name": redact(name)[0], "arguments": redact(arguments)[0]}}
 
 
-def sanitize_messages(messages: Iterable[dict]) -> list[dict]:
+def sanitize_messages(messages: Iterable[dict], *, preserve_whitespace: bool = False) -> list[dict]:
     """Drop hidden roles/channels and incomplete or credential-reading tools."""
     rows, calls = [], {}
     for message in messages:
@@ -101,6 +101,12 @@ def sanitize_messages(messages: Iterable[dict]) -> list[dict]:
         if role not in {"user", "assistant", "tool"}:
             continue
         text = visible_text(message.get("content", ""), user=role == "user")
+        original = message.get("content", "")
+        # Explicit canonical code documents need their initial indentation and
+        # final newline. Restore boundary whitespace only when every visible
+        # byte survived redaction and user-wrapper filtering unchanged.
+        if preserve_whitespace and isinstance(original, str) and original.strip() == text and text:
+            text = original
         row = {"role": role, "content": text}
         if role == "assistant":
             safe_calls = [safe for call in message.get("tool_calls") or [] if isinstance(call, dict) and (safe := _call(call))]
@@ -270,7 +276,7 @@ def _canonical(records: list[dict], project: str, path: Path) -> list[dict]:
         if kind == "verified_region":
             row["family_ids"].extend(str(row["training"].get(key, "")) for key in
                                      ("region_family_id", "task_family_id") if row["training"].get(key))
-        row["messages"] = _native_visible_messages(row["messages"]) if kind in {"verified_native", "verified_region"} else sanitize_messages(row["messages"])
+        row["messages"] = _native_visible_messages(row["messages"]) if kind in {"verified_native", "verified_region"} else sanitize_messages(row["messages"], preserve_whitespace=True)
     return list(grouped.values())
 
 

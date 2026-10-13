@@ -57,6 +57,7 @@ def parser():
     set_model.add_argument("--url", required=True); set_model.add_argument("--name", required=True)
     set_model.add_argument("--protocol", choices=["auto", "native", "json"], default="auto")
     set_model.add_argument("--display-name", default="Local model")
+    set_model.add_argument("--adapter", help="Explicit local adapter metadata; configure the server to load it separately")
     ms.add_parser("show")
     orchestration = sub.add_parser("orchestration", help="Configure independent specialist models and a lightweight decision router")
     osub = orchestration.add_subparsers(dest="action", required=True)
@@ -110,6 +111,21 @@ def parser():
     train.add_argument("--epochs", type=int, default=1); train.add_argument("--samples", type=int, default=0)
     train.add_argument("--dry-run", action="store_true")
     train.add_argument("--preflight-only", action="store_true", help="Validate local tokenizer and target masks on CPU; do not load model weights")
+    specialization = sub.add_parser("specialize", help="Freeze and inspect a private single-project training/evaluation profile; never launches models")
+    ss = specialization.add_subparsers(dest="action", required=True)
+    freeze = ss.add_parser("create")
+    freeze.add_argument("--profile", required=True, type=Path)
+    freeze.add_argument("--project", required=True)
+    for name in ("repo", "data", "model", "adapter", "holdout"):
+        freeze.add_argument("--" + name, required=True, type=Path)
+    freeze.add_argument("--commands", type=Path, help="Explicit JSON object of reviewed argv arrays")
+    freeze.add_argument("--commands-reviewed", action="store_true", help="Record that the operator reviewed the argv; commands are never executed")
+    status = ss.add_parser("status")
+    status.add_argument("--profile", required=True, type=Path)
+    evidence = ss.add_parser("record")
+    evidence.add_argument("--profile", required=True, type=Path)
+    evidence.add_argument("--stage", choices=("preflight", "training", "reload", "quality"), required=True)
+    evidence.add_argument("--receipt", required=True, type=Path)
     evaluation = sub.add_parser("evaluate", help="Run explicit held-out agent cases without applying changes")
     evaluation.add_argument("--cases", type=Path, required=True); evaluation.add_argument("--output", type=Path)
     evaluation.add_argument("--limit", type=int, default=0); evaluation.add_argument("--timeout", type=int, default=600)
@@ -151,11 +167,32 @@ def main(argv=None):
             elif args.action == "remove":
                 projects.pop(args.name, None); write_config(config_path, config)
             print(json.dumps(projects, indent=2))
+        elif args.command == "specialize":
+            from .specialization import create_profile, record_evidence, refresh_status
+            if args.action == "create":
+                commands = json.loads(args.commands.read_text()) if args.commands else None
+                result = create_profile(args.profile, project=args.project, repo=args.repo, data=args.data,
+                                        model=args.model, adapter=args.adapter, holdout=args.holdout,
+                                        home=home, config_path=config_path, commands=commands,
+                                        commands_reviewed=args.commands_reviewed)
+            elif args.action == "record":
+                result = record_evidence(args.profile, args.stage, args.receipt)
+            else:
+                result = refresh_status(args.profile)
+            print(json.dumps(result, indent=2))
         elif args.command == "model":
             if args.action == "set":
                 from .config import local_endpoint
                 local_endpoint(args.url)
-                config["model"] = {"url": args.url.rstrip("/"), "name": args.name, "display_name": args.display_name, "protocol": args.protocol, "context_chars": 32000}
+                previous = config.get("model", {})
+                same_model = previous.get("url", "").rstrip("/") == args.url.rstrip("/") and previous.get("name") == args.name
+                selected = dict(previous) if same_model else {}
+                selected.update(url=args.url.rstrip("/"), name=args.name,
+                                display_name=args.display_name, protocol=args.protocol)
+                selected.setdefault("context_chars", 32000)
+                if args.adapter is not None:
+                    selected["adapter"] = str(Path(args.adapter).expanduser().resolve())
+                config["model"] = selected
                 write_config(config_path, config)
             print(json.dumps(config.get("model", {}), indent=2))
         elif args.command == "orchestration":
