@@ -518,8 +518,8 @@ failure/candidate success and negative fixtures verify this change. The measured
 scores were **not retroactively regraded**, and these fixes have no measured
 post-fix model-quality gain.
 
-The final local Python suite passes **1246 tests, with one optional test skipped**;
-JavaScript syntax, public-tree privacy and diff checks pass. CPU oracle admission
+At that publication, the local Python suite passed **1246 tests, with one optional test skipped**;
+JavaScript syntax, public-tree privacy and diff checks passed. CPU oracle admission
 independently accepted six reference fixes and rejected 72 negative variants
 without loading a model. Scripted host-cycle tests exercise addressed component
 repair, exact frozen-base alternatives, preservation of verified implementation,
@@ -535,3 +535,121 @@ tokens. Both target masks passed, with zero truncation/exclusions and no model
 weights, MLX, trainer or optimizer loaded. This tiny corpus establishes technical
 preparation compatibility, not training readiness for a credible quality study;
 it has no dataset test holdout. No LoRA or specialist-model improvement is claimed.
+
+## Private single-project specialization pilot
+
+**Private operator pilot, case data/evidence withheld, not publicly reproducible
+benchmark.** Only an [anonymous numerical summary](../benchmarks/results/2026-10-13-private-operator-specialization-pilot-summary.json)
+is published. The underlying repository, cases, source, histories, model outputs
+and proof artifacts remain private; readers cannot independently reproduce or
+audit the scores from this summary. These results are separate from every public
+synthetic series above, including the unchanged V4 files **3/4** versus regions
+**2/4** development results. No prior trial was regraded or pooled.
+
+The pilot used stock Qwen2.5-Coder-1.5B-Instruct in MLX 4-bit in three arms: base, base with project memory,
+and the trained adapter with the same frozen memory. Three development and two
+separate final tasks ran in each arm, **15/15 started, finalized and graded**.
+All failures were retained, with zero completed tasks, zero usable passes, zero
+ungraded attempts, zero never-started tasks and no timeout or resource abort.
+
+An earlier six-attempt private development series is retained separately: base
+had zero usable passes in three attempts and nine model HTTP calls; memory had
+zero usable passes in three attempts and zero model calls because host context
+admission failed. No adapter or final attempt ran in that series. Scaffold,
+optional-memory packing and scope-admission fixes were frozen before the later
+15-attempt matrix; the earlier results were not regraded.
+
+| Arm | Development usable | Final usable | Independent behavior | Compatibility | Full regression | Completed | Model HTTP attempts |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| Base | 0/3 | 0/2 | 0/5 | 5/5 | 0/5 | 0/5 | 13 |
+| Base + project memory | 0/3 | 0/2 | 1/5 | 4/5 | 0/5 | 0/5 | 14 |
+| Adapter + same memory | 0/3 | 0/2 | 1/5 | 2/5 | 0/5 | 0/5 | 14 |
+
+All arms used the same frozen function-scoped document workflow, independent
+behavior/compatibility observer, required-read and scope/style gates, and actual
+pristine-assertion-failure/candidate-pass regression requirement. Each attempt
+had **12 calls, 600 seconds, 2048 output tokens, 22000 context characters and two
+repair alternatives**. Source, corpus, memory, runtime and evaluation inputs
+were pinned before inference. One explicitly owned server handled requests
+sequentially, with separate base and adapter blocks. The resource baseline was
+shared across the matrix: **1.5 GiB minimum estimated available memory, 3.8 GiB
+owned footprint/RSS limit and 2048 MiB swap-growth limit**. No safety threshold
+was bypassed. Failed-task latency is not a speed comparison; timings from blocks
+across backend rotations are not pooled.
+
+Training was an actual optimizer run, rather than preparation or preflight:
+**48 steps / eight epochs in 43.505 wall-clock seconds**, rank four on the final
+two layers' query/value projections, **38912 trainable parameters and eight
+finite, nonzero saved tensors**. The corpus contained six training and two
+validation teacher component reconstructions from three families. All eight
+complete supervised targets fit the 2048-token window, with zero dropped or
+truncated targets. Saved artifacts were inspected and the loader confirmed
+equality of all eight tensors. These observations establish actual training,
+artifact saving and loading separately; they do not establish useful task
+quality. There were **zero historically verified patches** in this corpus.
+This was content-response knowledge transport, not a test of native agent
+behavior imitation.
+
+The adapter arm matched the memory-only arm's **1/5 behavior** result and did
+not produce a completed cycle or full regression. It passed fewer compatibility
+cases (**2/5** versus **4/5** with memory); all compatibility failures remain in
+the table. Thus this pilot found **no coding-quality improvement from LoRA**.
+The small private task set cannot establish dependable project assistance,
+general model quality, a specialist advantage or Codex parity. Specialist-model
+benefits remain unproven. A passing partial implementation, lower training loss
+or successful tensor loading must not be presented as a usable task result.
+
+For a new project cycle, explicitly freeze source/corpus/model/evaluation inputs,
+run tokenizer preflight, retain actual optimizer and saved-artifact evidence,
+verify the current loader separately, and compare base, memory and adapter on
+independently graded tasks. Keep every failure and ungraded stop. The
+[specialization procedure](agent-setup.md#one-project-one-specialization-cycle)
+records these states without treating setup readiness, endpoint health or a
+training receipt as proof of quality.
+
+### Separate stock 4B development diagnostic
+
+The same private-data disclosure applies to this separate diagnostic; it is not
+a publicly reproducible benchmark or fresh final evaluation. A stock 4B model
+with the frozen project memory ran the three already-used development cases:
+**3/3 graded, 0/3 completed, 0/3 usable and seven model HTTP attempts**, with no
+timeout or resource abort. One partial implementation passed independent
+behavior, compatibility, scope and style checks. Regression submissions were
+rejected, so this partial result did not complete a task. All three failures
+remain separate from the 1.5B three-arm matrix; changing the model does not
+isolate a LoRA effect, and failed-task timings support no speed claim.
+
+A separately committed, protocol-only candidate now names the validated
+host-selected qualified test identifier and exact leaf method name in both the
+SYSTEM instruction and final stage cue. It leaves source/import/helper context,
+signature/decorator/indentation checks and whole-module rejection intact. CPU
+mock request captures cover native/JSON, multiline/decorated and Unicode
+identities plus unchanged rejection/retry behavior. The candidate's local CPU
+suite passed **1352 tests with one optional skip in 51.90 seconds**, retaining an
+existing Starlette deprecation warning. CPU checks establish contract coverage,
+not task quality; the original measured runtime and reports remain unchanged.
+
+Three separate clean-start probes after this change repeated **one already-used
+development case**, selected after the earlier diagnostic's outcomes were known.
+Each recorded a genuine completed/usable/oracle pass, one implementation, test
+and review call, and five actual host checks. Observer grading counted five
+passing candidate tests plus one pristine regression run with the expected
+attributable assertion failure; there were no unexpected failures or import/syntax
+errors. The authored regression passed on the candidate. Its expected pristine
+failure also means the five host checks do not all have exit code zero.
+Source/observer integrity and all completion gates held. None of the runs timed
+out or triggered a resource abort.
+
+| Known-case protocol probe | Usable / graded | Model HTTP attempts | Task seconds | End to end seconds |
+|---|---:|---:|---:|---:|
+| First clean start | 1/1 | 3 | 73.956 | 79.807 |
+| Independent repeat | 1/1 | 3 | 72.190 | 78.687 |
+| Second separate repeat | 1/1 | 3 | 69.302 | 75.850 |
+
+The earlier stock 4B diagnostic retains **0/3** overall, including **0/1 on this
+selected case before the prompt change**. No result was regraded. The three passes
+are development-tuned repetitions of one case rather than three independent case
+families or a fresh final evaluation. They show a bounded cycle working on that
+case, not general reliability, a success-rate estimate, a LoRA effect, specialist
+benefit or commercial-agent parity. Timings are separate observations with no
+pooled latency or speed-gain claim.

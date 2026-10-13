@@ -173,10 +173,45 @@ in identity assertions. The frozen scores above were **not regraded**; no
 post-fix model-quality improvement is claimed. The workflow is still experimental
 and currently limited to explicitly named Python functions and registered checks.
 Verified action preparation excludes unfinished tasks and final evaluation;
-LoRA and specialist-model benefits remain unmeasured.
+specialist-model benefits remain unproven.
 The [CPU tokenizer preflight](benchmarks/results/2026-10-12-verified-region-tokenizer-preflight.json)
 retained two complete verified examples (465 and 397 tokens in a 2048-token
-window), split train 1 / valid 1 / test 0. No weights or training were loaded.
+window), split train 1 / valid 1 / test 0. That separate preflight loaded no
+weights and performed no training.
+
+A later **private operator pilot, case data/evidence withheld, not publicly
+reproducible benchmark** tested Qwen2.5-Coder-1.5B-Instruct in MLX 4-bit with project memory and a
+small project LoRA. Three development and two separate final tasks ran in every
+arm; all 15 attempts were graded and retained, and none completed.
+
+| Private pilot arm | Usable | Behavior | Compatibility | Regression | Model HTTP attempts |
+|---|---:|---:|---:|---:|---:|
+| Base | **0/5** | 0/5 | 5/5 | 0/5 | 13 |
+| Base + project memory | **0/5** | 1/5 | 4/5 | 0/5 | 14 |
+| Adapter + same memory | **0/5** | 1/5 | 2/5 | 0/5 | 14 |
+
+Actual training completed 48 optimizer steps on six teacher component
+reconstructions, with two validation examples; saved artifacts and equality of
+all eight tensors on reload were checked. These were content-response knowledge
+targets, not native behavior imitation or historically verified patches.
+**This pilot found no coding-quality improvement from LoRA and establishes no
+Codex parity.** Compatibility failures remain included. No speed comparison is
+made from failed tasks or across backend rotations. See the
+[method and anonymous numerical summary](docs/benchmarks.md#private-single-project-specialization-pilot).
+
+Separate stock 4B + memory diagnostics preserve the earlier failures and the
+subsequent named-method protocol probes:
+
+| Separate private diagnostic | Distinct development cases | Usable / graded attempts | Model HTTP attempts |
+|---|---:|---:|---:|
+| Before the named-method prompt change | 3 | 0/3 | 7 |
+| After the change, repeating one already-used case | **1** | **3/3** | 9 |
+
+All three successful runs completed actual checks and an attributable original-bug
+regression, then received approved review and an independent oracle pass. These
+are development-tuned repetitions of **one known case**, not three distinct tasks,
+a fresh holdout, a general completion rate or a LoRA benefit. No speed comparison
+is made, and neither diagnostic is pooled with the three-arm pilot.
 
 ## Development
 
