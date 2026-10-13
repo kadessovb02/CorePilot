@@ -7,6 +7,7 @@ from __future__ import annotations
 import asyncio
 import hashlib
 import json
+import keyword
 import math
 import re
 import uuid
@@ -368,6 +369,14 @@ class Controller:
         """Two attempts per stage invocation; every request charges the budget."""
         reason = ""
         previous, diagnostics = None, None
+        method_identifier = method_name = None
+        if stage == "tests" and region is not None:
+            method_identifier = region.get("identifier")
+            parts = method_identifier.split(".") if isinstance(method_identifier, str) else []
+            if (not parts or len(parts) < 2 or len(method_identifier) > 200
+                    or any(not part.isidentifier() or keyword.iskeyword(part) for part in parts)):
+                raise ControlledBlocked("Regression method identity must be a valid host-selected qualified identifier")
+            method_name = parts[-1]
         for attempt in range(2):
             if self.task["step"] >= self.task["max_steps"]:
                 raise ControlledBlocked("Controlled model-call budget reached; checkpoint is available")
@@ -384,6 +393,8 @@ class Controller:
             adapter_hint = (("For the JSON adapter, put the complete file text inside the final string. " if document_path
                             else "For the JSON adapter, put the serialized stage object inside the final string. ")
                             if self.engine.settings.protocol == "json" else "")
+            if method_identifier is not None:
+                adapter_hint = adapter_hint.replace("complete file text", "complete selected method text")
             instruction = ("You are the " + stage + " stage of a host-controlled workflow. "
                 + ("Return only the complete file text for the host-selected path; no JSON, paths, patches, tool calls or prose. "
                    "An optional single whole-answer source-language fence is accepted. " if document_path else
@@ -408,6 +419,10 @@ class Controller:
                     "and preserves every byte outside this function. Do not change public interfaces or existing "
                     "style. Keep existing docstrings and literal data. Exclude module imports and every other "
                     "function or class.\n") + rules.replace("selected file's contents", "selected method's contents" if stage == "tests" else "selected function's contents") + "\n" + adapter_hint)
+                if method_identifier is not None:
+                    instruction += ("\nHost-selected qualified identifier: " + json.dumps(method_identifier, ensure_ascii=False)
+                        + ". Exact leaf method name: " + json.dumps(method_name, ensure_ascii=False)
+                        + ". Return that method with its unchanged parameters, decorators and original indentation.")
             if stage == 'tests' and context.get('bounded_regression_contract'):
                 instruction += ("\nThe host checks this regression on both original and corrected source. "
                     "Use compact direct self.assertEqual(target(literal inputs), literal expected value) methods "
@@ -424,7 +439,8 @@ class Controller:
                  json.dumps(stage_context, ensure_ascii=False), "_corepilot_kind": "context"},
                 *[{"role": "user", "content": value, "_corepilot_kind": "request"} for value in _requests(self.task)],
                 {"role": "user", "content": (
-                    ("Return only the selected regression test method replacement now." if stage == "tests" else
+                    ("Return only the complete replacement for " + json.dumps(method_identifier, ensure_ascii=False)
+                     + " (method " + json.dumps(method_name, ensure_ascii=False) + ") now." if stage == "tests" else
                      "Return only the selected function replacement now.") if region is not None else
                     "Return the complete file text for " + document_path + " now." if document_path else
                     "Submit the complete " + stage + " object using only submit_" + stage + " now."

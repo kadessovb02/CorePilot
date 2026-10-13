@@ -102,6 +102,6 @@ def test_test_method_region_instruction_and_document_transport_are_scoped(tmp_pa
         assert result["content"] == replacement and tool_names == []
         assert "one host-selected regression test method" in messages[0]["content"]
         assert "No whole file, imports" in messages[0]["content"] and "framework hooks" in messages[0]["content"]
-        assert messages[-1]["content"] == "Return only the selected regression test method replacement now."
+        assert messages[-1]["content"] == 'Return only the complete replacement for "Regression.test_bug" (method "test_bug") now.'
         assert not task["pending_calls"]
     asyncio.run(run())
